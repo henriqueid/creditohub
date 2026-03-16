@@ -1,20 +1,18 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "@/hooks/use-toast";
 import { formatBRL } from "@/lib/formatters";
-import { ArrowLeft, Plus, Trash2, Send, Printer } from "lucide-react";
-import { fetchPrintData, generatePrintHtml, openPrintWindow } from "@/lib/pdf-export";
+import { ArrowLeft, Plus, Trash2, Send, Printer, Save, Building2, BarChart3, Users, ShieldCheck, TrendingUp, AlertTriangle, Settings2, FileCheck } from "lucide-react";
 import { StatusBadge } from "@/components/StatusBadge";
-import type { Tables, TablesInsert } from "@/integrations/supabase/types";
+import { fetchPrintData, generatePrintHtml, openPrintWindow } from "@/lib/pdf-export";
+import { cn } from "@/lib/utils";
 
 interface SacadoRow {
   id?: string;
@@ -31,11 +29,47 @@ interface SocioRow {
   cargo: string;
 }
 
+const SECTIONS = [
+  { id: "identificacao", label: "Identificação", icon: Building2 },
+  { id: "operacional", label: "Operacional", icon: BarChart3 },
+  { id: "societaria", label: "Societária", icon: Users },
+  { id: "credito", label: "Crédito", icon: ShieldCheck },
+  { id: "financeira", label: "Financeira", icon: TrendingUp },
+  { id: "riscos", label: "Riscos", icon: AlertTriangle },
+  { id: "operacao", label: "Operação", icon: Settings2 },
+  { id: "parecer", label: "Parecer", icon: FileCheck },
+] as const;
+
+function SectionHeader({ id, title, icon: Icon }: { id: string; title: string; icon: React.ElementType }) {
+  return (
+    <div id={id} className="flex items-center gap-2 pt-6 pb-3 border-b border-border first:pt-0 scroll-mt-4">
+      <Icon className="h-4 w-4 text-primary" />
+      <h2 className="text-sm font-semibold tracking-wide uppercase text-primary">{title}</h2>
+    </div>
+  );
+}
+
+function FieldGroup({ children, cols = 2 }: { children: React.ReactNode; cols?: 2 | 3 | 4 }) {
+  const gridCols = cols === 4 ? "grid-cols-2 md:grid-cols-4" : cols === 3 ? "grid-cols-1 md:grid-cols-3" : "grid-cols-1 md:grid-cols-2";
+  return <div className={`grid ${gridCols} gap-x-6 gap-y-3`}>{children}</div>;
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-1">
+      <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{label}</label>
+      {children}
+    </div>
+  );
+}
+
 export default function CreditAnalysisForm() {
   const { id } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const isEditing = !!id && id !== "nova";
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [activeSection, setActiveSection] = useState("identificacao");
 
   // Form state
   const [clientId, setClientId] = useState("");
@@ -65,11 +99,36 @@ export default function CreditAnalysisForm() {
   const [parecerAnalista, setParecerAnalista] = useState("");
   const [recommendation, setRecommendation] = useState<string>("");
   const [status, setStatus] = useState("draft");
-
   const [sacados, setSacados] = useState<SacadoRow[]>([]);
   const [socios, setSocios] = useState<SocioRow[]>([]);
 
-  // Load clients for selector
+  // Scroll spy
+  const handleScroll = useCallback(() => {
+    const container = contentRef.current;
+    if (!container) return;
+    const scrollTop = container.scrollTop + 60;
+    for (let i = SECTIONS.length - 1; i >= 0; i--) {
+      const el = document.getElementById(SECTIONS[i].id);
+      if (el && el.offsetTop <= scrollTop) {
+        setActiveSection(SECTIONS[i].id);
+        break;
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    const container = contentRef.current;
+    if (!container) return;
+    container.addEventListener("scroll", handleScroll, { passive: true });
+    return () => container.removeEventListener("scroll", handleScroll);
+  }, [handleScroll]);
+
+  const scrollTo = (sectionId: string) => {
+    const el = document.getElementById(sectionId);
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  // Queries
   const { data: clients = [] } = useQuery({
     queryKey: ["clients-select"],
     queryFn: async () => {
@@ -78,7 +137,6 @@ export default function CreditAnalysisForm() {
     },
   });
 
-  // Load existing analysis
   const { data: analysis } = useQuery({
     queryKey: ["credit-analysis", id],
     queryFn: async () => {
@@ -110,6 +168,7 @@ export default function CreditAnalysisForm() {
     enabled: isEditing,
   });
 
+  // Populate form
   useEffect(() => {
     if (analysis) {
       setClientId(analysis.client_id);
@@ -145,10 +204,7 @@ export default function CreditAnalysisForm() {
   useEffect(() => {
     if (existingSacados.length) {
       setSacados(existingSacados.map((s) => ({
-        id: s.id,
-        sacado_nome: s.sacado_nome,
-        percentual_faturamento: s.percentual_faturamento,
-        prazo_medio: s.prazo_medio,
+        id: s.id, sacado_nome: s.sacado_nome, percentual_faturamento: s.percentual_faturamento, prazo_medio: s.prazo_medio,
       })));
     }
   }, [existingSacados]);
@@ -156,15 +212,12 @@ export default function CreditAnalysisForm() {
   useEffect(() => {
     if (existingSocios.length) {
       setSocios(existingSocios.map((s) => ({
-        id: s.id,
-        nome: s.nome,
-        cpf: s.cpf || "",
-        participacao: s.participacao,
-        cargo: s.cargo || "",
+        id: s.id, nome: s.nome, cpf: s.cpf || "", participacao: s.participacao, cargo: s.cargo || "",
       })));
     }
   }, [existingSocios]);
 
+  // Mutations
   const saveMutation = useMutation({
     mutationFn: async () => {
       const payload = {
@@ -198,7 +251,6 @@ export default function CreditAnalysisForm() {
       };
 
       let analysisId = id;
-
       if (isEditing) {
         const { error } = await supabase.from("credit_analysis").update(payload).eq("id", id);
         if (error) throw error;
@@ -208,35 +260,19 @@ export default function CreditAnalysisForm() {
         analysisId = data.id;
       }
 
-      // Save sacados
-      if (isEditing) {
-        await supabase.from("credit_analysis_sacados").delete().eq("credit_analysis_id", analysisId!);
-      }
+      if (isEditing) await supabase.from("credit_analysis_sacados").delete().eq("credit_analysis_id", analysisId!);
       if (sacados.length > 0) {
-        const sacadoInserts = sacados.map((s) => ({
-          credit_analysis_id: analysisId!,
-          sacado_nome: s.sacado_nome,
-          percentual_faturamento: s.percentual_faturamento,
-          prazo_medio: s.prazo_medio,
-        }));
-        await supabase.from("credit_analysis_sacados").insert(sacadoInserts);
+        await supabase.from("credit_analysis_sacados").insert(
+          sacados.map((s) => ({ credit_analysis_id: analysisId!, sacado_nome: s.sacado_nome, percentual_faturamento: s.percentual_faturamento, prazo_medio: s.prazo_medio }))
+        );
       }
 
-      // Save socios
-      if (isEditing) {
-        await supabase.from("credit_analysis_socios").delete().eq("credit_analysis_id", analysisId!);
-      }
+      if (isEditing) await supabase.from("credit_analysis_socios").delete().eq("credit_analysis_id", analysisId!);
       if (socios.length > 0) {
-        const socioInserts = socios.map((s) => ({
-          credit_analysis_id: analysisId!,
-          nome: s.nome,
-          cpf: s.cpf || null,
-          participacao: s.participacao,
-          cargo: s.cargo || null,
-        }));
-        await supabase.from("credit_analysis_socios").insert(socioInserts);
+        await supabase.from("credit_analysis_socios").insert(
+          socios.map((s) => ({ credit_analysis_id: analysisId!, nome: s.nome, cpf: s.cpf || null, participacao: s.participacao, cargo: s.cargo || null }))
+        );
       }
-
       return analysisId;
     },
     onSuccess: () => {
@@ -252,10 +288,7 @@ export default function CreditAnalysisForm() {
   const sendToCommittee = useMutation({
     mutationFn: async () => {
       if (!isEditing) throw new Error("Salve a análise antes de enviar ao comitê");
-      const { error } = await supabase
-        .from("credit_analysis")
-        .update({ status: "in_committee" as any })
-        .eq("id", id);
+      const { error } = await supabase.from("credit_analysis").update({ status: "in_committee" as any }).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -278,364 +311,371 @@ export default function CreditAnalysisForm() {
   };
 
   const isReadOnly = status !== "draft";
-
   const addSacado = () => setSacados([...sacados, { sacado_nome: "", percentual_faturamento: null, prazo_medio: null }]);
   const removeSacado = (i: number) => setSacados(sacados.filter((_, idx) => idx !== i));
-
   const addSocio = () => setSocios([...socios, { nome: "", cpf: "", participacao: null, cargo: "" }]);
   const removeSocio = (i: number) => setSocios(socios.filter((_, idx) => idx !== i));
 
-  return (
-    <div className="p-6 max-w-4xl space-y-6">
-      <div className="flex items-center justify-between">
-        <Button variant="ghost" size="sm" onClick={() => navigate("/analises")}>
-          <ArrowLeft className="h-4 w-4 mr-1" /> Voltar
-        </Button>
-        <div className="flex items-center gap-2">
-          {isEditing && <StatusBadge status={status} />}
-          {isEditing && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={async () => {
-                try {
-                  const data = await fetchPrintData(id!);
-                  const html = generatePrintHtml(data);
-                  openPrintWindow(html);
-                } catch {
-                  toast({ title: "Erro ao gerar relatório", variant: "destructive" });
-                }
-              }}
-            >
-              <Printer className="h-4 w-4 mr-1" /> Exportar PDF
-            </Button>
-          )}
-        </div>
-      </div>
+  const selectedClient = clients.find(c => c.id === clientId);
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* 1. Identificação */}
-        <Card>
-          <CardHeader><CardTitle className="text-lg">Identificação do Cliente</CardTitle></CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Cedente *</Label>
+  return (
+    <div className="flex h-[calc(100vh-3.5rem)] overflow-hidden">
+      {/* Scroll-spy sidebar */}
+      <aside className="hidden lg:flex flex-col w-52 shrink-0 border-r border-border bg-muted/30 py-4 px-2">
+        <div className="mb-4 px-2">
+          <Button variant="ghost" size="sm" className="w-full justify-start text-xs text-muted-foreground" onClick={() => navigate("/analises")}>
+            <ArrowLeft className="h-3 w-3 mr-1.5" /> Voltar
+          </Button>
+        </div>
+
+        <nav className="flex-1 space-y-0.5">
+          {SECTIONS.map((s) => (
+            <button
+              key={s.id}
+              onClick={() => scrollTo(s.id)}
+              className={cn(
+                "w-full flex items-center gap-2 px-3 py-2 text-xs rounded-md transition-colors text-left",
+                activeSection === s.id
+                  ? "bg-primary text-primary-foreground font-semibold"
+                  : "text-muted-foreground hover:text-foreground hover:bg-accent"
+              )}
+            >
+              <s.icon className="h-3.5 w-3.5 shrink-0" />
+              {s.label}
+            </button>
+          ))}
+        </nav>
+
+        {/* Quick stats */}
+        {(limiteSugerido || creditScore) && (
+          <div className="mt-auto pt-4 px-2 space-y-2 border-t border-border">
+            {limiteSugerido && (
+              <div>
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Limite</p>
+                <p className="text-sm font-bold tabular-nums">{formatBRL(parseFloat(limiteSugerido))}</p>
+              </div>
+            )}
+            {creditScore && (
+              <div>
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Score</p>
+                <p className="text-sm font-bold tabular-nums">{creditScore}</p>
+              </div>
+            )}
+          </div>
+        )}
+      </aside>
+
+      {/* Main content */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Top bar */}
+        <header className="shrink-0 flex items-center justify-between gap-3 px-6 py-3 border-b border-border bg-card">
+          <div className="flex items-center gap-3 min-w-0">
+            <Button variant="ghost" size="icon" className="lg:hidden h-8 w-8" onClick={() => navigate("/analises")}>
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <div className="min-w-0">
+              <h1 className="text-base font-semibold truncate">
+                {isEditing ? (selectedClient?.razao_social || "Análise de Crédito") : "Nova Análise de Crédito"}
+              </h1>
+              {isEditing && <p className="text-xs text-muted-foreground">Relatório de análise de crédito</p>}
+            </div>
+            {isEditing && <StatusBadge status={status} />}
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            {isEditing && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-xs"
+                onClick={async () => {
+                  try {
+                    const data = await fetchPrintData(id!);
+                    const html = generatePrintHtml(data);
+                    openPrintWindow(html);
+                  } catch {
+                    toast({ title: "Erro ao gerar relatório", variant: "destructive" });
+                  }
+                }}
+              >
+                <Printer className="h-3.5 w-3.5 mr-1" /> PDF
+              </Button>
+            )}
+            {!isReadOnly && (
+              <>
+                <Button size="sm" className="text-xs" onClick={handleSubmit} disabled={saveMutation.isPending}>
+                  <Save className="h-3.5 w-3.5 mr-1" />
+                  {saveMutation.isPending ? "Salvando..." : "Salvar"}
+                </Button>
+                {isEditing && (
+                  <Button
+                    size="sm"
+                    className="text-xs bg-status-committee hover:bg-status-committee/90"
+                    onClick={() => sendToCommittee.mutate()}
+                    disabled={sendToCommittee.isPending || !recommendation}
+                  >
+                    <Send className="h-3.5 w-3.5 mr-1" />
+                    Comitê
+                  </Button>
+                )}
+              </>
+            )}
+          </div>
+        </header>
+
+        {/* Scrollable report */}
+        <div ref={contentRef} className="flex-1 overflow-y-auto">
+          <form onSubmit={handleSubmit} className="max-w-5xl mx-auto px-6 py-4 space-y-1">
+
+            {/* 1. Identificação */}
+            <SectionHeader id="identificacao" title="Identificação do Cliente" icon={Building2} />
+            <FieldGroup cols={2}>
+              <Field label="Cedente *">
                 <Select value={clientId} onValueChange={setClientId} disabled={isReadOnly}>
-                  <SelectTrigger><SelectValue placeholder="Selecione o cedente" /></SelectTrigger>
+                  <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Selecione o cedente" /></SelectTrigger>
                   <SelectContent>
                     {clients.map((c) => (
                       <SelectItem key={c.id} value={c.id}>{c.razao_social}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Data da Análise</Label>
-                <Input type="date" value={dataAnalise} onChange={(e) => setDataAnalise(e.target.value)} disabled={isReadOnly} />
-              </div>
-              <div className="space-y-2">
-                <Label>Responsável Comercial</Label>
-                <Input value={responsavelComercial} onChange={(e) => setResponsavelComercial(e.target.value)} disabled={isReadOnly} />
-              </div>
-              <div className="space-y-2">
-                <Label>Analista de Crédito</Label>
-                <Input value={analistaCredito} onChange={(e) => setAnalistaCredito(e.target.value)} disabled={isReadOnly} />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+              </Field>
+              <Field label="Data da Análise">
+                <Input type="date" value={dataAnalise} onChange={(e) => setDataAnalise(e.target.value)} disabled={isReadOnly} className="h-9 text-sm" />
+              </Field>
+              <Field label="Responsável Comercial">
+                <Input value={responsavelComercial} onChange={(e) => setResponsavelComercial(e.target.value)} disabled={isReadOnly} className="h-9 text-sm" placeholder="—" />
+              </Field>
+              <Field label="Analista de Crédito">
+                <Input value={analistaCredito} onChange={(e) => setAnalistaCredito(e.target.value)} disabled={isReadOnly} className="h-9 text-sm" placeholder="—" />
+              </Field>
+            </FieldGroup>
 
-        {/* 2. Operacional */}
-        <Card>
-          <CardHeader><CardTitle className="text-lg">Informações Operacionais</CardTitle></CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label>Faturamento Médio Mensal (R$)</Label>
-                <Input type="number" step="0.01" value={faturamentoMedio} onChange={(e) => setFaturamentoMedio(e.target.value)} disabled={isReadOnly} className="tabular-nums" />
-              </div>
-              <div className="space-y-2">
-                <Label>Volume Estimado (R$)</Label>
-                <Input type="number" step="0.01" value={volumeEstimado} onChange={(e) => setVolumeEstimado(e.target.value)} disabled={isReadOnly} className="tabular-nums" />
-              </div>
-              <div className="space-y-2">
-                <Label>Prazo Médio (dias)</Label>
-                <Input type="number" value={prazoMedioTitulos} onChange={(e) => setPrazoMedioTitulos(e.target.value)} disabled={isReadOnly} />
-              </div>
-            </div>
+            {/* 2. Operacional */}
+            <SectionHeader id="operacional" title="Informações Operacionais" icon={BarChart3} />
+            <FieldGroup cols={3}>
+              <Field label="Faturamento Médio (R$)">
+                <Input type="number" step="0.01" value={faturamentoMedio} onChange={(e) => setFaturamentoMedio(e.target.value)} disabled={isReadOnly} className="h-9 text-sm tabular-nums" placeholder="0,00" />
+              </Field>
+              <Field label="Volume Estimado (R$)">
+                <Input type="number" step="0.01" value={volumeEstimado} onChange={(e) => setVolumeEstimado(e.target.value)} disabled={isReadOnly} className="h-9 text-sm tabular-nums" placeholder="0,00" />
+              </Field>
+              <Field label="Prazo Médio (dias)">
+                <Input type="number" value={prazoMedioTitulos} onChange={(e) => setPrazoMedioTitulos(e.target.value)} disabled={isReadOnly} className="h-9 text-sm tabular-nums" placeholder="0" />
+              </Field>
+            </FieldGroup>
 
-            {/* Sacados table */}
-            <div>
+            {/* Sacados inline table */}
+            <div className="pt-3">
               <div className="flex items-center justify-between mb-2">
-                <Label className="text-sm font-medium">Principais Sacados</Label>
+                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Principais Sacados</span>
                 {!isReadOnly && (
-                  <Button type="button" variant="outline" size="sm" onClick={addSacado}>
-                    <Plus className="h-3 w-3 mr-1" /> Adicionar
+                  <Button type="button" variant="ghost" size="sm" className="h-7 text-xs" onClick={addSacado}>
+                    <Plus className="h-3 w-3 mr-1" /> Sacado
                   </Button>
                 )}
               </div>
               {sacados.length > 0 && (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Sacado</TableHead>
-                      <TableHead>% Faturamento</TableHead>
-                      <TableHead>Prazo Médio</TableHead>
-                      {!isReadOnly && <TableHead className="w-10" />}
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {sacados.map((s, i) => (
-                      <TableRow key={i}>
-                        <TableCell>
-                          <Input value={s.sacado_nome} onChange={(e) => {
-                            const updated = [...sacados];
-                            updated[i].sacado_nome = e.target.value;
-                            setSacados(updated);
-                          }} disabled={isReadOnly} />
-                        </TableCell>
-                        <TableCell>
-                          <Input type="number" step="0.1" value={s.percentual_faturamento ?? ""} onChange={(e) => {
-                            const updated = [...sacados];
-                            updated[i].percentual_faturamento = e.target.value ? parseFloat(e.target.value) : null;
-                            setSacados(updated);
-                          }} disabled={isReadOnly} className="tabular-nums" />
-                        </TableCell>
-                        <TableCell>
-                          <Input type="number" value={s.prazo_medio ?? ""} onChange={(e) => {
-                            const updated = [...sacados];
-                            updated[i].prazo_medio = e.target.value ? parseInt(e.target.value) : null;
-                            setSacados(updated);
-                          }} disabled={isReadOnly} />
-                        </TableCell>
-                        {!isReadOnly && (
-                          <TableCell>
-                            <Button type="button" variant="ghost" size="icon" onClick={() => removeSacado(i)}>
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                          </TableCell>
-                        )}
+                <div className="rounded-md border border-border overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-muted/50">
+                        <TableHead className="text-xs h-8">Sacado</TableHead>
+                        <TableHead className="text-xs h-8 w-32">% Fat.</TableHead>
+                        <TableHead className="text-xs h-8 w-28">Prazo</TableHead>
+                        {!isReadOnly && <TableHead className="w-10 h-8" />}
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {sacados.map((s, i) => (
+                        <TableRow key={i}>
+                          <TableCell className="p-1.5">
+                            <Input value={s.sacado_nome} onChange={(e) => { const u = [...sacados]; u[i].sacado_nome = e.target.value; setSacados(u); }} disabled={isReadOnly} className="h-8 text-sm border-0 bg-transparent shadow-none focus-visible:ring-1" />
+                          </TableCell>
+                          <TableCell className="p-1.5">
+                            <Input type="number" step="0.1" value={s.percentual_faturamento ?? ""} onChange={(e) => { const u = [...sacados]; u[i].percentual_faturamento = e.target.value ? parseFloat(e.target.value) : null; setSacados(u); }} disabled={isReadOnly} className="h-8 text-sm tabular-nums border-0 bg-transparent shadow-none focus-visible:ring-1" />
+                          </TableCell>
+                          <TableCell className="p-1.5">
+                            <Input type="number" value={s.prazo_medio ?? ""} onChange={(e) => { const u = [...sacados]; u[i].prazo_medio = e.target.value ? parseInt(e.target.value) : null; setSacados(u); }} disabled={isReadOnly} className="h-8 text-sm tabular-nums border-0 bg-transparent shadow-none focus-visible:ring-1" />
+                          </TableCell>
+                          {!isReadOnly && (
+                            <TableCell className="p-1.5">
+                              <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => removeSacado(i)}><Trash2 className="h-3 w-3 text-destructive" /></Button>
+                            </TableCell>
+                          )}
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               )}
             </div>
-          </CardContent>
-        </Card>
 
-        {/* 3. Estrutura Societária */}
-        <Card>
-          <CardHeader><CardTitle className="text-lg">Estrutura Societária</CardTitle></CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between mb-2">
-              <Label className="text-sm font-medium">Sócios</Label>
-              {!isReadOnly && (
-                <Button type="button" variant="outline" size="sm" onClick={addSocio}>
-                  <Plus className="h-3 w-3 mr-1" /> Adicionar
-                </Button>
+            {/* 3. Societária */}
+            <SectionHeader id="societaria" title="Estrutura Societária" icon={Users} />
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Quadro Societário</span>
+                {!isReadOnly && (
+                  <Button type="button" variant="ghost" size="sm" className="h-7 text-xs" onClick={addSocio}>
+                    <Plus className="h-3 w-3 mr-1" /> Sócio
+                  </Button>
+                )}
+              </div>
+              {socios.length > 0 && (
+                <div className="rounded-md border border-border overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-muted/50">
+                        <TableHead className="text-xs h-8">Nome</TableHead>
+                        <TableHead className="text-xs h-8 w-36">CPF</TableHead>
+                        <TableHead className="text-xs h-8 w-24">Part. %</TableHead>
+                        <TableHead className="text-xs h-8 w-32">Cargo</TableHead>
+                        {!isReadOnly && <TableHead className="w-10 h-8" />}
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {socios.map((s, i) => (
+                        <TableRow key={i}>
+                          <TableCell className="p-1.5">
+                            <Input value={s.nome} onChange={(e) => { const u = [...socios]; u[i].nome = e.target.value; setSocios(u); }} disabled={isReadOnly} className="h-8 text-sm border-0 bg-transparent shadow-none focus-visible:ring-1" />
+                          </TableCell>
+                          <TableCell className="p-1.5">
+                            <Input value={s.cpf} onChange={(e) => { const u = [...socios]; u[i].cpf = e.target.value; setSocios(u); }} disabled={isReadOnly} className="h-8 text-sm border-0 bg-transparent shadow-none focus-visible:ring-1" />
+                          </TableCell>
+                          <TableCell className="p-1.5">
+                            <Input type="number" step="0.1" value={s.participacao ?? ""} onChange={(e) => { const u = [...socios]; u[i].participacao = e.target.value ? parseFloat(e.target.value) : null; setSocios(u); }} disabled={isReadOnly} className="h-8 text-sm tabular-nums border-0 bg-transparent shadow-none focus-visible:ring-1" />
+                          </TableCell>
+                          <TableCell className="p-1.5">
+                            <Input value={s.cargo} onChange={(e) => { const u = [...socios]; u[i].cargo = e.target.value; setSocios(u); }} disabled={isReadOnly} className="h-8 text-sm border-0 bg-transparent shadow-none focus-visible:ring-1" />
+                          </TableCell>
+                          {!isReadOnly && (
+                            <TableCell className="p-1.5">
+                              <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => removeSocio(i)}><Trash2 className="h-3 w-3 text-destructive" /></Button>
+                            </TableCell>
+                          )}
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               )}
             </div>
-            {socios.length > 0 && (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nome</TableHead>
-                    <TableHead>CPF</TableHead>
-                    <TableHead>Participação %</TableHead>
-                    <TableHead>Cargo</TableHead>
-                    {!isReadOnly && <TableHead className="w-10" />}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {socios.map((s, i) => (
-                    <TableRow key={i}>
-                      <TableCell>
-                        <Input value={s.nome} onChange={(e) => {
-                          const u = [...socios]; u[i].nome = e.target.value; setSocios(u);
-                        }} disabled={isReadOnly} />
-                      </TableCell>
-                      <TableCell>
-                        <Input value={s.cpf} onChange={(e) => {
-                          const u = [...socios]; u[i].cpf = e.target.value; setSocios(u);
-                        }} disabled={isReadOnly} />
-                      </TableCell>
-                      <TableCell>
-                        <Input type="number" step="0.1" value={s.participacao ?? ""} onChange={(e) => {
-                          const u = [...socios]; u[i].participacao = e.target.value ? parseFloat(e.target.value) : null; setSocios(u);
-                        }} disabled={isReadOnly} className="tabular-nums" />
-                      </TableCell>
-                      <TableCell>
-                        <Input value={s.cargo} onChange={(e) => {
-                          const u = [...socios]; u[i].cargo = e.target.value; setSocios(u);
-                        }} disabled={isReadOnly} />
-                      </TableCell>
-                      {!isReadOnly && (
-                        <TableCell>
-                          <Button type="button" variant="ghost" size="icon" onClick={() => removeSocio(i)}>
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        </TableCell>
+            <div className="pt-3">
+              <Field label="Histórico Empresarial dos Sócios">
+                <Textarea value={historicoSocios} onChange={(e) => setHistoricoSocios(e.target.value)} disabled={isReadOnly} rows={2} className="text-sm resize-none" placeholder="Descrição do histórico empresarial..." />
+              </Field>
+            </div>
+
+            {/* 4. Crédito */}
+            <SectionHeader id="credito" title="Consulta de Crédito" icon={ShieldCheck} />
+            <FieldGroup cols={3}>
+              <Field label="Score de Crédito">
+                <Input type="number" value={creditScore} onChange={(e) => setCreditScore(e.target.value)} disabled={isReadOnly} className="h-9 text-sm tabular-nums" placeholder="0" />
+              </Field>
+              <Field label="Protestos">
+                <Input value={protestos} onChange={(e) => setProtestos(e.target.value)} disabled={isReadOnly} className="h-9 text-sm" placeholder="Nada consta" />
+              </Field>
+              <Field label="Pendências Financeiras">
+                <Input value={pendencias} onChange={(e) => setPendencias(e.target.value)} disabled={isReadOnly} className="h-9 text-sm" placeholder="Nada consta" />
+              </Field>
+              <Field label="Cheques sem Fundo">
+                <Input value={chequesSemFundo} onChange={(e) => setChequesSemFundo(e.target.value)} disabled={isReadOnly} className="h-9 text-sm" placeholder="Nada consta" />
+              </Field>
+              <Field label="Ações Judiciais">
+                <Input value={acoesJudiciais} onChange={(e) => setAcoesJudiciais(e.target.value)} disabled={isReadOnly} className="h-9 text-sm" placeholder="Nada consta" />
+              </Field>
+            </FieldGroup>
+            <div className="pt-3">
+              <Field label="Observações da Consulta">
+                <Textarea value={observacoesCredito} onChange={(e) => setObservacoesCredito(e.target.value)} disabled={isReadOnly} rows={2} className="text-sm resize-none" placeholder="Observações relevantes..." />
+              </Field>
+            </div>
+
+            {/* 5. Financeira */}
+            <SectionHeader id="financeira" title="Análise Financeira" icon={TrendingUp} />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
+              <Field label="Análise de Faturamento">
+                <Textarea value={analiseFaturamento} onChange={(e) => setAnaliseFaturamento(e.target.value)} disabled={isReadOnly} rows={3} className="text-sm resize-none" />
+              </Field>
+              <Field label="Estrutura Financeira">
+                <Textarea value={estruturaFinanceira} onChange={(e) => setEstruturaFinanceira(e.target.value)} disabled={isReadOnly} rows={3} className="text-sm resize-none" />
+              </Field>
+              <Field label="Endividamento Aparente">
+                <Textarea value={endividamento} onChange={(e) => setEndividamento(e.target.value)} disabled={isReadOnly} rows={3} className="text-sm resize-none" />
+              </Field>
+              <Field label="Dependência de Clientes">
+                <Textarea value={dependenciaClientes} onChange={(e) => setDependenciaClientes(e.target.value)} disabled={isReadOnly} rows={3} className="text-sm resize-none" />
+              </Field>
+            </div>
+
+            {/* 6. Riscos */}
+            <SectionHeader id="riscos" title="Riscos e Pontos Positivos" icon={AlertTriangle} />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
+              <Field label="Riscos Identificados">
+                <Textarea value={riscos} onChange={(e) => setRiscos(e.target.value)} disabled={isReadOnly} rows={4} className="text-sm resize-none" />
+              </Field>
+              <Field label="Pontos Positivos">
+                <Textarea value={pontosPositivos} onChange={(e) => setPontosPositivos(e.target.value)} disabled={isReadOnly} rows={4} className="text-sm resize-none" />
+              </Field>
+            </div>
+
+            {/* 7. Operação */}
+            <SectionHeader id="operacao" title="Operação Proposta" icon={Settings2} />
+            <FieldGroup cols={3}>
+              <Field label="Limite Sugerido (R$)">
+                <Input type="number" step="0.01" value={limiteSugerido} onChange={(e) => setLimiteSugerido(e.target.value)} disabled={isReadOnly} className="h-9 text-sm tabular-nums font-semibold" placeholder="0,00" />
+              </Field>
+              <Field label="Prazo Médio Permitido (dias)">
+                <Input type="number" value={prazoMedioPermitido} onChange={(e) => setPrazoMedioPermitido(e.target.value)} disabled={isReadOnly} className="h-9 text-sm tabular-nums" placeholder="0" />
+              </Field>
+              <Field label="Concentração Máx. Sacado (%)">
+                <Input type="number" step="0.1" value={concentracaoMaxima} onChange={(e) => setConcentracaoMaxima(e.target.value)} disabled={isReadOnly} className="h-9 text-sm tabular-nums" placeholder="0" />
+              </Field>
+            </FieldGroup>
+            <div className="pt-3">
+              <Field label="Garantias">
+                <Textarea value={garantias} onChange={(e) => setGarantias(e.target.value)} disabled={isReadOnly} rows={2} className="text-sm resize-none" />
+              </Field>
+            </div>
+
+            {/* 8. Parecer */}
+            <SectionHeader id="parecer" title="Parecer do Analista" icon={FileCheck} />
+            <Field label="Parecer">
+              <Textarea value={parecerAnalista} onChange={(e) => setParecerAnalista(e.target.value)} disabled={isReadOnly} rows={5} className="text-sm resize-none" />
+            </Field>
+            <div className="pt-3">
+              <Field label="Recomendação">
+                <div className="flex gap-2 pt-1">
+                  {[
+                    { value: "approve", label: "Aprovar", color: "bg-status-approved/10 border-status-approved text-status-approved" },
+                    { value: "restrict", label: "Aprovar c/ Restrição", color: "bg-status-restricted/10 border-status-restricted text-status-restricted" },
+                    { value: "reject", label: "Reprovar", color: "bg-status-rejected/10 border-status-rejected text-status-rejected" },
+                  ].map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      disabled={isReadOnly}
+                      onClick={() => setRecommendation(opt.value)}
+                      className={cn(
+                        "px-4 py-2 rounded-md text-xs font-semibold border-2 transition-all",
+                        recommendation === opt.value
+                          ? opt.color
+                          : "border-border text-muted-foreground hover:border-muted-foreground/50"
                       )}
-                    </TableRow>
+                    >
+                      {opt.label}
+                    </button>
                   ))}
-                </TableBody>
-              </Table>
-            )}
-            <div className="space-y-2">
-              <Label>Histórico Empresarial dos Sócios</Label>
-              <Textarea value={historicoSocios} onChange={(e) => setHistoricoSocios(e.target.value)} disabled={isReadOnly} rows={3} />
+                </div>
+              </Field>
             </div>
-          </CardContent>
-        </Card>
 
-        {/* 4. Consulta de Crédito */}
-        <Card>
-          <CardHeader><CardTitle className="text-lg">Consulta de Crédito</CardTitle></CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label>Score de Crédito</Label>
-                <Input type="number" value={creditScore} onChange={(e) => setCreditScore(e.target.value)} disabled={isReadOnly} />
-              </div>
-              <div className="space-y-2">
-                <Label>Protestos</Label>
-                <Input value={protestos} onChange={(e) => setProtestos(e.target.value)} disabled={isReadOnly} />
-              </div>
-              <div className="space-y-2">
-                <Label>Pendências Financeiras</Label>
-                <Input value={pendencias} onChange={(e) => setPendencias(e.target.value)} disabled={isReadOnly} />
-              </div>
-              <div className="space-y-2">
-                <Label>Cheques sem Fundo</Label>
-                <Input value={chequesSemFundo} onChange={(e) => setChequesSemFundo(e.target.value)} disabled={isReadOnly} />
-              </div>
-              <div className="space-y-2">
-                <Label>Ações Judiciais</Label>
-                <Input value={acoesJudiciais} onChange={(e) => setAcoesJudiciais(e.target.value)} disabled={isReadOnly} />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Observações da Consulta</Label>
-              <Textarea value={observacoesCredito} onChange={(e) => setObservacoesCredito(e.target.value)} disabled={isReadOnly} rows={3} />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* 5. Análise Financeira */}
-        <Card>
-          <CardHeader><CardTitle className="text-lg">Análise Financeira</CardTitle></CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label>Análise de Faturamento</Label>
-              <Textarea value={analiseFaturamento} onChange={(e) => setAnaliseFaturamento(e.target.value)} disabled={isReadOnly} rows={3} />
-            </div>
-            <div className="space-y-2">
-              <Label>Estrutura Financeira</Label>
-              <Textarea value={estruturaFinanceira} onChange={(e) => setEstruturaFinanceira(e.target.value)} disabled={isReadOnly} rows={3} />
-            </div>
-            <div className="space-y-2">
-              <Label>Endividamento Aparente</Label>
-              <Textarea value={endividamento} onChange={(e) => setEndividamento(e.target.value)} disabled={isReadOnly} rows={3} />
-            </div>
-            <div className="space-y-2">
-              <Label>Dependência de Clientes</Label>
-              <Textarea value={dependenciaClientes} onChange={(e) => setDependenciaClientes(e.target.value)} disabled={isReadOnly} rows={3} />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* 6. Riscos e Positivos */}
-        <Card>
-          <CardHeader><CardTitle className="text-lg">Riscos e Pontos Positivos</CardTitle></CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label>Riscos Identificados</Label>
-              <Textarea value={riscos} onChange={(e) => setRiscos(e.target.value)} disabled={isReadOnly} rows={4} />
-            </div>
-            <div className="space-y-2">
-              <Label>Pontos Positivos</Label>
-              <Textarea value={pontosPositivos} onChange={(e) => setPontosPositivos(e.target.value)} disabled={isReadOnly} rows={4} />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* 7. Operação Proposta */}
-        <Card>
-          <CardHeader><CardTitle className="text-lg">Estrutura da Operação Proposta</CardTitle></CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Limite Sugerido (R$)</Label>
-                <Input type="number" step="0.01" value={limiteSugerido} onChange={(e) => setLimiteSugerido(e.target.value)} disabled={isReadOnly} className="tabular-nums" />
-              </div>
-              <div className="space-y-2">
-                <Label>Prazo Médio Permitido (dias)</Label>
-                <Input type="number" value={prazoMedioPermitido} onChange={(e) => setPrazoMedioPermitido(e.target.value)} disabled={isReadOnly} />
-              </div>
-              <div className="space-y-2">
-                <Label>Concentração Máxima por Sacado (%)</Label>
-                <Input type="number" step="0.1" value={concentracaoMaxima} onChange={(e) => setConcentracaoMaxima(e.target.value)} disabled={isReadOnly} className="tabular-nums" />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Garantias</Label>
-              <Textarea value={garantias} onChange={(e) => setGarantias(e.target.value)} disabled={isReadOnly} rows={3} />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* 8. Parecer */}
-        <Card>
-          <CardHeader><CardTitle className="text-lg">Parecer do Analista</CardTitle></CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label>Parecer</Label>
-              <Textarea value={parecerAnalista} onChange={(e) => setParecerAnalista(e.target.value)} disabled={isReadOnly} rows={5} />
-            </div>
-            <div className="space-y-2">
-              <Label>Recomendação</Label>
-              <Select value={recommendation} onValueChange={setRecommendation} disabled={isReadOnly}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione a recomendação" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="approve">Aprovar</SelectItem>
-                  <SelectItem value="restrict">Aprovar com Restrições</SelectItem>
-                  <SelectItem value="reject">Reprovar</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Actions */}
-        <div className="flex gap-3">
-          {!isReadOnly && (
-            <>
-              <Button type="submit" disabled={saveMutation.isPending}>
-                {saveMutation.isPending ? "Salvando..." : "Salvar Rascunho"}
-              </Button>
-              {isEditing && (
-                <Button
-                  type="button"
-                  variant="default"
-                  onClick={() => sendToCommittee.mutate()}
-                  disabled={sendToCommittee.isPending || !recommendation}
-                  className="bg-status-committee hover:bg-status-committee/90"
-                >
-                  <Send className="h-4 w-4 mr-1" />
-                  {sendToCommittee.isPending ? "Enviando..." : "Enviar para Comitê"}
-                </Button>
-              )}
-            </>
-          )}
-          <Button type="button" variant="outline" onClick={() => navigate("/analises")}>
-            {isReadOnly ? "Voltar" : "Cancelar"}
-          </Button>
+            {/* Bottom spacer */}
+            <div className="h-16" />
+          </form>
         </div>
-      </form>
+      </div>
     </div>
   );
 }
