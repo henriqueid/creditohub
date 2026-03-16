@@ -108,7 +108,6 @@ export default function Dashboard() {
             </Card>
           </motion.div>
         ))}
-        </Card>
       </div>
 
       {/* Second row: Financial + Pipeline */}
