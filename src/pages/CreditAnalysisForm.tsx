@@ -15,7 +15,7 @@ import { formatBRL } from "@/lib/formatters";
 import {
   ArrowLeft, Plus, Trash2, Send, Printer, Save, Building2, BarChart3,
   Users, ShieldCheck, TrendingUp, AlertTriangle, Settings2, FileCheck,
-  Sparkles, Brain, Target, Gauge, FileText, Zap, ChevronDown, Check
+  Sparkles, Brain, Target, Gauge, FileText, Zap, ChevronDown, Check, Eye, EyeOff
 } from "lucide-react";
 import { StatusBadge } from "@/components/StatusBadge";
 import { fetchPrintData, generatePrintHtml, openPrintWindow } from "@/lib/pdf-export";
@@ -71,7 +71,7 @@ function FieldGroup({ children, cols = 2 }: { children: React.ReactNode; cols?: 
   return <div className={`grid ${gridCols} gap-4`}>{children}</div>;
 }
 
-function SectionWrapper({ title, icon: Icon, children, section, analysisId, attachments, onAttachmentsChange, onDataExtracted, analysisContext, disabled, defaultOpen = true }: {
+function SectionWrapper({ title, icon: Icon, children, section, analysisId, attachments, onAttachmentsChange, onDataExtracted, analysisContext, disabled, defaultOpen = true, summary, compactMode }: {
   title: string;
   icon: React.ElementType;
   children: React.ReactNode;
@@ -83,9 +83,12 @@ function SectionWrapper({ title, icon: Icon, children, section, analysisId, atta
   analysisContext?: any;
   disabled?: boolean;
   defaultOpen?: boolean;
+  summary?: string[];
+  compactMode?: boolean;
 }) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
   const attachCount = attachments.length;
+  const showContent = compactMode ? false : isOpen;
 
   return (
     <motion.div
@@ -112,15 +115,52 @@ function SectionWrapper({ title, icon: Icon, children, section, analysisId, atta
             )}
           </div>
           <motion.div
-            animate={{ rotate: isOpen ? 180 : 0 }}
+            animate={{ rotate: showContent ? 180 : 0 }}
             transition={{ duration: 0.2 }}
           >
             <ChevronDown className="h-4 w-4 text-muted-foreground" />
           </motion.div>
         </button>
 
+        {/* Compact summary */}
         <AnimatePresence initial={false}>
-          {isOpen && (
+          {compactMode && !isOpen && summary && summary.length > 0 && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2, ease: "easeInOut" }}
+              className="overflow-hidden"
+            >
+              <div className="px-5 py-2.5 bg-muted/10 border-t border-border/30">
+                <div className="flex flex-wrap gap-x-4 gap-y-1">
+                  {summary.map((item, i) => (
+                    <span key={i} className="text-[11px] text-muted-foreground">
+                      <span className="text-foreground font-medium">{item.split(": ")[0]}:</span>{" "}
+                      {item.split(": ").slice(1).join(": ") || "—"}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          )}
+          {compactMode && !isOpen && (!summary || summary.length === 0) && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2, ease: "easeInOut" }}
+              className="overflow-hidden"
+            >
+              <div className="px-5 py-2 bg-muted/10 border-t border-border/30">
+                <span className="text-[11px] text-muted-foreground italic">Nenhum dado preenchido</span>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence initial={false}>
+          {(compactMode ? isOpen : showContent) && (
             <motion.div
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: "auto", opacity: 1 }}
@@ -158,6 +198,7 @@ export default function CreditAnalysisForm() {
   const isEditing = !!id && id !== "nova";
 
   const [activeTab, setActiveTab] = useState("dossie");
+  const [compactMode, setCompactMode] = useState(false);
 
   // Form state
   const [clientId, setClientId] = useState("");
@@ -529,6 +570,51 @@ export default function CreditAnalysisForm() {
     return totalFields > 0 ? Math.round((totalFilled / totalFields) * 100) : 0;
   }, [sectionProgress]);
 
+  const sectionSummaries = useMemo(() => {
+    const f = (v: string, label: string) => v.trim() ? `${label}: ${v.trim().substring(0, 60)}${v.trim().length > 60 ? "…" : ""}` : null;
+    return {
+      identificacao: [
+        selectedClient ? `Cedente: ${selectedClient.razao_social}` : null,
+        f(dataAnalise, "Data"),
+        f(responsavelComercial, "Comercial"),
+        f(analistaCredito, "Analista"),
+      ].filter(Boolean) as string[],
+      operacional: [
+        fatNum ? `Faturamento: ${formatBRL(fatNum)}` : null,
+        volNum ? `Volume: ${formatBRL(volNum)}` : null,
+        prazoMedioTitulos ? `Prazo: ${prazoMedioTitulos} dias` : null,
+        sacados.length > 0 ? `${sacados.length} sacado(s)` : null,
+      ].filter(Boolean) as string[],
+      societaria: [
+        socios.length > 0 ? `${socios.length} sócio(s) • ${sociosTotal.totalParticipacao.toFixed(1)}%` : null,
+        f(historicoSocios, "Histórico"),
+      ].filter(Boolean) as string[],
+      credito: [
+        scoreNum ? `Score: ${scoreNum} (${grade})` : null,
+        f(protestos, "Protestos"),
+        f(pendencias, "Pendências"),
+        f(chequesSemFundo, "Cheques s/ fundo"),
+        f(acoesJudiciais, "Ações judiciais"),
+      ].filter(Boolean) as string[],
+      financeira: [
+        f(analiseFaturamento, "Faturamento"),
+        f(estruturaFinanceira, "Estrutura"),
+        f(endividamento, "Endividamento"),
+        f(dependenciaClientes, "Dependência"),
+      ].filter(Boolean) as string[],
+      riscos: [
+        f(riscos, "Riscos"),
+        f(pontosPositivos, "Positivos"),
+      ].filter(Boolean) as string[],
+      operacao: [
+        limiteNum ? `Limite: ${formatBRL(limiteNum)}` : null,
+        prazoMedioPermitido ? `Prazo: ${prazoMedioPermitido} dias` : null,
+        concentracaoMaxima ? `Conc. máx: ${concentracaoMaxima}%` : null,
+        f(garantias, "Garantias"),
+      ].filter(Boolean) as string[],
+    };
+  }, [selectedClient, dataAnalise, responsavelComercial, analistaCredito, fatNum, volNum, prazoMedioTitulos, sacados.length, socios.length, sociosTotal, historicoSocios, scoreNum, grade, protestos, pendencias, chequesSemFundo, acoesJudiciais, analiseFaturamento, estruturaFinanceira, endividamento, dependenciaClientes, riscos, pontosPositivos, limiteNum, prazoMedioPermitido, concentracaoMaxima, garantias]);
+
   return (
     <div className="flex h-[calc(100vh-3.5rem)] overflow-hidden">
       {/* Main content */}
@@ -695,12 +781,24 @@ export default function CreditAnalysisForm() {
               >
                 <div className="flex items-center justify-between mb-3">
                   <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Progresso do Dossiê</p>
-                  <span className={cn(
-                    "text-xs font-bold tabular-nums px-2 py-0.5 rounded-full",
-                    overallProgress === 100 ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
-                  )}>
-                    {overallProgress}%
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant={compactMode ? "default" : "outline"}
+                      size="sm"
+                      className="h-6 text-[10px] gap-1 px-2"
+                      onClick={() => setCompactMode(!compactMode)}
+                    >
+                      {compactMode ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                      {compactMode ? "Expandir" : "Compacto"}
+                    </Button>
+                    <span className={cn(
+                      "text-xs font-bold tabular-nums px-2 py-0.5 rounded-full",
+                      overallProgress === 100 ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
+                    )}>
+                      {overallProgress}%
+                    </span>
+                  </div>
                 </div>
                 <div className="w-full h-1.5 rounded-full bg-muted overflow-hidden mb-4">
                   <motion.div
@@ -759,6 +857,7 @@ export default function CreditAnalysisForm() {
                 analysisId={isEditing ? id! : null} attachments={sectionAttachments.identificacao || []}
                 onAttachmentsChange={updateSectionAttachments("identificacao")}
                 onDataExtracted={handleDataExtracted} analysisContext={analysisDataForAI} disabled={isReadOnly}
+                compactMode={compactMode} summary={sectionSummaries.identificacao}
               >
                 <FieldGroup cols={2}>
                   <Field label="Cedente *">
@@ -786,6 +885,7 @@ export default function CreditAnalysisForm() {
                 analysisId={isEditing ? id! : null} attachments={sectionAttachments.operacional || []}
                 onAttachmentsChange={updateSectionAttachments("operacional")}
                 onDataExtracted={handleDataExtracted} analysisContext={analysisDataForAI} disabled={isReadOnly}
+                compactMode={compactMode} summary={sectionSummaries.operacional}
               >
                 <FieldGroup cols={3}>
                   <Field label="Faturamento Médio (R$)">
@@ -851,6 +951,7 @@ export default function CreditAnalysisForm() {
                 analysisId={isEditing ? id! : null} attachments={sectionAttachments.societaria || []}
                 onAttachmentsChange={updateSectionAttachments("societaria")}
                 onDataExtracted={handleDataExtracted} analysisContext={analysisDataForAI} disabled={isReadOnly}
+                compactMode={compactMode} summary={sectionSummaries.societaria}
               >
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
@@ -917,6 +1018,7 @@ export default function CreditAnalysisForm() {
                 analysisId={isEditing ? id! : null} attachments={sectionAttachments.credito || []}
                 onAttachmentsChange={updateSectionAttachments("credito")}
                 onDataExtracted={handleDataExtracted} analysisContext={analysisDataForAI} disabled={isReadOnly}
+                compactMode={compactMode} summary={sectionSummaries.credito}
               >
                 <FieldGroup cols={3}>
                   <Field label="Score de Crédito">
@@ -950,6 +1052,7 @@ export default function CreditAnalysisForm() {
                 analysisId={isEditing ? id! : null} attachments={sectionAttachments.financeira || []}
                 onAttachmentsChange={updateSectionAttachments("financeira")}
                 onDataExtracted={handleDataExtracted} analysisContext={analysisDataForAI} disabled={isReadOnly}
+                compactMode={compactMode} summary={sectionSummaries.financeira}
               >
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
                   <Field label="Análise de Faturamento">
@@ -972,6 +1075,7 @@ export default function CreditAnalysisForm() {
                 analysisId={isEditing ? id! : null} attachments={sectionAttachments.riscos || []}
                 onAttachmentsChange={updateSectionAttachments("riscos")}
                 onDataExtracted={handleDataExtracted} analysisContext={analysisDataForAI} disabled={isReadOnly}
+                compactMode={compactMode} summary={sectionSummaries.riscos}
               >
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
                   <Field label="Riscos Identificados">
@@ -988,6 +1092,7 @@ export default function CreditAnalysisForm() {
                 analysisId={isEditing ? id! : null} attachments={sectionAttachments.operacao || []}
                 onAttachmentsChange={updateSectionAttachments("operacao")}
                 onDataExtracted={handleDataExtracted} analysisContext={analysisDataForAI} disabled={isReadOnly}
+                compactMode={compactMode} summary={sectionSummaries.operacao}
               >
                 <FieldGroup cols={3}>
                   <Field label="Limite Sugerido (R$)">
