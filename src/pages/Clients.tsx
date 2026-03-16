@@ -68,7 +68,7 @@ export default function Clients() {
               </TableRow>
             ) : clients.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                   Nenhum cedente encontrado
                 </TableCell>
               </TableRow>
