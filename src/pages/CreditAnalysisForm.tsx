@@ -940,7 +940,7 @@ export default function CreditAnalysisForm() {
                     <CardTitle className="text-sm text-muted-foreground">Concentração Máxima</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <p className={cn("text-3xl font-bold tabular-nums", concentration.maxSingleConcentration > 30 ? "text-red-600" : "text-foreground")}>
+                    <p className={cn("text-3xl font-bold tabular-nums", concentration.maxSingleConcentration > 30 ? "text-destructive" : "text-foreground")}>
                       {concentration.maxSingleConcentration.toFixed(1)}%
                     </p>
                   </CardContent>
