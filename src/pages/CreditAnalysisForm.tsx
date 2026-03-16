@@ -71,7 +71,7 @@ function FieldGroup({ children, cols = 2 }: { children: React.ReactNode; cols?: 
   return <div className={`grid ${gridCols} gap-4`}>{children}</div>;
 }
 
-function SectionWrapper({ title, icon: Icon, children, section, analysisId, attachments, onAttachmentsChange, onDataExtracted, analysisContext, disabled, defaultOpen = true }: {
+function SectionWrapper({ title, icon: Icon, children, section, analysisId, attachments, onAttachmentsChange, onDataExtracted, analysisContext, disabled, defaultOpen = true, summary, compactMode }: {
   title: string;
   icon: React.ElementType;
   children: React.ReactNode;
@@ -83,9 +83,12 @@ function SectionWrapper({ title, icon: Icon, children, section, analysisId, atta
   analysisContext?: any;
   disabled?: boolean;
   defaultOpen?: boolean;
+  summary?: string[];
+  compactMode?: boolean;
 }) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
   const attachCount = attachments.length;
+  const showContent = compactMode ? false : isOpen;
 
   return (
     <motion.div
@@ -112,15 +115,52 @@ function SectionWrapper({ title, icon: Icon, children, section, analysisId, atta
             )}
           </div>
           <motion.div
-            animate={{ rotate: isOpen ? 180 : 0 }}
+            animate={{ rotate: showContent ? 180 : 0 }}
             transition={{ duration: 0.2 }}
           >
             <ChevronDown className="h-4 w-4 text-muted-foreground" />
           </motion.div>
         </button>
 
+        {/* Compact summary */}
         <AnimatePresence initial={false}>
-          {isOpen && (
+          {compactMode && !isOpen && summary && summary.length > 0 && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2, ease: "easeInOut" }}
+              className="overflow-hidden"
+            >
+              <div className="px-5 py-2.5 bg-muted/10 border-t border-border/30">
+                <div className="flex flex-wrap gap-x-4 gap-y-1">
+                  {summary.map((item, i) => (
+                    <span key={i} className="text-[11px] text-muted-foreground">
+                      <span className="text-foreground font-medium">{item.split(": ")[0]}:</span>{" "}
+                      {item.split(": ").slice(1).join(": ") || "—"}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          )}
+          {compactMode && !isOpen && (!summary || summary.length === 0) && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2, ease: "easeInOut" }}
+              className="overflow-hidden"
+            >
+              <div className="px-5 py-2 bg-muted/10 border-t border-border/30">
+                <span className="text-[11px] text-muted-foreground italic">Nenhum dado preenchido</span>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence initial={false}>
+          {(compactMode ? isOpen : showContent) && (
             <motion.div
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: "auto", opacity: 1 }}
