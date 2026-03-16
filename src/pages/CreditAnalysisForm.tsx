@@ -595,8 +595,15 @@ export default function CreditAnalysisForm() {
           </div>
 
           {/* TAB: Dossiê */}
-          <TabsContent value="dossie" className="flex-1 overflow-y-auto mt-0 p-0">
-            <form onSubmit={handleSubmit} className="max-w-6xl mx-auto px-6 py-6 space-y-8">
+          <TabsContent value="dossie" className="flex-1 overflow-y-auto mt-0 p-0" forceMount={activeTab === "dossie" ? undefined : true} hidden={activeTab !== "dossie"}>
+            <motion.form
+              key="dossie"
+              initial={{ opacity: 0, x: -12 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.35, ease: "easeOut" }}
+              onSubmit={handleSubmit}
+              className="max-w-6xl mx-auto px-6 py-6 space-y-8"
+            >
 
               {/* 1. Identificação */}
               <SectionWrapper title="Identificação do Cliente" icon={Building2} section="identificacao"
