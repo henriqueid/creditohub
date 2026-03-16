@@ -204,6 +204,88 @@ export type Database = {
           },
         ]
       }
+      credit_analysis_attachments: {
+        Row: {
+          ai_extracted_data: Json | null
+          created_at: string
+          credit_analysis_id: string
+          file_name: string
+          file_path: string
+          file_size: number | null
+          file_type: string | null
+          id: string
+          section: string
+        }
+        Insert: {
+          ai_extracted_data?: Json | null
+          created_at?: string
+          credit_analysis_id: string
+          file_name: string
+          file_path: string
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          section: string
+        }
+        Update: {
+          ai_extracted_data?: Json | null
+          created_at?: string
+          credit_analysis_id?: string
+          file_name?: string
+          file_path?: string
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          section?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_analysis_attachments_credit_analysis_id_fkey"
+            columns: ["credit_analysis_id"]
+            isOneToOne: false
+            referencedRelation: "credit_analysis"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      credit_analysis_insights: {
+        Row: {
+          content: string
+          created_at: string
+          credit_analysis_id: string
+          id: string
+          insight_type: string
+          metadata: Json | null
+          section: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          credit_analysis_id: string
+          id?: string
+          insight_type: string
+          metadata?: Json | null
+          section?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          credit_analysis_id?: string
+          id?: string
+          insight_type?: string
+          metadata?: Json | null
+          section?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_analysis_insights_credit_analysis_id_fkey"
+            columns: ["credit_analysis_id"]
+            isOneToOne: false
+            referencedRelation: "credit_analysis"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       credit_analysis_sacados: {
         Row: {
           credit_analysis_id: string
