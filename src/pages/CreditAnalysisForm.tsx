@@ -752,6 +752,8 @@ export default function CreditAnalysisForm() {
                       overallProgress === 100 ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
                     )}>
                       {overallProgress}%
+                    </span>
+                  </div>
                 </div>
                 <div className="w-full h-1.5 rounded-full bg-muted overflow-hidden mb-4">
                   <motion.div
