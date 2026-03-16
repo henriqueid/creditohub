@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, History } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { formatCNPJorCPF, formatDate } from "@/lib/formatters";
 
@@ -56,18 +56,19 @@ export default function Clients() {
               <TableHead>Segmento</TableHead>
               <TableHead>Cidade/UF</TableHead>
               <TableHead>Cadastro</TableHead>
+              <TableHead className="w-10"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                   Carregando...
                 </TableCell>
               </TableRow>
             ) : clients.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                   Nenhum cedente encontrado
                 </TableCell>
               </TableRow>
@@ -83,8 +84,22 @@ export default function Clients() {
                   <TableCell>{client.segmento || "—"}</TableCell>
                   <TableCell>{client.cidade && client.estado ? `${client.cidade}/${client.estado}` : "—"}</TableCell>
                   <TableCell>{formatDate(client.created_at)}</TableCell>
+                  <TableCell>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/cedentes/${client.id}/historico`);
+                      }}
+                    >
+                      <History className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
                 </TableRow>
               ))
+
             )}
           </TableBody>
         </Table>
