@@ -85,64 +85,29 @@ export default function Dashboard() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/cedentes")}>
-          <CardHeader className="flex flex-row items-center justify-between pb-1 pt-4 px-4">
-            <CardTitle className="text-xs font-medium text-muted-foreground">Cedentes</CardTitle>
-            <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
-          </CardHeader>
-          <CardContent className="px-4 pb-4">
-            <div className="text-2xl font-bold tabular-nums">{clientCount}</div>
-          </CardContent>
-        </Card>
-
-        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/analises")}>
-          <CardHeader className="flex flex-row items-center justify-between pb-1 pt-4 px-4">
-            <CardTitle className="text-xs font-medium text-muted-foreground">Total Análises</CardTitle>
-            <FileText className="h-3.5 w-3.5 text-muted-foreground" />
-          </CardHeader>
-          <CardContent className="px-4 pb-4">
-            <div className="text-2xl font-bold tabular-nums">{total}</div>
-          </CardContent>
-        </Card>
-
-        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/comite")}>
-          <CardHeader className="flex flex-row items-center justify-between pb-1 pt-4 px-4">
-            <CardTitle className="text-xs font-medium text-status-committee">Em Comitê</CardTitle>
-            <Clock className="h-3.5 w-3.5 text-status-committee" />
-          </CardHeader>
-          <CardContent className="px-4 pb-4">
-            <div className="text-2xl font-bold tabular-nums text-status-committee">{inCommittee}</div>
-          </CardContent>
-        </Card>
-
-        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/analises")}>
-          <CardHeader className="flex flex-row items-center justify-between pb-1 pt-4 px-4">
-            <CardTitle className="text-xs font-medium text-status-approved">Aprovados</CardTitle>
-            <CheckCircle className="h-3.5 w-3.5 text-status-approved" />
-          </CardHeader>
-          <CardContent className="px-4 pb-4">
-            <div className="text-2xl font-bold tabular-nums text-status-approved">{approved}</div>
-          </CardContent>
-        </Card>
-
-        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/analises")}>
-          <CardHeader className="flex flex-row items-center justify-between pb-1 pt-4 px-4">
-            <CardTitle className="text-xs font-medium text-status-rejected">Reprovados</CardTitle>
-            <XCircle className="h-3.5 w-3.5 text-status-rejected" />
-          </CardHeader>
-          <CardContent className="px-4 pb-4">
-            <div className="text-2xl font-bold tabular-nums text-status-rejected">{rejected}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-1 pt-4 px-4">
-            <CardTitle className="text-xs font-medium text-muted-foreground">Score Médio</CardTitle>
-            <BarChart3 className="h-3.5 w-3.5 text-muted-foreground" />
-          </CardHeader>
-          <CardContent className="px-4 pb-4">
-            <div className="text-2xl font-bold tabular-nums">{avgScore || "—"}</div>
-          </CardContent>
+        {[
+          { title: "Cedentes", value: clientCount, icon: Building2, href: "/cedentes", colorClass: "" },
+          { title: "Total Análises", value: total, icon: FileText, href: "/analises", colorClass: "" },
+          { title: "Em Comitê", value: inCommittee, icon: Clock, href: "/comite", colorClass: "text-status-committee" },
+          { title: "Aprovados", value: approved, icon: CheckCircle, href: "/analises", colorClass: "text-status-approved" },
+          { title: "Reprovados", value: rejected, icon: XCircle, href: "/analises", colorClass: "text-status-rejected" },
+          { title: "Score Médio", value: avgScore || "—", icon: BarChart3, href: "", colorClass: "" },
+        ].map((card, i) => (
+          <motion.div key={card.title} custom={i} variants={cardVariants} initial="hidden" animate="visible">
+            <Card
+              className={cn("cursor-pointer hover:shadow-md transition-shadow", !card.href && "cursor-default")}
+              onClick={() => card.href && navigate(card.href)}
+            >
+              <CardHeader className="flex flex-row items-center justify-between pb-1 pt-4 px-4">
+                <CardTitle className={cn("text-xs font-medium", card.colorClass || "text-muted-foreground")}>{card.title}</CardTitle>
+                <card.icon className={cn("h-3.5 w-3.5", card.colorClass || "text-muted-foreground")} />
+              </CardHeader>
+              <CardContent className="px-4 pb-4">
+                <div className={cn("text-2xl font-bold tabular-nums", card.colorClass)}>{card.value}</div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        ))}
         </Card>
       </div>
 
