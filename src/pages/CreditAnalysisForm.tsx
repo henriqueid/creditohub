@@ -736,7 +736,25 @@ export default function CreditAnalysisForm() {
               >
                 <div className="flex items-center justify-between mb-3">
                   <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Progresso do Dossiê</p>
-                  <span className={cn(
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant={compactMode ? "default" : "outline"}
+                      size="sm"
+                      className="h-6 text-[10px] gap-1 px-2"
+                      onClick={() => setCompactMode(!compactMode)}
+                    >
+                      {compactMode ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                      {compactMode ? "Expandir" : "Compacto"}
+                    </Button>
+                    <span className={cn(
+                      "text-xs font-bold tabular-nums px-2 py-0.5 rounded-full",
+                      overallProgress === 100 ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
+                    )}>
+                      {overallProgress}%
+                    </span>
+                  </div>
+                </div>
                     "text-xs font-bold tabular-nums px-2 py-0.5 rounded-full",
                     overallProgress === 100 ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
                   )}>
