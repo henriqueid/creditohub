@@ -1027,7 +1027,7 @@ export default function CreditAnalysisForm() {
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Utilização:</span>
-                      <span className={cn("font-bold tabular-nums", limitUtil > 100 ? "text-red-600" : "text-foreground")}>{limitUtil.toFixed(0)}%</span>
+                      <span className={cn("font-bold tabular-nums", limitUtil > 100 ? "text-destructive" : "text-foreground")}>{limitUtil.toFixed(0)}%</span>
                     </div>
                   </CardContent>
                 </Card>
