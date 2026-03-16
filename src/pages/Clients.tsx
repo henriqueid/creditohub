@@ -84,7 +84,19 @@ export default function Clients() {
                   <TableCell>{client.segmento || "—"}</TableCell>
                   <TableCell>{client.cidade && client.estado ? `${client.cidade}/${client.estado}` : "—"}</TableCell>
                   <TableCell>{formatDate(client.created_at)}</TableCell>
-                </TableRow>
+                  <TableCell>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/cedentes/${client.id}/historico`);
+                      }}
+                    >
+                      <History className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
               ))
             )}
           </TableBody>
