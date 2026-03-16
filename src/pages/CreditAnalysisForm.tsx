@@ -15,7 +15,7 @@ import { formatBRL } from "@/lib/formatters";
 import {
   ArrowLeft, Plus, Trash2, Send, Printer, Save, Building2, BarChart3,
   Users, ShieldCheck, TrendingUp, AlertTriangle, Settings2, FileCheck,
-  Sparkles, Brain, Target, Gauge, FileText, Zap, ChevronDown
+  Sparkles, Brain, Target, Gauge, FileText, Zap, ChevronDown, Check
 } from "lucide-react";
 import { StatusBadge } from "@/components/StatusBadge";
 import { fetchPrintData, generatePrintHtml, openPrintWindow } from "@/lib/pdf-export";
