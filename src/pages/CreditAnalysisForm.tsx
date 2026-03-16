@@ -56,21 +56,22 @@ interface FileAttachment {
 
 type SectionAttachments = Record<string, FileAttachment[]>;
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, children, hint }: { label: string; children: React.ReactNode; hint?: string }) {
   return (
-    <div className="space-y-1">
-      <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{label}</label>
+    <div className="space-y-1.5">
+      <label className="text-[11px] font-semibold text-muted-foreground">{label}</label>
       {children}
+      {hint && <p className="text-[10px] text-muted-foreground/70">{hint}</p>}
     </div>
   );
 }
 
 function FieldGroup({ children, cols = 2 }: { children: React.ReactNode; cols?: 2 | 3 | 4 }) {
   const gridCols = cols === 4 ? "grid-cols-2 md:grid-cols-4" : cols === 3 ? "grid-cols-1 md:grid-cols-3" : "grid-cols-1 md:grid-cols-2";
-  return <div className={`grid ${gridCols} gap-x-6 gap-y-3`}>{children}</div>;
+  return <div className={`grid ${gridCols} gap-4`}>{children}</div>;
 }
 
-function SectionWrapper({ title, icon: Icon, children, section, analysisId, attachments, onAttachmentsChange, onDataExtracted, analysisContext, disabled }: {
+function SectionWrapper({ title, icon: Icon, children, section, analysisId, attachments, onAttachmentsChange, onDataExtracted, analysisContext, disabled, defaultOpen = true }: {
   title: string;
   icon: React.ElementType;
   children: React.ReactNode;
@@ -81,32 +82,71 @@ function SectionWrapper({ title, icon: Icon, children, section, analysisId, atta
   onDataExtracted?: (data: any) => void;
   analysisContext?: any;
   disabled?: boolean;
+  defaultOpen?: boolean;
 }) {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
+  const attachCount = attachments.length;
+
   return (
     <motion.div
-      className="space-y-4"
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 12 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-40px" }}
-      transition={{ duration: 0.4, ease: "easeOut" }}
+      viewport={{ once: true, margin: "-20px" }}
+      transition={{ duration: 0.3, ease: "easeOut" }}
     >
-      <div className="flex items-center gap-2 pb-2 border-b border-border">
-        <Icon className="h-4 w-4 text-primary" />
-        <h2 className="text-sm font-semibold tracking-wide uppercase text-primary">{title}</h2>
-      </div>
-      {children}
-      <div className="pt-2">
-        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Anexos — {title}</p>
-        <SectionFileUpload
-          analysisId={analysisId}
-          section={section}
-          attachments={attachments}
-          onAttachmentsChange={onAttachmentsChange}
-          onDataExtracted={onDataExtracted}
-          analysisContext={analysisContext}
-          disabled={disabled}
-        />
-      </div>
+      <Card className="overflow-hidden border-border/60 shadow-sm hover:shadow-md transition-shadow duration-300">
+        <button
+          type="button"
+          onClick={() => setIsOpen(!isOpen)}
+          className="w-full flex items-center justify-between px-5 py-3.5 bg-muted/30 hover:bg-muted/50 transition-colors"
+        >
+          <div className="flex items-center gap-2.5">
+            <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Icon className="h-3.5 w-3.5 text-primary" />
+            </div>
+            <h2 className="text-sm font-semibold text-foreground">{title}</h2>
+            {attachCount > 0 && (
+              <span className="text-[10px] font-medium bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">
+                {attachCount} {attachCount === 1 ? 'anexo' : 'anexos'}
+              </span>
+            )}
+          </div>
+          <motion.div
+            animate={{ rotate: isOpen ? 180 : 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+          </motion.div>
+        </button>
+
+        <AnimatePresence initial={false}>
+          {isOpen && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.25, ease: "easeInOut" }}
+              className="overflow-hidden"
+            >
+              <CardContent className="px-5 py-4 space-y-4">
+                {children}
+
+                <div className="pt-2 border-t border-border/40">
+                  <SectionFileUpload
+                    analysisId={analysisId}
+                    section={section}
+                    attachments={attachments}
+                    onAttachmentsChange={onAttachmentsChange}
+                    onDataExtracted={onDataExtracted}
+                    analysisContext={analysisContext}
+                    disabled={disabled}
+                  />
+                </div>
+              </CardContent>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </Card>
     </motion.div>
   );
 }
