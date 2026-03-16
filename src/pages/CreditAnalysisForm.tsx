@@ -872,7 +872,7 @@ export default function CreditAnalysisForm() {
 
           {/* TAB: Insights IA */}
           <TabsContent value="insights" className="flex-1 overflow-y-auto mt-0 p-0">
-            <div className="max-w-4xl mx-auto px-6 py-6 space-y-4">
+            <motion.div initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.35, ease: "easeOut" }} className="max-w-4xl mx-auto px-6 py-6 space-y-4">
               <div className="flex items-center gap-2 mb-4">
                 <Brain className="h-5 w-5 text-primary" />
                 <div>
