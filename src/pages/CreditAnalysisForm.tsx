@@ -291,7 +291,26 @@ export default function CreditAnalysisForm() {
         <Button variant="ghost" size="sm" onClick={() => navigate("/analises")}>
           <ArrowLeft className="h-4 w-4 mr-1" /> Voltar
         </Button>
-        {isEditing && <StatusBadge status={status} />}
+        <div className="flex items-center gap-2">
+          {isEditing && <StatusBadge status={status} />}
+          {isEditing && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={async () => {
+                try {
+                  const data = await fetchPrintData(id!);
+                  const html = generatePrintHtml(data);
+                  openPrintWindow(html);
+                } catch {
+                  toast({ title: "Erro ao gerar relatório", variant: "destructive" });
+                }
+              }}
+            >
+              <Printer className="h-4 w-4 mr-1" /> Exportar PDF
+            </Button>
+          )}
+        </div>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
