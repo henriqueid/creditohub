@@ -857,6 +857,7 @@ export default function CreditAnalysisForm() {
                 analysisId={isEditing ? id! : null} attachments={sectionAttachments.identificacao || []}
                 onAttachmentsChange={updateSectionAttachments("identificacao")}
                 onDataExtracted={handleDataExtracted} analysisContext={analysisDataForAI} disabled={isReadOnly}
+                compactMode={compactMode} summary={sectionSummaries.identificacao}
               >
                 <FieldGroup cols={2}>
                   <Field label="Cedente *">
