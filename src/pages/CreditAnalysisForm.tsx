@@ -615,7 +615,7 @@ export default function CreditAnalysisForm() {
     };
   }, [selectedClient, dataAnalise, responsavelComercial, analistaCredito, fatNum, volNum, prazoMedioTitulos, sacados.length, socios.length, sociosTotal, historicoSocios, scoreNum, grade, protestos, pendencias, chequesSemFundo, acoesJudiciais, analiseFaturamento, estruturaFinanceira, endividamento, dependenciaClientes, riscos, pontosPositivos, limiteNum, prazoMedioPermitido, concentracaoMaxima, garantias]);
 
-
+  return (
     <div className="flex h-[calc(100vh-3.5rem)] overflow-hidden">
       {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0">
