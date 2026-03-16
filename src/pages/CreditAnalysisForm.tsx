@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -82,7 +83,13 @@ function SectionWrapper({ title, icon: Icon, children, section, analysisId, atta
   disabled?: boolean;
 }) {
   return (
-    <div className="space-y-4">
+    <motion.div
+      className="space-y-4"
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-40px" }}
+      transition={{ duration: 0.4, ease: "easeOut" }}
+    >
       <div className="flex items-center gap-2 pb-2 border-b border-border">
         <Icon className="h-4 w-4 text-primary" />
         <h2 className="text-sm font-semibold tracking-wide uppercase text-primary">{title}</h2>
@@ -100,7 +107,7 @@ function SectionWrapper({ title, icon: Icon, children, section, analysisId, atta
           disabled={disabled}
         />
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -482,7 +489,12 @@ export default function CreditAnalysisForm() {
         </header>
 
         {/* KPI Strip */}
-        <div className="shrink-0 border-b border-border bg-muted/20 px-6 py-3">
+        <motion.div
+          className="shrink-0 border-b border-border bg-muted/20 px-6 py-3"
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+        >
           <div className="flex items-center gap-6 overflow-x-auto">
             {/* Score Gauge */}
             <div className="flex items-center gap-3 shrink-0">
@@ -561,7 +573,7 @@ export default function CreditAnalysisForm() {
               </p>
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
@@ -584,7 +596,14 @@ export default function CreditAnalysisForm() {
 
           {/* TAB: Dossiê */}
           <TabsContent value="dossie" className="flex-1 overflow-y-auto mt-0 p-0">
-            <form onSubmit={handleSubmit} className="max-w-6xl mx-auto px-6 py-6 space-y-8">
+            <motion.form
+              key="dossie"
+              initial={{ opacity: 0, x: -12 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.35, ease: "easeOut" }}
+              onSubmit={handleSubmit}
+              className="max-w-6xl mx-auto px-6 py-6 space-y-8"
+            >
 
               {/* 1. Identificação */}
               <SectionWrapper title="Identificação do Cliente" icon={Building2} section="identificacao"
@@ -848,12 +867,12 @@ export default function CreditAnalysisForm() {
               </SectionWrapper>
 
               <div className="h-8" />
-            </form>
+            </motion.form>
           </TabsContent>
 
           {/* TAB: Insights IA */}
           <TabsContent value="insights" className="flex-1 overflow-y-auto mt-0 p-0">
-            <div className="max-w-4xl mx-auto px-6 py-6 space-y-4">
+            <motion.div initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.35, ease: "easeOut" }} className="max-w-4xl mx-auto px-6 py-6 space-y-4">
               <div className="flex items-center gap-2 mb-4">
                 <Brain className="h-5 w-5 text-primary" />
                 <div>
@@ -867,12 +886,12 @@ export default function CreditAnalysisForm() {
               <AIInsightsPanel analysisId={isEditing ? id! : null} insightType="financial" analysisData={analysisDataForAI} clientData={clientDataForAI} existingInsight={getInsight("financial")} />
               <AIInsightsPanel analysisId={isEditing ? id! : null} insightType="risk" analysisData={analysisDataForAI} clientData={clientDataForAI} existingInsight={getInsight("risk")} />
               <AIInsightsPanel analysisId={isEditing ? id! : null} insightType="summary" analysisData={analysisDataForAI} clientData={clientDataForAI} existingInsight={getInsight("summary")} />
-            </div>
+            </motion.div>
           </TabsContent>
 
           {/* TAB: Concentração */}
           <TabsContent value="concentracao" className="flex-1 overflow-y-auto mt-0 p-0">
-            <div className="max-w-4xl mx-auto px-6 py-6 space-y-6">
+            <motion.div initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.35, ease: "easeOut" }} className="max-w-4xl mx-auto px-6 py-6 space-y-6">
               <div className="flex items-center gap-2 mb-2">
                 <Target className="h-5 w-5 text-primary" />
                 <div>
@@ -932,12 +951,12 @@ export default function CreditAnalysisForm() {
                   />
                 </CardContent>
               </Card>
-            </div>
+            </motion.div>
           </TabsContent>
 
           {/* TAB: Parecer & Decisão */}
           <TabsContent value="parecer" className="flex-1 overflow-y-auto mt-0 p-0">
-            <div className="max-w-4xl mx-auto px-6 py-6 space-y-6">
+            <motion.div initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.35, ease: "easeOut" }} className="max-w-4xl mx-auto px-6 py-6 space-y-6">
               <div className="flex items-center gap-2 mb-2">
                 <Gauge className="h-5 w-5 text-primary" />
                 <div>
@@ -1031,7 +1050,7 @@ export default function CreditAnalysisForm() {
                   </div>
                 </Field>
               </div>
-            </div>
+            </motion.div>
           </TabsContent>
         </Tabs>
       </div>
