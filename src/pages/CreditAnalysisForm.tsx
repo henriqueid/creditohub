@@ -595,7 +595,7 @@ export default function CreditAnalysisForm() {
           </div>
 
           {/* TAB: Dossiê */}
-          <TabsContent value="dossie" className="flex-1 overflow-y-auto mt-0 p-0" forceMount={activeTab === "dossie" ? undefined : true} hidden={activeTab !== "dossie"}>
+          <TabsContent value="dossie" className="flex-1 overflow-y-auto mt-0 p-0">
             <motion.form
               key="dossie"
               initial={{ opacity: 0, x: -12 }}
