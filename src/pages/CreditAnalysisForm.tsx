@@ -1051,11 +1051,11 @@ export default function CreditAnalysisForm() {
               {/* Recommendation */}
               <div className="pt-2">
                 <Field label="Recomendação Final">
-                  <div className="flex gap-3 pt-2">
+                    <div className="flex gap-3 pt-2">
                     {[
-                      { value: "approve", label: "Aprovar", icon: "✅", color: "border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400" },
-                      { value: "restrict", label: "Aprovar c/ Restrição", icon: "⚠️", color: "border-amber-500 bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-400" },
-                      { value: "reject", label: "Reprovar", icon: "❌", color: "border-red-500 bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-400" },
+                      { value: "approve", label: "Aprovar", icon: "✅", color: "border-status-approved bg-status-approved/10 text-status-approved" },
+                      { value: "restrict", label: "Aprovar c/ Restrição", icon: "⚠️", color: "border-status-restricted bg-status-restricted/10 text-status-restricted" },
+                      { value: "reject", label: "Reprovar", icon: "❌", color: "border-status-rejected bg-status-rejected/10 text-status-rejected" },
                     ].map((opt) => (
                       <button
                         key={opt.value}
