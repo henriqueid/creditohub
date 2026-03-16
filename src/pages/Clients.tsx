@@ -56,6 +56,7 @@ export default function Clients() {
               <TableHead>Segmento</TableHead>
               <TableHead>Cidade/UF</TableHead>
               <TableHead>Cadastro</TableHead>
+              <TableHead className="w-10"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
