@@ -686,6 +686,74 @@ export default function CreditAnalysisForm() {
               className="max-w-5xl mx-auto px-6 py-6 space-y-5"
             >
 
+              {/* Progress Stepper */}
+              <motion.div
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.1 }}
+                className="rounded-xl border border-border/60 bg-card p-4 shadow-sm"
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Progresso do Dossiê</p>
+                  <span className={cn(
+                    "text-xs font-bold tabular-nums px-2 py-0.5 rounded-full",
+                    overallProgress === 100 ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
+                  )}>
+                    {overallProgress}%
+                  </span>
+                </div>
+                <div className="w-full h-1.5 rounded-full bg-muted overflow-hidden mb-4">
+                  <motion.div
+                    className="h-full rounded-full bg-primary"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${overallProgress}%` }}
+                    transition={{ duration: 0.6, ease: "easeOut", delay: 0.2 }}
+                  />
+                </div>
+                <div className="grid grid-cols-7 gap-1.5">
+                  {sectionProgress.map((s, i) => {
+                    const Icon = s.icon;
+                    const isComplete = s.pct === 100;
+                    const hasContent = s.pct > 0 && s.pct < 100;
+                    return (
+                      <motion.div
+                        key={s.key}
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ duration: 0.25, delay: 0.05 * i + 0.2 }}
+                        className={cn(
+                          "flex flex-col items-center gap-1.5 p-2 rounded-lg text-center cursor-default transition-colors",
+                          isComplete ? "bg-primary/10" : hasContent ? "bg-accent/10" : "bg-muted/30"
+                        )}
+                      >
+                        <div className={cn(
+                          "h-7 w-7 rounded-full flex items-center justify-center transition-colors",
+                          isComplete
+                            ? "bg-primary text-primary-foreground"
+                            : hasContent
+                              ? "bg-accent/20 text-accent-foreground"
+                              : "bg-muted text-muted-foreground"
+                        )}>
+                          {isComplete ? <Check className="h-3.5 w-3.5" /> : <Icon className="h-3.5 w-3.5" />}
+                        </div>
+                        <span className={cn(
+                          "text-[10px] font-medium leading-tight",
+                          isComplete ? "text-primary" : hasContent ? "text-foreground" : "text-muted-foreground"
+                        )}>
+                          {s.label}
+                        </span>
+                        <span className={cn(
+                          "text-[9px] tabular-nums",
+                          isComplete ? "text-primary/70" : "text-muted-foreground"
+                        )}>
+                          {s.filled}/{s.total}
+                        </span>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              </motion.div>
+
               {/* 1. Identificação */}
               <SectionWrapper title="Identificação do Cliente" icon={Building2} section="identificacao"
                 analysisId={isEditing ? id! : null} attachments={sectionAttachments.identificacao || []}
