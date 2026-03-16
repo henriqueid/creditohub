@@ -530,86 +530,72 @@ export default function CreditAnalysisForm() {
 
         {/* KPI Strip */}
         <motion.div
-          className="shrink-0 border-b border-border bg-muted/20 px-6 py-3"
+          className="shrink-0 border-b border-border bg-card/50 px-6 py-2.5"
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
+          transition={{ duration: 0.4, delay: 0.15 }}
         >
-          <div className="flex items-center gap-6 overflow-x-auto">
-            {/* Score Gauge */}
-            <div className="flex items-center gap-3 shrink-0">
+          <div className="flex items-center gap-5 overflow-x-auto">
+            <div className="flex items-center gap-2.5 shrink-0">
               <ScoreGauge score={scoreNum} size="sm" />
               <div>
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Risco</p>
+                <p className="text-[10px] text-muted-foreground">Risco</p>
                 <RiskIndicator score={scoreNum} compact />
               </div>
             </div>
 
-            <div className="h-10 w-px bg-border shrink-0" />
+            <div className="h-8 w-px bg-border/60 shrink-0" />
 
-            {/* Limit */}
             <div className="shrink-0">
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Limite Sugerido</p>
-              <p className="text-lg font-bold tabular-nums">{limiteNum ? formatBRL(limiteNum) : "—"}</p>
+              <p className="text-[10px] text-muted-foreground">Limite Sugerido</p>
+              <p className="text-base font-bold tabular-nums">{limiteNum ? formatBRL(limiteNum) : "—"}</p>
               {autoLimit > 0 && !limiteNum && (
-                <button
-                  type="button"
-                  className="text-[10px] text-primary hover:underline"
-                  onClick={() => setLimiteSugerido(autoLimit.toString())}
-                >
-                  <Zap className="h-2.5 w-2.5 inline mr-0.5" />
-                  Sugerir {formatBRL(autoLimit)}
+                <button type="button" className="text-[10px] text-primary hover:underline" onClick={() => setLimiteSugerido(autoLimit.toString())}>
+                  <Zap className="h-2.5 w-2.5 inline mr-0.5" />Sugerir {formatBRL(autoLimit)}
                 </button>
               )}
             </div>
 
-            <div className="h-10 w-px bg-border shrink-0" />
+            <div className="h-8 w-px bg-border/60 shrink-0" />
 
-            {/* Utilization */}
             <div className="shrink-0">
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Utilização</p>
+              <p className="text-[10px] text-muted-foreground">Utilização</p>
               <div className="flex items-center gap-2">
-                <div className="w-20 h-2 rounded-full bg-muted overflow-hidden">
+                <div className="w-16 h-1.5 rounded-full bg-muted overflow-hidden">
                   <div
-                    className={cn("h-full rounded-full transition-all", limitUtil > 100 ? "bg-red-500" : limitUtil > 80 ? "bg-amber-500" : "bg-primary")}
+                    className={cn("h-full rounded-full transition-all", limitUtil > 100 ? "bg-destructive" : limitUtil > 80 ? "bg-accent" : "bg-primary")}
                     style={{ width: `${Math.min(limitUtil, 100)}%` }}
                   />
                 </div>
-                <span className="text-sm font-bold tabular-nums">{limitUtil.toFixed(0)}%</span>
+                <span className="text-xs font-bold tabular-nums">{limitUtil.toFixed(0)}%</span>
               </div>
             </div>
 
-            <div className="h-10 w-px bg-border shrink-0" />
+            <div className="h-8 w-px bg-border/60 shrink-0" />
 
-            {/* Concentration */}
             <div className="shrink-0">
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Concentração</p>
-              <p className={cn("text-sm font-semibold tabular-nums", concentration.alerts.length > 0 ? "text-amber-600" : "text-foreground")}>
+              <p className="text-[10px] text-muted-foreground">Concentração</p>
+              <p className={cn("text-xs font-semibold tabular-nums", concentration.alerts.length > 0 ? "text-destructive" : "text-foreground")}>
                 Max: {concentration.maxSingleConcentration.toFixed(1)}%
               </p>
-              {concentration.alerts.length > 0 && (
-                <p className="text-[10px] text-amber-600">⚠ {concentration.alerts[0]}</p>
-              )}
             </div>
 
-            <div className="h-10 w-px bg-border shrink-0" />
+            <div className="h-8 w-px bg-border/60 shrink-0" />
 
-            {/* Socios */}
             <div className="shrink-0">
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Societária</p>
-              <p className={cn("text-sm font-semibold tabular-nums", !sociosTotal.isValid && socios.length > 0 ? "text-red-600" : "text-foreground")}>
+              <p className="text-[10px] text-muted-foreground">Societária</p>
+              <p className={cn("text-xs font-semibold tabular-nums", !sociosTotal.isValid && socios.length > 0 ? "text-destructive" : "text-foreground")}>
                 {socios.length} sócios • {sociosTotal.totalParticipacao.toFixed(1)}%
               </p>
             </div>
 
-            <div className="h-10 w-px bg-border shrink-0" />
+            <div className="h-8 w-px bg-border/60 shrink-0" />
 
-            {/* Attachments count */}
             <div className="shrink-0">
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Anexos</p>
-              <p className="text-sm font-semibold tabular-nums flex items-center gap-1">
+              <p className="text-[10px] text-muted-foreground">Anexos</p>
+              <p className="text-xs font-semibold tabular-nums flex items-center gap-1">
                 <FileText className="h-3 w-3" />
-                {Object.values(sectionAttachments).flat().length} arquivos
+                {Object.values(sectionAttachments).flat().length}
               </p>
             </div>
           </div>
