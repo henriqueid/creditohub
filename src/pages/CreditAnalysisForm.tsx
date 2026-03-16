@@ -570,7 +570,52 @@ export default function CreditAnalysisForm() {
     return totalFields > 0 ? Math.round((totalFilled / totalFields) * 100) : 0;
   }, [sectionProgress]);
 
-  return (
+  const sectionSummaries = useMemo(() => {
+    const f = (v: string, label: string) => v.trim() ? `${label}: ${v.trim().substring(0, 60)}${v.trim().length > 60 ? "…" : ""}` : null;
+    return {
+      identificacao: [
+        selectedClient ? `Cedente: ${selectedClient.razao_social}` : null,
+        f(dataAnalise, "Data"),
+        f(responsavelComercial, "Comercial"),
+        f(analistaCredito, "Analista"),
+      ].filter(Boolean) as string[],
+      operacional: [
+        fatNum ? `Faturamento: ${formatBRL(fatNum)}` : null,
+        volNum ? `Volume: ${formatBRL(volNum)}` : null,
+        prazoMedioTitulos ? `Prazo: ${prazoMedioTitulos} dias` : null,
+        sacados.length > 0 ? `${sacados.length} sacado(s)` : null,
+      ].filter(Boolean) as string[],
+      societaria: [
+        socios.length > 0 ? `${socios.length} sócio(s) • ${sociosTotal.totalParticipacao.toFixed(1)}%` : null,
+        f(historicoSocios, "Histórico"),
+      ].filter(Boolean) as string[],
+      credito: [
+        scoreNum ? `Score: ${scoreNum} (${grade})` : null,
+        f(protestos, "Protestos"),
+        f(pendencias, "Pendências"),
+        f(chequesSemFundo, "Cheques s/ fundo"),
+        f(acoesJudiciais, "Ações judiciais"),
+      ].filter(Boolean) as string[],
+      financeira: [
+        f(analiseFaturamento, "Faturamento"),
+        f(estruturaFinanceira, "Estrutura"),
+        f(endividamento, "Endividamento"),
+        f(dependenciaClientes, "Dependência"),
+      ].filter(Boolean) as string[],
+      riscos: [
+        f(riscos, "Riscos"),
+        f(pontosPositivos, "Positivos"),
+      ].filter(Boolean) as string[],
+      operacao: [
+        limiteNum ? `Limite: ${formatBRL(limiteNum)}` : null,
+        prazoMedioPermitido ? `Prazo: ${prazoMedioPermitido} dias` : null,
+        concentracaoMaxima ? `Conc. máx: ${concentracaoMaxima}%` : null,
+        f(garantias, "Garantias"),
+      ].filter(Boolean) as string[],
+    };
+  }, [selectedClient, dataAnalise, responsavelComercial, analistaCredito, fatNum, volNum, prazoMedioTitulos, sacados.length, socios.length, sociosTotal, historicoSocios, scoreNum, grade, protestos, pendencias, chequesSemFundo, acoesJudiciais, analiseFaturamento, estruturaFinanceira, endividamento, dependenciaClientes, riscos, pontosPositivos, limiteNum, prazoMedioPermitido, concentracaoMaxima, garantias]);
+
+
     <div className="flex h-[calc(100vh-3.5rem)] overflow-hidden">
       {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0">
