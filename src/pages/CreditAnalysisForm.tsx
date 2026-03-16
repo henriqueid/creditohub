@@ -11,7 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "@/hooks/use-toast";
 import { formatBRL } from "@/lib/formatters";
-import { ArrowLeft, Plus, Trash2, Send } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Send, Printer } from "lucide-react";
+import { fetchPrintData, generatePrintHtml, openPrintWindow } from "@/lib/pdf-export";
 import { StatusBadge } from "@/components/StatusBadge";
 import type { Tables, TablesInsert } from "@/integrations/supabase/types";
 
