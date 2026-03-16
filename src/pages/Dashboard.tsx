@@ -111,7 +111,7 @@ export default function Dashboard() {
       </div>
 
       {/* Second row: Financial + Pipeline */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <motion.div className="grid grid-cols-1 lg:grid-cols-3 gap-4" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.5 }}>
         {/* Financial summary */}
         <Card className="lg:col-span-1">
           <CardHeader className="pb-3">
