@@ -642,7 +642,7 @@ export default function CreditAnalysisForm() {
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.35, ease: "easeOut" }}
               onSubmit={handleSubmit}
-              className="max-w-6xl mx-auto px-6 py-6 space-y-8"
+              className="max-w-5xl mx-auto px-6 py-6 space-y-5"
             >
 
               {/* 1. Identificação */}
