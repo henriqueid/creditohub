@@ -489,7 +489,12 @@ export default function CreditAnalysisForm() {
         </header>
 
         {/* KPI Strip */}
-        <div className="shrink-0 border-b border-border bg-muted/20 px-6 py-3">
+        <motion.div
+          className="shrink-0 border-b border-border bg-muted/20 px-6 py-3"
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+        >
           <div className="flex items-center gap-6 overflow-x-auto">
             {/* Score Gauge */}
             <div className="flex items-center gap-3 shrink-0">
