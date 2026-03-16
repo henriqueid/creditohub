@@ -885,6 +885,7 @@ export default function CreditAnalysisForm() {
                 analysisId={isEditing ? id! : null} attachments={sectionAttachments.operacional || []}
                 onAttachmentsChange={updateSectionAttachments("operacional")}
                 onDataExtracted={handleDataExtracted} analysisContext={analysisDataForAI} disabled={isReadOnly}
+                compactMode={compactMode} summary={sectionSummaries.operacional}
               >
                 <FieldGroup cols={3}>
                   <Field label="Faturamento Médio (R$)">
