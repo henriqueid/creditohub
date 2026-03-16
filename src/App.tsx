@@ -11,6 +11,7 @@ import CreditAnalysisList from "@/pages/CreditAnalysisList";
 import CreditAnalysisForm from "@/pages/CreditAnalysisForm";
 import CommitteeQueue from "@/pages/CommitteeQueue";
 import CommitteeVoting from "@/pages/CommitteeVoting";
+import ClientHistory from "@/pages/ClientHistory";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
