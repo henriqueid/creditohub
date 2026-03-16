@@ -1018,6 +1018,7 @@ export default function CreditAnalysisForm() {
                 analysisId={isEditing ? id! : null} attachments={sectionAttachments.credito || []}
                 onAttachmentsChange={updateSectionAttachments("credito")}
                 onDataExtracted={handleDataExtracted} analysisContext={analysisDataForAI} disabled={isReadOnly}
+                compactMode={compactMode} summary={sectionSummaries.credito}
               >
                 <FieldGroup cols={3}>
                   <Field label="Score de Crédito">
