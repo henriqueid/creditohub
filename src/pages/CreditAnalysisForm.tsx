@@ -956,11 +956,11 @@ export default function CreditAnalysisForm() {
               </div>
 
               {concentration.alerts.length > 0 && (
-                <div className="rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950 p-4">
-                  <p className="text-sm font-semibold text-amber-700 dark:text-amber-400 mb-2">⚠ Alertas de Concentração</p>
+                <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4">
+                  <p className="text-sm font-semibold text-destructive mb-2">⚠ Alertas de Concentração</p>
                   <ul className="space-y-1">
                     {concentration.alerts.map((a, i) => (
-                      <li key={i} className="text-xs text-amber-600 dark:text-amber-300">• {a}</li>
+                      <li key={i} className="text-xs text-destructive/80">• {a}</li>
                     ))}
                   </ul>
                 </div>
