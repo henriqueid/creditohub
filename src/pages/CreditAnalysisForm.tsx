@@ -1052,6 +1052,7 @@ export default function CreditAnalysisForm() {
                 analysisId={isEditing ? id! : null} attachments={sectionAttachments.financeira || []}
                 onAttachmentsChange={updateSectionAttachments("financeira")}
                 onDataExtracted={handleDataExtracted} analysisContext={analysisDataForAI} disabled={isReadOnly}
+                compactMode={compactMode} summary={sectionSummaries.financeira}
               >
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
                   <Field label="Análise de Faturamento">
