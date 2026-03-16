@@ -15,7 +15,7 @@ import { formatBRL } from "@/lib/formatters";
 import {
   ArrowLeft, Plus, Trash2, Send, Printer, Save, Building2, BarChart3,
   Users, ShieldCheck, TrendingUp, AlertTriangle, Settings2, FileCheck,
-  Sparkles, Brain, Target, Gauge, FileText, Zap
+  Sparkles, Brain, Target, Gauge, FileText, Zap, ChevronDown
 } from "lucide-react";
 import { StatusBadge } from "@/components/StatusBadge";
 import { fetchPrintData, generatePrintHtml, openPrintWindow } from "@/lib/pdf-export";
@@ -56,21 +56,22 @@ interface FileAttachment {
 
 type SectionAttachments = Record<string, FileAttachment[]>;
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, children, hint }: { label: string; children: React.ReactNode; hint?: string }) {
   return (
-    <div className="space-y-1">
-      <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{label}</label>
+    <div className="space-y-1.5">
+      <label className="text-[11px] font-semibold text-muted-foreground">{label}</label>
       {children}
+      {hint && <p className="text-[10px] text-muted-foreground/70">{hint}</p>}
     </div>
   );
 }
 
 function FieldGroup({ children, cols = 2 }: { children: React.ReactNode; cols?: 2 | 3 | 4 }) {
   const gridCols = cols === 4 ? "grid-cols-2 md:grid-cols-4" : cols === 3 ? "grid-cols-1 md:grid-cols-3" : "grid-cols-1 md:grid-cols-2";
-  return <div className={`grid ${gridCols} gap-x-6 gap-y-3`}>{children}</div>;
+  return <div className={`grid ${gridCols} gap-4`}>{children}</div>;
 }
 
-function SectionWrapper({ title, icon: Icon, children, section, analysisId, attachments, onAttachmentsChange, onDataExtracted, analysisContext, disabled }: {
+function SectionWrapper({ title, icon: Icon, children, section, analysisId, attachments, onAttachmentsChange, onDataExtracted, analysisContext, disabled, defaultOpen = true }: {
   title: string;
   icon: React.ElementType;
   children: React.ReactNode;
@@ -81,32 +82,71 @@ function SectionWrapper({ title, icon: Icon, children, section, analysisId, atta
   onDataExtracted?: (data: any) => void;
   analysisContext?: any;
   disabled?: boolean;
+  defaultOpen?: boolean;
 }) {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
+  const attachCount = attachments.length;
+
   return (
     <motion.div
-      className="space-y-4"
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 12 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-40px" }}
-      transition={{ duration: 0.4, ease: "easeOut" }}
+      viewport={{ once: true, margin: "-20px" }}
+      transition={{ duration: 0.3, ease: "easeOut" }}
     >
-      <div className="flex items-center gap-2 pb-2 border-b border-border">
-        <Icon className="h-4 w-4 text-primary" />
-        <h2 className="text-sm font-semibold tracking-wide uppercase text-primary">{title}</h2>
-      </div>
-      {children}
-      <div className="pt-2">
-        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Anexos — {title}</p>
-        <SectionFileUpload
-          analysisId={analysisId}
-          section={section}
-          attachments={attachments}
-          onAttachmentsChange={onAttachmentsChange}
-          onDataExtracted={onDataExtracted}
-          analysisContext={analysisContext}
-          disabled={disabled}
-        />
-      </div>
+      <Card className="overflow-hidden border-border/60 shadow-sm hover:shadow-md transition-shadow duration-300">
+        <button
+          type="button"
+          onClick={() => setIsOpen(!isOpen)}
+          className="w-full flex items-center justify-between px-5 py-3.5 bg-muted/30 hover:bg-muted/50 transition-colors"
+        >
+          <div className="flex items-center gap-2.5">
+            <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Icon className="h-3.5 w-3.5 text-primary" />
+            </div>
+            <h2 className="text-sm font-semibold text-foreground">{title}</h2>
+            {attachCount > 0 && (
+              <span className="text-[10px] font-medium bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">
+                {attachCount} {attachCount === 1 ? 'anexo' : 'anexos'}
+              </span>
+            )}
+          </div>
+          <motion.div
+            animate={{ rotate: isOpen ? 180 : 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+          </motion.div>
+        </button>
+
+        <AnimatePresence initial={false}>
+          {isOpen && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.25, ease: "easeInOut" }}
+              className="overflow-hidden"
+            >
+              <CardContent className="px-5 py-4 space-y-4">
+                {children}
+
+                <div className="pt-2 border-t border-border/40">
+                  <SectionFileUpload
+                    analysisId={analysisId}
+                    section={section}
+                    attachments={attachments}
+                    onAttachmentsChange={onAttachmentsChange}
+                    onDataExtracted={onDataExtracted}
+                    analysisContext={analysisContext}
+                    disabled={disabled}
+                  />
+                </div>
+              </CardContent>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </Card>
     </motion.div>
   );
 }
@@ -490,86 +530,72 @@ export default function CreditAnalysisForm() {
 
         {/* KPI Strip */}
         <motion.div
-          className="shrink-0 border-b border-border bg-muted/20 px-6 py-3"
+          className="shrink-0 border-b border-border bg-card/50 px-6 py-2.5"
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
+          transition={{ duration: 0.4, delay: 0.15 }}
         >
-          <div className="flex items-center gap-6 overflow-x-auto">
-            {/* Score Gauge */}
-            <div className="flex items-center gap-3 shrink-0">
+          <div className="flex items-center gap-5 overflow-x-auto">
+            <div className="flex items-center gap-2.5 shrink-0">
               <ScoreGauge score={scoreNum} size="sm" />
               <div>
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Risco</p>
+                <p className="text-[10px] text-muted-foreground">Risco</p>
                 <RiskIndicator score={scoreNum} compact />
               </div>
             </div>
 
-            <div className="h-10 w-px bg-border shrink-0" />
+            <div className="h-8 w-px bg-border/60 shrink-0" />
 
-            {/* Limit */}
             <div className="shrink-0">
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Limite Sugerido</p>
-              <p className="text-lg font-bold tabular-nums">{limiteNum ? formatBRL(limiteNum) : "—"}</p>
+              <p className="text-[10px] text-muted-foreground">Limite Sugerido</p>
+              <p className="text-base font-bold tabular-nums">{limiteNum ? formatBRL(limiteNum) : "—"}</p>
               {autoLimit > 0 && !limiteNum && (
-                <button
-                  type="button"
-                  className="text-[10px] text-primary hover:underline"
-                  onClick={() => setLimiteSugerido(autoLimit.toString())}
-                >
-                  <Zap className="h-2.5 w-2.5 inline mr-0.5" />
-                  Sugerir {formatBRL(autoLimit)}
+                <button type="button" className="text-[10px] text-primary hover:underline" onClick={() => setLimiteSugerido(autoLimit.toString())}>
+                  <Zap className="h-2.5 w-2.5 inline mr-0.5" />Sugerir {formatBRL(autoLimit)}
                 </button>
               )}
             </div>
 
-            <div className="h-10 w-px bg-border shrink-0" />
+            <div className="h-8 w-px bg-border/60 shrink-0" />
 
-            {/* Utilization */}
             <div className="shrink-0">
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Utilização</p>
+              <p className="text-[10px] text-muted-foreground">Utilização</p>
               <div className="flex items-center gap-2">
-                <div className="w-20 h-2 rounded-full bg-muted overflow-hidden">
+                <div className="w-16 h-1.5 rounded-full bg-muted overflow-hidden">
                   <div
-                    className={cn("h-full rounded-full transition-all", limitUtil > 100 ? "bg-red-500" : limitUtil > 80 ? "bg-amber-500" : "bg-primary")}
+                    className={cn("h-full rounded-full transition-all", limitUtil > 100 ? "bg-destructive" : limitUtil > 80 ? "bg-accent" : "bg-primary")}
                     style={{ width: `${Math.min(limitUtil, 100)}%` }}
                   />
                 </div>
-                <span className="text-sm font-bold tabular-nums">{limitUtil.toFixed(0)}%</span>
+                <span className="text-xs font-bold tabular-nums">{limitUtil.toFixed(0)}%</span>
               </div>
             </div>
 
-            <div className="h-10 w-px bg-border shrink-0" />
+            <div className="h-8 w-px bg-border/60 shrink-0" />
 
-            {/* Concentration */}
             <div className="shrink-0">
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Concentração</p>
-              <p className={cn("text-sm font-semibold tabular-nums", concentration.alerts.length > 0 ? "text-amber-600" : "text-foreground")}>
+              <p className="text-[10px] text-muted-foreground">Concentração</p>
+              <p className={cn("text-xs font-semibold tabular-nums", concentration.alerts.length > 0 ? "text-destructive" : "text-foreground")}>
                 Max: {concentration.maxSingleConcentration.toFixed(1)}%
               </p>
-              {concentration.alerts.length > 0 && (
-                <p className="text-[10px] text-amber-600">⚠ {concentration.alerts[0]}</p>
-              )}
             </div>
 
-            <div className="h-10 w-px bg-border shrink-0" />
+            <div className="h-8 w-px bg-border/60 shrink-0" />
 
-            {/* Socios */}
             <div className="shrink-0">
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Societária</p>
-              <p className={cn("text-sm font-semibold tabular-nums", !sociosTotal.isValid && socios.length > 0 ? "text-red-600" : "text-foreground")}>
+              <p className="text-[10px] text-muted-foreground">Societária</p>
+              <p className={cn("text-xs font-semibold tabular-nums", !sociosTotal.isValid && socios.length > 0 ? "text-destructive" : "text-foreground")}>
                 {socios.length} sócios • {sociosTotal.totalParticipacao.toFixed(1)}%
               </p>
             </div>
 
-            <div className="h-10 w-px bg-border shrink-0" />
+            <div className="h-8 w-px bg-border/60 shrink-0" />
 
-            {/* Attachments count */}
             <div className="shrink-0">
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Anexos</p>
-              <p className="text-sm font-semibold tabular-nums flex items-center gap-1">
+              <p className="text-[10px] text-muted-foreground">Anexos</p>
+              <p className="text-xs font-semibold tabular-nums flex items-center gap-1">
                 <FileText className="h-3 w-3" />
-                {Object.values(sectionAttachments).flat().length} arquivos
+                {Object.values(sectionAttachments).flat().length}
               </p>
             </div>
           </div>
@@ -602,7 +628,7 @@ export default function CreditAnalysisForm() {
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.35, ease: "easeOut" }}
               onSubmit={handleSubmit}
-              className="max-w-6xl mx-auto px-6 py-6 space-y-8"
+              className="max-w-5xl mx-auto px-6 py-6 space-y-5"
             >
 
               {/* 1. Identificação */}
@@ -707,7 +733,7 @@ export default function CreditAnalysisForm() {
                   <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Quadro Societário
                     {socios.length > 0 && (
-                      <span className={cn("ml-2", sociosTotal.isValid ? "text-primary" : "text-red-600")}>
+                      <span className={cn("ml-2", sociosTotal.isValid ? "text-primary" : "text-destructive")}>
                         ({sociosTotal.totalParticipacao.toFixed(1)}% total)
                       </span>
                     )}
@@ -914,7 +940,7 @@ export default function CreditAnalysisForm() {
                     <CardTitle className="text-sm text-muted-foreground">Concentração Máxima</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <p className={cn("text-3xl font-bold tabular-nums", concentration.maxSingleConcentration > 30 ? "text-red-600" : "text-foreground")}>
+                    <p className={cn("text-3xl font-bold tabular-nums", concentration.maxSingleConcentration > 30 ? "text-destructive" : "text-foreground")}>
                       {concentration.maxSingleConcentration.toFixed(1)}%
                     </p>
                   </CardContent>
@@ -930,11 +956,11 @@ export default function CreditAnalysisForm() {
               </div>
 
               {concentration.alerts.length > 0 && (
-                <div className="rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950 p-4">
-                  <p className="text-sm font-semibold text-amber-700 dark:text-amber-400 mb-2">⚠ Alertas de Concentração</p>
+                <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4">
+                  <p className="text-sm font-semibold text-destructive mb-2">⚠ Alertas de Concentração</p>
                   <ul className="space-y-1">
                     {concentration.alerts.map((a, i) => (
-                      <li key={i} className="text-xs text-amber-600 dark:text-amber-300">• {a}</li>
+                      <li key={i} className="text-xs text-destructive/80">• {a}</li>
                     ))}
                   </ul>
                 </div>
@@ -1001,7 +1027,7 @@ export default function CreditAnalysisForm() {
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Utilização:</span>
-                      <span className={cn("font-bold tabular-nums", limitUtil > 100 ? "text-red-600" : "text-foreground")}>{limitUtil.toFixed(0)}%</span>
+                      <span className={cn("font-bold tabular-nums", limitUtil > 100 ? "text-destructive" : "text-foreground")}>{limitUtil.toFixed(0)}%</span>
                     </div>
                   </CardContent>
                 </Card>
@@ -1025,11 +1051,11 @@ export default function CreditAnalysisForm() {
               {/* Recommendation */}
               <div className="pt-2">
                 <Field label="Recomendação Final">
-                  <div className="flex gap-3 pt-2">
+                    <div className="flex gap-3 pt-2">
                     {[
-                      { value: "approve", label: "Aprovar", icon: "✅", color: "border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400" },
-                      { value: "restrict", label: "Aprovar c/ Restrição", icon: "⚠️", color: "border-amber-500 bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-400" },
-                      { value: "reject", label: "Reprovar", icon: "❌", color: "border-red-500 bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-400" },
+                      { value: "approve", label: "Aprovar", icon: "✅", color: "border-status-approved bg-status-approved/10 text-status-approved" },
+                      { value: "restrict", label: "Aprovar c/ Restrição", icon: "⚠️", color: "border-status-restricted bg-status-restricted/10 text-status-restricted" },
+                      { value: "reject", label: "Reprovar", icon: "❌", color: "border-status-rejected bg-status-rejected/10 text-status-rejected" },
                     ].map((opt) => (
                       <button
                         key={opt.value}
