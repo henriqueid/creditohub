@@ -68,12 +68,20 @@ export default function Dashboard() {
     { label: "Reprovados", value: rejected, color: "bg-status-rejected", pct: total > 0 ? (rejected / total) * 100 : 0 },
   ];
 
+  const cardVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: (i: number) => ({
+      opacity: 1, y: 0,
+      transition: { delay: i * 0.08, duration: 0.4, ease: "easeOut" },
+    }),
+  };
+
   return (
     <div className="p-6 space-y-6 overflow-auto">
-      <div>
+      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
         <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
         <p className="text-muted-foreground">Painel consolidado do módulo de crédito</p>
-      </div>
+      </motion.div>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
