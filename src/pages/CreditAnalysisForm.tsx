@@ -474,6 +474,61 @@ export default function CreditAnalysisForm() {
 
   const getInsight = (type: string) => existingInsights.find((i: any) => i.insight_type === type)?.content || null;
 
+  // Section completion tracking
+  const sectionProgress = useMemo(() => {
+    const sections = [
+      {
+        key: "identificacao", label: "Identificação", icon: Building2,
+        fields: [clientId, dataAnalise, responsavelComercial, analistaCredito],
+        required: [clientId],
+      },
+      {
+        key: "operacional", label: "Operacional", icon: BarChart3,
+        fields: [faturamentoMedio, volumeEstimado, prazoMedioTitulos],
+        required: [faturamentoMedio],
+      },
+      {
+        key: "societaria", label: "Societária", icon: Users,
+        fields: [historicoSocios, ...(socios.length > 0 ? ["has_socios"] : [])],
+        required: [],
+      },
+      {
+        key: "credito", label: "Crédito", icon: ShieldCheck,
+        fields: [creditScore, protestos, pendencias, chequesSemFundo, acoesJudiciais, observacoesCredito],
+        required: [creditScore],
+      },
+      {
+        key: "financeira", label: "Financeira", icon: TrendingUp,
+        fields: [analiseFaturamento, estruturaFinanceira, endividamento, dependenciaClientes],
+        required: [],
+      },
+      {
+        key: "riscos", label: "Riscos", icon: AlertTriangle,
+        fields: [riscos, pontosPositivos],
+        required: [],
+      },
+      {
+        key: "operacao", label: "Operação", icon: Settings2,
+        fields: [limiteSugerido, prazoMedioPermitido, concentracaoMaxima, garantias],
+        required: [limiteSugerido],
+      },
+    ];
+
+    return sections.map(s => {
+      const filled = s.fields.filter(f => f && String(f).trim() !== "").length;
+      const total = s.fields.length;
+      const pct = total > 0 ? Math.round((filled / total) * 100) : 0;
+      const requiredOk = s.required.every(f => f && String(f).trim() !== "");
+      return { ...s, filled, total, pct, requiredOk };
+    });
+  }, [clientId, dataAnalise, responsavelComercial, analistaCredito, faturamentoMedio, volumeEstimado, prazoMedioTitulos, historicoSocios, socios.length, creditScore, protestos, pendencias, chequesSemFundo, acoesJudiciais, observacoesCredito, analiseFaturamento, estruturaFinanceira, endividamento, dependenciaClientes, riscos, pontosPositivos, limiteSugerido, prazoMedioPermitido, concentracaoMaxima, garantias]);
+
+  const overallProgress = useMemo(() => {
+    const totalFilled = sectionProgress.reduce((a, s) => a + s.filled, 0);
+    const totalFields = sectionProgress.reduce((a, s) => a + s.total, 0);
+    return totalFields > 0 ? Math.round((totalFilled / totalFields) * 100) : 0;
+  }, [sectionProgress]);
+
   return (
     <div className="flex h-[calc(100vh-3.5rem)] overflow-hidden">
       {/* Main content */}
