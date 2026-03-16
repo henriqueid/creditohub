@@ -198,6 +198,7 @@ export default function CreditAnalysisForm() {
   const isEditing = !!id && id !== "nova";
 
   const [activeTab, setActiveTab] = useState("dossie");
+  const [compactMode, setCompactMode] = useState(false);
 
   // Form state
   const [clientId, setClientId] = useState("");
