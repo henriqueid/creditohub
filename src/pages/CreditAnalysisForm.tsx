@@ -15,7 +15,7 @@ import { formatBRL } from "@/lib/formatters";
 import {
   ArrowLeft, Plus, Trash2, Send, Printer, Save, Building2, BarChart3,
   Users, ShieldCheck, TrendingUp, AlertTriangle, Settings2, FileCheck,
-  Sparkles, Brain, Target, Gauge, FileText, Zap, ChevronDown
+  Sparkles, Brain, Target, Gauge, FileText, Zap, ChevronDown, Check
 } from "lucide-react";
 import { StatusBadge } from "@/components/StatusBadge";
 import { fetchPrintData, generatePrintHtml, openPrintWindow } from "@/lib/pdf-export";
@@ -474,6 +474,61 @@ export default function CreditAnalysisForm() {
 
   const getInsight = (type: string) => existingInsights.find((i: any) => i.insight_type === type)?.content || null;
 
+  // Section completion tracking
+  const sectionProgress = useMemo(() => {
+    const sections = [
+      {
+        key: "identificacao", label: "Identificação", icon: Building2,
+        fields: [clientId, dataAnalise, responsavelComercial, analistaCredito],
+        required: [clientId],
+      },
+      {
+        key: "operacional", label: "Operacional", icon: BarChart3,
+        fields: [faturamentoMedio, volumeEstimado, prazoMedioTitulos],
+        required: [faturamentoMedio],
+      },
+      {
+        key: "societaria", label: "Societária", icon: Users,
+        fields: [historicoSocios, ...(socios.length > 0 ? ["has_socios"] : [])],
+        required: [],
+      },
+      {
+        key: "credito", label: "Crédito", icon: ShieldCheck,
+        fields: [creditScore, protestos, pendencias, chequesSemFundo, acoesJudiciais, observacoesCredito],
+        required: [creditScore],
+      },
+      {
+        key: "financeira", label: "Financeira", icon: TrendingUp,
+        fields: [analiseFaturamento, estruturaFinanceira, endividamento, dependenciaClientes],
+        required: [],
+      },
+      {
+        key: "riscos", label: "Riscos", icon: AlertTriangle,
+        fields: [riscos, pontosPositivos],
+        required: [],
+      },
+      {
+        key: "operacao", label: "Operação", icon: Settings2,
+        fields: [limiteSugerido, prazoMedioPermitido, concentracaoMaxima, garantias],
+        required: [limiteSugerido],
+      },
+    ];
+
+    return sections.map(s => {
+      const filled = s.fields.filter(f => f && String(f).trim() !== "").length;
+      const total = s.fields.length;
+      const pct = total > 0 ? Math.round((filled / total) * 100) : 0;
+      const requiredOk = s.required.every(f => f && String(f).trim() !== "");
+      return { ...s, filled, total, pct, requiredOk };
+    });
+  }, [clientId, dataAnalise, responsavelComercial, analistaCredito, faturamentoMedio, volumeEstimado, prazoMedioTitulos, historicoSocios, socios.length, creditScore, protestos, pendencias, chequesSemFundo, acoesJudiciais, observacoesCredito, analiseFaturamento, estruturaFinanceira, endividamento, dependenciaClientes, riscos, pontosPositivos, limiteSugerido, prazoMedioPermitido, concentracaoMaxima, garantias]);
+
+  const overallProgress = useMemo(() => {
+    const totalFilled = sectionProgress.reduce((a, s) => a + s.filled, 0);
+    const totalFields = sectionProgress.reduce((a, s) => a + s.total, 0);
+    return totalFields > 0 ? Math.round((totalFilled / totalFields) * 100) : 0;
+  }, [sectionProgress]);
+
   return (
     <div className="flex h-[calc(100vh-3.5rem)] overflow-hidden">
       {/* Main content */}
@@ -630,6 +685,74 @@ export default function CreditAnalysisForm() {
               onSubmit={handleSubmit}
               className="max-w-5xl mx-auto px-6 py-6 space-y-5"
             >
+
+              {/* Progress Stepper */}
+              <motion.div
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.1 }}
+                className="rounded-xl border border-border/60 bg-card p-4 shadow-sm"
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Progresso do Dossiê</p>
+                  <span className={cn(
+                    "text-xs font-bold tabular-nums px-2 py-0.5 rounded-full",
+                    overallProgress === 100 ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
+                  )}>
+                    {overallProgress}%
+                  </span>
+                </div>
+                <div className="w-full h-1.5 rounded-full bg-muted overflow-hidden mb-4">
+                  <motion.div
+                    className="h-full rounded-full bg-primary"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${overallProgress}%` }}
+                    transition={{ duration: 0.6, ease: "easeOut", delay: 0.2 }}
+                  />
+                </div>
+                <div className="grid grid-cols-7 gap-1.5">
+                  {sectionProgress.map((s, i) => {
+                    const Icon = s.icon;
+                    const isComplete = s.pct === 100;
+                    const hasContent = s.pct > 0 && s.pct < 100;
+                    return (
+                      <motion.div
+                        key={s.key}
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ duration: 0.25, delay: 0.05 * i + 0.2 }}
+                        className={cn(
+                          "flex flex-col items-center gap-1.5 p-2 rounded-lg text-center cursor-default transition-colors",
+                          isComplete ? "bg-primary/10" : hasContent ? "bg-accent/10" : "bg-muted/30"
+                        )}
+                      >
+                        <div className={cn(
+                          "h-7 w-7 rounded-full flex items-center justify-center transition-colors",
+                          isComplete
+                            ? "bg-primary text-primary-foreground"
+                            : hasContent
+                              ? "bg-accent/20 text-accent-foreground"
+                              : "bg-muted text-muted-foreground"
+                        )}>
+                          {isComplete ? <Check className="h-3.5 w-3.5" /> : <Icon className="h-3.5 w-3.5" />}
+                        </div>
+                        <span className={cn(
+                          "text-[10px] font-medium leading-tight",
+                          isComplete ? "text-primary" : hasContent ? "text-foreground" : "text-muted-foreground"
+                        )}>
+                          {s.label}
+                        </span>
+                        <span className={cn(
+                          "text-[9px] tabular-nums",
+                          isComplete ? "text-primary/70" : "text-muted-foreground"
+                        )}>
+                          {s.filled}/{s.total}
+                        </span>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              </motion.div>
 
               {/* 1. Identificação */}
               <SectionWrapper title="Identificação do Cliente" icon={Building2} section="identificacao"
