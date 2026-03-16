@@ -28,6 +28,7 @@ const App = () => (
             <Route path="/cedentes" element={<Clients />} />
             <Route path="/cedentes/novo" element={<ClientForm />} />
             <Route path="/cedentes/:id" element={<ClientForm />} />
+            <Route path="/cedentes/:id/historico" element={<ClientHistory />} />
             <Route path="/analises" element={<CreditAnalysisList />} />
             <Route path="/analises/nova" element={<CreditAnalysisForm />} />
             <Route path="/analises/:id" element={<CreditAnalysisForm />} />
