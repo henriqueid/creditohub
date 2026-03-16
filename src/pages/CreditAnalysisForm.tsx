@@ -83,7 +83,13 @@ function SectionWrapper({ title, icon: Icon, children, section, analysisId, atta
   disabled?: boolean;
 }) {
   return (
-    <div className="space-y-4">
+    <motion.div
+      className="space-y-4"
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-40px" }}
+      transition={{ duration: 0.4, ease: "easeOut" }}
+    >
       <div className="flex items-center gap-2 pb-2 border-b border-border">
         <Icon className="h-4 w-4 text-primary" />
         <h2 className="text-sm font-semibold tracking-wide uppercase text-primary">{title}</h2>
@@ -101,7 +107,7 @@ function SectionWrapper({ title, icon: Icon, children, section, analysisId, atta
           disabled={disabled}
         />
       </div>
-    </div>
+    </motion.div>
   );
 }
 
