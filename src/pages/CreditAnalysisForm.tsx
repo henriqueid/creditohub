@@ -733,7 +733,7 @@ export default function CreditAnalysisForm() {
                   <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Quadro Societário
                     {socios.length > 0 && (
-                      <span className={cn("ml-2", sociosTotal.isValid ? "text-primary" : "text-red-600")}>
+                      <span className={cn("ml-2", sociosTotal.isValid ? "text-primary" : "text-destructive")}>
                         ({sociosTotal.totalParticipacao.toFixed(1)}% total)
                       </span>
                     )}
