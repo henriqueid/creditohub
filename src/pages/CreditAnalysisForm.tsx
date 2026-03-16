@@ -573,7 +573,7 @@ export default function CreditAnalysisForm() {
               </p>
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
