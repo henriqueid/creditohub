@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { formatBRL } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 import { StatusBadge } from "@/components/StatusBadge";
+import { motion } from "framer-motion";
 
 export default function Dashboard() {
   const navigate = useNavigate();

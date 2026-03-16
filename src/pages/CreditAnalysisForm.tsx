@@ -1050,7 +1050,7 @@ export default function CreditAnalysisForm() {
                   </div>
                 </Field>
               </div>
-            </div>
+            </motion.div>
           </TabsContent>
         </Tabs>
       </div>
