@@ -867,7 +867,7 @@ export default function CreditAnalysisForm() {
               </SectionWrapper>
 
               <div className="h-8" />
-            </form>
+            </motion.form>
           </TabsContent>
 
           {/* TAB: Insights IA */}
