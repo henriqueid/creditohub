@@ -1092,6 +1092,7 @@ export default function CreditAnalysisForm() {
                 analysisId={isEditing ? id! : null} attachments={sectionAttachments.operacao || []}
                 onAttachmentsChange={updateSectionAttachments("operacao")}
                 onDataExtracted={handleDataExtracted} analysisContext={analysisDataForAI} disabled={isReadOnly}
+                compactMode={compactMode} summary={sectionSummaries.operacao}
               >
                 <FieldGroup cols={3}>
                   <Field label="Limite Sugerido (R$)">
