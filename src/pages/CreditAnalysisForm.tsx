@@ -886,7 +886,7 @@ export default function CreditAnalysisForm() {
               <AIInsightsPanel analysisId={isEditing ? id! : null} insightType="financial" analysisData={analysisDataForAI} clientData={clientDataForAI} existingInsight={getInsight("financial")} />
               <AIInsightsPanel analysisId={isEditing ? id! : null} insightType="risk" analysisData={analysisDataForAI} clientData={clientDataForAI} existingInsight={getInsight("risk")} />
               <AIInsightsPanel analysisId={isEditing ? id! : null} insightType="summary" analysisData={analysisDataForAI} clientData={clientDataForAI} existingInsight={getInsight("summary")} />
-            </div>
+            </motion.div>
           </TabsContent>
 
           {/* TAB: Concentração */}
