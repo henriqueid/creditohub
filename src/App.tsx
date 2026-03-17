@@ -37,6 +37,7 @@ const App = () => (
             <Route path="/comite" element={<CommitteeQueue />} />
             <Route path="/comite/:id" element={<CommitteeVoting />} />
             <Route path="/consulta" element={<ConsultaCPFCNPJ />} />
+            <Route path="/blacklist" element={<Blacklist />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>

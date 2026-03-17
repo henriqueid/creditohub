@@ -19,6 +19,7 @@ const menuItems = [
   { title: "Cedentes", url: "/cedentes", icon: Building2 },
   { title: "Análises de Crédito", url: "/analises", icon: FileText },
   { title: "Comitê de Crédito", url: "/comite", icon: Users },
+  { title: "Blacklist", url: "/blacklist", icon: ShieldBan },
 ];
 
 export function AppSidebar() {
