@@ -991,7 +991,18 @@ export default function CreditAnalysisForm() {
                   <Field label="Prazo Médio (dias)">
                     <Input type="number" value={prazoMedioTitulos} onChange={(e) => setPrazoMedioTitulos(e.target.value)} disabled={isReadOnly} className="h-9 text-sm tabular-nums" placeholder="0" />
                   </Field>
+                  <Field label="Capital Social (R$)">
+                    <Input type="number" step="0.01" value={capitalSocial} onChange={(e) => setCapitalSocial(e.target.value)} disabled={isReadOnly} className="h-9 text-sm tabular-nums" placeholder="0,00" />
+                  </Field>
+                  <Field label="Receita Líquida (R$)">
+                    <Input type="number" step="0.01" value={receitaLiquida} onChange={(e) => setReceitaLiquida(e.target.value)} disabled={isReadOnly} className="h-9 text-sm tabular-nums" placeholder="0,00" />
+                  </Field>
                 </FieldGroup>
+                <div className="pt-3">
+                  <Field label="Detalhamento de Faturamento" hint="Evolução mensal, sazonalidade, tendências">
+                    <Textarea value={faturamentoDetalhado} onChange={(e) => setFaturamentoDetalhado(e.target.value)} disabled={isReadOnly} rows={2} className="text-sm resize-none" placeholder="Ex: Jan R$100k, Fev R$120k... ou descrição qualitativa" />
+                  </Field>
+                </div>
 
                 {/* Sacados table */}
                 <div className="pt-3">
