@@ -266,6 +266,28 @@ export default function CreditAnalysisForm() {
   const sociosTotal = useMemo(() => calculateSociosTotal(socios), [socios]);
   const limitUtil = useMemo(() => calculateLimitUtilization(volNum, limiteNum), [volNum, limiteNum]);
 
+  const ratios = useMemo(() => calculateFinancialRatios({
+    receitaLiquida: receitaLiquida ? parseFloat(receitaLiquida) : null,
+    faturamentoMedio: fatNum,
+    capitalSocial: capitalSocial ? parseFloat(capitalSocial) : null,
+    limiteSugerido: limiteNum,
+    volumeEstimado: volNum,
+    numeroFuncionarios: numeroFuncionarios ? parseInt(numeroFuncionarios) : null,
+    margemLiquida: margemLiquida || null,
+    indiceLiquidez: indiceLiquidez || null,
+  }), [receitaLiquida, fatNum, capitalSocial, limiteNum, volNum, numeroFuncionarios, margemLiquida, indiceLiquidez]);
+
+  const radarDimensions = useMemo(() => calculateRiskRadar({
+    creditScore: scoreNum, faturamentoMedio: fatNum, limiteSugerido: limiteNum, volumeEstimado: volNum,
+    sacadosCount: sacados.length, sociosCount: socios.length,
+    protestos, pendencias, acoesJudiciais, chequesSemFundo,
+    historicoPagamentos, tempoAtividade,
+    hhi: concentration.hhi, coberturaDivida: ratios.coberturaDivida, margemLiquidaNum: ratios.margemLiquidaNum,
+  }), [scoreNum, fatNum, limiteNum, volNum, sacados.length, socios.length, protestos, pendencias, acoesJudiciais, chequesSemFundo, historicoPagamentos, tempoAtividade, concentration.hhi, ratios.coberturaDivida, ratios.margemLiquidaNum]);
+
+  const overallRiskScore = useMemo(() => calculateOverallRiskScore(radarDimensions), [radarDimensions]);
+  const autoRate = useMemo(() => suggestRate(scoreNum, prazoMedioTitulos ? parseInt(prazoMedioTitulos) : null), [scoreNum, prazoMedioTitulos]);
+
   // Queries
   const { data: clients = [] } = useQuery({
     queryKey: ["clients-select"],
