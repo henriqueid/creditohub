@@ -16,7 +16,7 @@ import {
   ArrowLeft, Plus, Trash2, Send, Printer, Save, Building2, BarChart3,
   Users, ShieldCheck, TrendingUp, AlertTriangle, Settings2, FileCheck,
   Sparkles, Brain, Target, Gauge, FileText, Zap, ChevronDown, Check, Eye, EyeOff,
-  Landmark, Handshake, MapPin, DollarSign, Scale
+  Landmark, Handshake, MapPin, DollarSign, Scale, Activity
 } from "lucide-react";
 import { StatusBadge } from "@/components/StatusBadge";
 import { fetchPrintData, generatePrintHtml, openPrintWindow } from "@/lib/pdf-export";
@@ -26,9 +26,12 @@ import { RiskIndicator } from "@/components/RiskIndicator";
 import { ConcentrationChart } from "@/components/ConcentrationChart";
 import { SectionFileUpload } from "@/components/SectionFileUpload";
 import { AIInsightsPanel } from "@/components/AIInsightsPanel";
+import { FinancialIndicatorsPanel } from "@/components/FinancialIndicatorsPanel";
 import {
   classifyRisk, suggestLimit, calculateConcentration,
-  calculateSociosTotal, calculateLimitUtilization, getScoreGrade
+  calculateSociosTotal, calculateLimitUtilization, getScoreGrade,
+  suggestRate, calculateOverallRiskScore, calculateRiskRadar,
+  calculateFinancialRatios
 } from "@/lib/credit-calculations";
 
 interface SacadoRow {
