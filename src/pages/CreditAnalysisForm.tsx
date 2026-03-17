@@ -1180,7 +1180,7 @@ export default function CreditAnalysisForm() {
                 </div>
               </SectionWrapper>
 
-              {/* 5. Financeira */}
+              {/* 6. Financeira */}
               <SectionWrapper title="Análise Financeira" icon={TrendingUp} section="financeira"
                 analysisId={isEditing ? id! : null} attachments={sectionAttachments.financeira || []}
                 onAttachmentsChange={updateSectionAttachments("financeira")}
