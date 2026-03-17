@@ -883,7 +883,7 @@ export default function CreditAnalysisForm() {
                     transition={{ duration: 0.6, ease: "easeOut", delay: 0.2 }}
                   />
                 </div>
-                <div className="grid grid-cols-7 gap-1.5">
+                <div className="grid grid-cols-4 md:grid-cols-8 gap-1.5">
                   {sectionProgress.map((s, i) => {
                     const Icon = s.icon;
                     const isComplete = s.pct === 100;
