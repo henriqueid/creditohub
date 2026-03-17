@@ -297,6 +297,11 @@ export default function ConsultaCPFCNPJ() {
                         </>
                       ) : socioRecords.length > 0 ? (
                         <p className="text-base font-medium">{socioRecords[0].nome}</p>
+                      ) : externalName ? (
+                        <>
+                          <p className="text-base font-medium">{externalName}</p>
+                          <p className="text-xs text-muted-foreground">Dados da Receita Federal (não cadastrado)</p>
+                        </>
                       ) : (
                         <p className="text-sm text-muted-foreground">Não encontrado na base interna</p>
                       )}
