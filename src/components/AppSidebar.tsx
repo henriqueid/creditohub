@@ -28,8 +28,8 @@ export function AppSidebar() {
   const collapsed = state === "collapsed";
 
   return (
-    <Sidebar collapsible="icon" className="floating-sidebar border-0 bg-transparent">
-      <SidebarContent className="bg-sidebar rounded-2xl border border-sidebar-border shadow-lg">
+    <Sidebar collapsible="icon" className="border-0">
+      <SidebarContent className="bg-sidebar border-r border-sidebar-border">
         <div className="px-4 py-5">
           {!collapsed && (
             <h1 className="text-lg font-bold tracking-tight text-sidebar-primary-foreground">
