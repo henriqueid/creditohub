@@ -231,6 +231,38 @@ export default function ConsultaCPFCNPJ() {
             transition={{ duration: 0.2 }}
             className="space-y-6"
           >
+            {/* Blacklist Alert */}
+            {blacklistEntry && (
+              <motion.div initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }}>
+                <Card className="border-destructive bg-destructive/5">
+                  <CardContent className="p-4 flex items-start gap-4">
+                    <div className="p-2.5 rounded-full bg-destructive/15">
+                      <Ban className="h-6 w-6 text-destructive" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold text-destructive">Documento na Blacklist</h3>
+                        <Badge variant="destructive" className="text-[10px]">BLOQUEADO</Badge>
+                      </div>
+                      <p className="text-sm text-destructive/80 mt-1">
+                        Este {blacklistEntry.tipo === "cpf" ? "CPF" : "CNPJ"} está bloqueado para operações de crédito.
+                      </p>
+                      {blacklistEntry.motivo && (
+                        <p className="text-sm mt-1"><span className="font-medium">Motivo:</span> {blacklistEntry.motivo}</p>
+                      )}
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Adicionado em {formatDate(blacklistEntry.created_at)}
+                        {blacklistEntry.adicionado_por && ` por ${blacklistEntry.adicionado_por}`}
+                      </p>
+                    </div>
+                    <Button variant="outline" size="sm" className="shrink-0 border-destructive/30 text-destructive hover:bg-destructive/10" onClick={() => navigate("/blacklist")}>
+                      Ver Blacklist
+                    </Button>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
+
             {/* Identity Header */}
             <Card>
               <CardContent className="p-5">
