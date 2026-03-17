@@ -873,6 +873,9 @@ export default function CreditAnalysisForm() {
               <TabsTrigger value="concentracao" className="text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-t-md rounded-b-none px-4 gap-1.5">
                 <Target className="h-3.5 w-3.5" /> Concentração
               </TabsTrigger>
+              <TabsTrigger value="indicadores" className="text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-t-md rounded-b-none px-4 gap-1.5">
+                <Activity className="h-3.5 w-3.5" /> Indicadores
+              </TabsTrigger>
               <TabsTrigger value="parecer" className="text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-t-md rounded-b-none px-4 gap-1.5">
                 <Gauge className="h-3.5 w-3.5" /> Parecer & Decisão
               </TabsTrigger>
