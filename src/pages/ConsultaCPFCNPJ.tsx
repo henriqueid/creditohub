@@ -13,7 +13,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Search, Building2, User, FileText, AlertTriangle, CheckCircle2,
   XCircle, Clock, TrendingUp, Shield, History, ExternalLink, Loader2,
-  Info, Ban, Scale, Banknote, Users, MapPin, Calendar,
+  Info, Ban, Scale, Banknote, Users, MapPin, Calendar, Phone, Briefcase,
+  Hash, Receipt, Landmark,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { formatCNPJorCPF, formatBRL, formatDate, formatPercent, statusLabels, statusColors } from "@/lib/formatters";
@@ -713,31 +714,166 @@ function ExternalDataDisplay({ sources }: { sources: ExternalSourceResult[] }) {
   const data = apiData || brasilApiData;
   if (!data) return null;
 
+  const formatPhoneDisplay = (phone?: string) => {
+    if (!phone) return null;
+    const d = phone.replace(/\D/g, "");
+    if (d.length === 11) return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
+    if (d.length === 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
+    return phone;
+  };
+
   return (
     <div className="grid md:grid-cols-2 gap-4">
-      {/* Cadastral from external */}
+      {/* Cadastral */}
       {(data.razao_social || data.situacao_cadastral || data.cnae_descricao) && (
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
-              <Building2 className="h-4 w-4" /> Dados Cadastrais (Externo)
+              <Building2 className="h-4 w-4" /> Dados Cadastrais
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
             {data.razao_social && <Row label="Razão Social" value={data.razao_social} />}
             {data.nome_fantasia && <Row label="Nome Fantasia" value={data.nome_fantasia} />}
-            {data.situacao_cadastral && <Row label="Situação Cadastral" value={data.situacao_cadastral} />}
+            {data.situacao_cadastral && <Row label="Situação" value={data.situacao_cadastral} />}
+            {data.descricao_motivo_situacao && data.descricao_motivo_situacao !== "SEM MOTIVO" && (
+              <Row label="Motivo Situação" value={data.descricao_motivo_situacao} />
+            )}
+            {data.data_situacao && <Row label="Data Situação" value={data.data_situacao} />}
             {data.natureza_juridica && <Row label="Natureza Jurídica" value={data.natureza_juridica} />}
             {data.porte && <Row label="Porte" value={data.porte} />}
             {data.capital_social != null && <Row label="Capital Social" value={formatBRL(data.capital_social)} />}
-            {data.cnae_descricao && <Row label="CNAE" value={data.cnae_descricao} />}
-            {data.data_abertura && <Row label="Abertura" value={data.data_abertura} />}
-            {data.endereco && (
+            {data.data_abertura && <Row label="Início Atividade" value={data.data_abertura} />}
+            {data.identificador_matriz_filial && (
+              <Row label="Tipo" value={data.identificador_matriz_filial} />
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Contato & Endereço */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Phone className="h-4 w-4" /> Contato & Endereço
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2 text-sm">
+          {data.endereco && (
+            <>
               <Row
                 label="Endereço"
-                value={`${data.endereco.logradouro || ""} ${data.endereco.numero || ""}, ${data.endereco.bairro || ""} - ${data.endereco.cidade || ""}/${data.endereco.uf || ""}`}
+                value={[
+                  data.endereco.tipo_logradouro,
+                  data.endereco.logradouro,
+                  data.endereco.numero,
+                ].filter(Boolean).join(" ")}
               />
+              {data.endereco.complemento && <Row label="Complemento" value={data.endereco.complemento} />}
+              {data.endereco.bairro && <Row label="Bairro" value={data.endereco.bairro} />}
+              <Row label="Cidade/UF" value={`${data.endereco.cidade || "—"}/${data.endereco.uf || "—"}`} />
+              {data.endereco.cep && <Row label="CEP" value={data.endereco.cep} mono />}
+            </>
+          )}
+          {formatPhoneDisplay(data.telefone_1) && <Row label="Telefone 1" value={formatPhoneDisplay(data.telefone_1)!} mono />}
+          {formatPhoneDisplay(data.telefone_2) && <Row label="Telefone 2" value={formatPhoneDisplay(data.telefone_2)!} mono />}
+          {formatPhoneDisplay(data.fax) && <Row label="Fax" value={formatPhoneDisplay(data.fax)!} mono />}
+          {data.email && <Row label="E-mail" value={data.email} />}
+          {!data.endereco && !data.telefone_1 && !data.email && (
+            <p className="text-muted-foreground text-center py-2">Sem dados de contato</p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* CNAE Principal + Secundários */}
+      {(data.cnae_descricao || (data.cnaes_secundarios && data.cnaes_secundarios.length > 0)) && (
+        <Card className="md:col-span-2">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Briefcase className="h-4 w-4" /> Atividades Econômicas (CNAEs)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {data.cnae_descricao && (
+              <div className="flex items-center gap-2 p-3 rounded-lg bg-primary/5 border border-primary/20 mb-3">
+                <Badge variant="outline" className="shrink-0 bg-primary/10 text-primary border-primary/30">Principal</Badge>
+                <span className="text-sm font-medium">{data.cnae_descricao}</span>
+                {data.cnae_principal && <span className="text-xs text-muted-foreground font-mono ml-auto">{data.cnae_principal}</span>}
+              </div>
             )}
+            {data.cnaes_secundarios && data.cnaes_secundarios.length > 0 && (
+              <div className="space-y-1.5">
+                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Secundários ({data.cnaes_secundarios.length})</p>
+                {data.cnaes_secundarios.map((c, i) => (
+                  <div key={i} className="flex items-center justify-between py-1.5 px-3 rounded-md bg-muted/30 text-sm">
+                    <span>{c.descricao}</span>
+                    <span className="text-xs text-muted-foreground font-mono">{c.codigo}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Simples Nacional / MEI */}
+      {(data.opcao_simples != null || data.opcao_mei != null) && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Receipt className="h-4 w-4" /> Simples Nacional / MEI
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
+              <span className="text-muted-foreground">Simples Nacional</span>
+              <Badge variant="outline" className={
+                data.opcao_simples === true ? "bg-emerald-500/15 text-emerald-600 border-emerald-500/30"
+                : data.opcao_simples === false ? "bg-muted text-muted-foreground"
+                : "bg-muted text-muted-foreground"
+              }>
+                {data.opcao_simples === true ? "Optante" : data.opcao_simples === false ? "Não optante" : "Não informado"}
+              </Badge>
+            </div>
+            {data.data_opcao_simples && <Row label="Data Opção Simples" value={data.data_opcao_simples} />}
+            {data.data_exclusao_simples && <Row label="Data Exclusão Simples" value={data.data_exclusao_simples} />}
+
+            <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
+              <span className="text-muted-foreground">MEI</span>
+              <Badge variant="outline" className={
+                data.opcao_mei === true ? "bg-emerald-500/15 text-emerald-600 border-emerald-500/30"
+                : data.opcao_mei === false ? "bg-muted text-muted-foreground"
+                : "bg-muted text-muted-foreground"
+              }>
+                {data.opcao_mei === true ? "Optante" : data.opcao_mei === false ? "Não optante" : "Não informado"}
+              </Badge>
+            </div>
+            {data.data_opcao_mei && <Row label="Data Opção MEI" value={data.data_opcao_mei} />}
+            {data.data_exclusao_mei && <Row label="Data Exclusão MEI" value={data.data_exclusao_mei} />}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Regime Tributário */}
+      {data.regime_tributario && data.regime_tributario.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Landmark className="h-4 w-4" /> Regime Tributário
+              <Badge variant="outline" className="ml-auto text-xs">{data.regime_tributario.length} ano(s)</Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-1.5 max-h-48 overflow-y-auto">
+              {data.regime_tributario
+                .sort((a, b) => b.ano - a.ano)
+                .map((r, i) => (
+                  <div key={i} className="flex items-center justify-between py-1.5 px-3 rounded-md bg-muted/30 text-sm">
+                    <span className="font-mono font-medium">{r.ano}</span>
+                    <span className="text-muted-foreground">{r.forma_tributacao}</span>
+                  </div>
+                ))}
+            </div>
           </CardContent>
         </Card>
       )}
@@ -774,7 +910,7 @@ function ExternalDataDisplay({ sources }: { sources: ExternalSourceResult[] }) {
         <Card className="md:col-span-2">
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-destructive" /> Protestos (Externo)
+              <AlertTriangle className="h-4 w-4 text-destructive" /> Protestos
               <Badge variant="outline" className="ml-auto">{data.protestos.length}</Badge>
             </CardTitle>
           </CardHeader>
@@ -803,12 +939,13 @@ function ExternalDataDisplay({ sources }: { sources: ExternalSourceResult[] }) {
         </Card>
       )}
 
-      {/* Sócios from external */}
+      {/* Sócios */}
       {data.socios && data.socios.length > 0 && (
         <Card className="md:col-span-2">
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
-              <Users className="h-4 w-4" /> Quadro Societário (Externo)
+              <Users className="h-4 w-4" /> Quadro Societário
+              <Badge variant="outline" className="ml-auto">{data.socios.length} sócio(s)</Badge>
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -819,15 +956,22 @@ function ExternalDataDisplay({ sources }: { sources: ExternalSourceResult[] }) {
                   <TableHead>CPF/CNPJ</TableHead>
                   <TableHead>Qualificação</TableHead>
                   <TableHead>Entrada</TableHead>
+                  <TableHead>Faixa Etária</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {data.socios.map((s, i) => (
                   <TableRow key={i}>
-                    <TableCell className="font-medium">{s.nome}</TableCell>
+                    <TableCell className="font-medium">
+                      {s.nome}
+                      {s.representante_legal && (
+                        <span className="block text-xs text-muted-foreground">Rep. Legal: {s.representante_legal}</span>
+                      )}
+                    </TableCell>
                     <TableCell className="font-mono">{s.cpf_cnpj || "—"}</TableCell>
                     <TableCell>{s.qualificacao || "—"}</TableCell>
                     <TableCell>{s.data_entrada || "—"}</TableCell>
+                    <TableCell className="text-muted-foreground">{s.faixa_etaria || "—"}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
