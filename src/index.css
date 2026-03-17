@@ -41,10 +41,10 @@
     --status-restricted: 25 80% 50%;
     --status-rejected: 0 72% 51%;
 
-    /* Sidebar */
-    --sidebar-background: 220 30% 10%;
+    /* Sidebar - glass */
+    --sidebar-background: 220 30% 8%;
     --sidebar-foreground: 215 20% 80%;
-    --sidebar-primary: 210 60% 60%;
+    --sidebar-primary: 210 70% 65%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 220 25% 16%;
     --sidebar-accent-foreground: 215 20% 90%;
@@ -99,3 +99,10 @@
     font-variant-numeric: tabular-nums;
   }
 }
+
+/* Glass sidebar overrides */
+.glass-sidebar [data-sidebar="sidebar"] {
+  background: transparent !important;
+  border: none !important;
+}
+
