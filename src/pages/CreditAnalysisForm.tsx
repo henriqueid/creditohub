@@ -953,7 +953,25 @@ export default function CreditAnalysisForm() {
                     <Input value={analistaCredito} onChange={(e) => setAnalistaCredito(e.target.value)} disabled={isReadOnly} className="h-9 text-sm" placeholder="—" />
                   </Field>
                 </FieldGroup>
-              </SectionWrapper>
+                <FieldGroup cols={3}>
+                  <Field label="Tempo de Atividade" hint="Ex: 15 anos, desde 2009">
+                    <Input value={tempoAtividade} onChange={(e) => setTempoAtividade(e.target.value)} disabled={isReadOnly} className="h-9 text-sm" placeholder="Ex: 12 anos" />
+                  </Field>
+                  <Field label="Tipo Imóvel Sede" hint="Próprio, alugado, cedido">
+                    <Select value={tipoImovelSede} onValueChange={setTipoImovelSede} disabled={isReadOnly}>
+                      <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="proprio">Próprio</SelectItem>
+                        <SelectItem value="alugado">Alugado</SelectItem>
+                        <SelectItem value="cedido">Cedido</SelectItem>
+                        <SelectItem value="comodato">Comodato</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </Field>
+                  <Field label="Nº de Funcionários">
+                    <Input type="number" value={numeroFuncionarios} onChange={(e) => setNumeroFuncionarios(e.target.value)} disabled={isReadOnly} className="h-9 text-sm tabular-nums" placeholder="0" />
+                  </Field>
+                </FieldGroup>
 
               {/* 2. Operacional */}
               <SectionWrapper title="Informações Operacionais" icon={BarChart3} section="operacional"
