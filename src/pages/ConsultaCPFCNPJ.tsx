@@ -155,7 +155,7 @@ export default function ConsultaCPFCNPJ() {
   const { data: externalSources = [], isLoading: loadingExternal } = useQuery({
     queryKey: ["consulta-external", digits],
     enabled: digits.length >= 11,
-    queryFn: () => fetchExternalSources(digits),
+    queryFn: () => fetchExternalConsulta(digits),
   });
 
   // Derived metrics
