@@ -83,6 +83,20 @@ export default function ConsultaCPFCNPJ() {
   const digits = searchDoc ? cleanDocument(searchDoc) : "";
   const isPJ = digits.length > 11;
 
+  // Blacklist check
+  const { data: blacklistEntry } = useQuery({
+    queryKey: ["consulta-blacklist", digits],
+    enabled: digits.length >= 11,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("blacklist")
+        .select("*")
+        .eq("documento", digits)
+        .maybeSingle();
+      return data;
+    },
+  });
+
   // Internal: client
   const { data: client, isLoading: loadingClient } = useQuery({
     queryKey: ["consulta-client", digits],
