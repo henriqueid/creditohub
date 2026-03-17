@@ -14,6 +14,7 @@ import CommitteeVoting from "@/pages/CommitteeVoting";
 import ClientHistory from "@/pages/ClientHistory";
 import ConsultaCPFCNPJ from "@/pages/ConsultaCPFCNPJ";
 import Blacklist from "@/pages/Blacklist";
+import Settings from "@/pages/Settings";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -38,6 +39,7 @@ const App = () => (
             <Route path="/comite/:id" element={<CommitteeVoting />} />
             <Route path="/consulta" element={<ConsultaCPFCNPJ />} />
             <Route path="/blacklist" element={<Blacklist />} />
+            <Route path="/configuracoes" element={<Settings />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
