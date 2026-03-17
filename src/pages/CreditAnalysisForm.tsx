@@ -231,6 +231,23 @@ export default function CreditAnalysisForm() {
   const [status, setStatus] = useState("draft");
   const [sacados, setSacados] = useState<SacadoRow[]>([]);
   const [socios, setSocios] = useState<SocioRow[]>([]);
+  // New enriched fields
+  const [referenciasBancarias, setReferenciasBancarias] = useState("");
+  const [referenciasComerciais, setReferenciasComerciais] = useState("");
+  const [tipoImovelSede, setTipoImovelSede] = useState("");
+  const [numeroFuncionarios, setNumeroFuncionarios] = useState("");
+  const [capitalSocial, setCapitalSocial] = useState("");
+  const [receitaLiquida, setReceitaLiquida] = useState("");
+  const [margemLiquida, setMargemLiquida] = useState("");
+  const [indiceLiquidez, setIndiceLiquidez] = useState("");
+  const [historicoPagamentos, setHistoricoPagamentos] = useState("");
+  const [restricoesCnpj, setRestricoesCnpj] = useState("");
+  const [tempoAtividade, setTempoAtividade] = useState("");
+  const [faturamentoDetalhado, setFaturamentoDetalhado] = useState("");
+  const [condicoesEspeciais, setCondicoesEspeciais] = useState("");
+  const [modalidadeOperacao, setModalidadeOperacao] = useState("");
+  const [taxaSugerida, setTaxaSugerida] = useState("");
+  const [fonteInformacao, setFonteInformacao] = useState("");
   const [sectionAttachments, setSectionAttachments] = useState<SectionAttachments>({});
 
   // Computed values
