@@ -972,6 +972,7 @@ export default function CreditAnalysisForm() {
                     <Input type="number" value={numeroFuncionarios} onChange={(e) => setNumeroFuncionarios(e.target.value)} disabled={isReadOnly} className="h-9 text-sm tabular-nums" placeholder="0" />
                   </Field>
                 </FieldGroup>
+              </SectionWrapper>
 
               {/* 2. Operacional */}
               <SectionWrapper title="Informações Operacionais" icon={BarChart3} section="operacional"
