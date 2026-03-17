@@ -660,7 +660,9 @@ function RestrictiveItem({ icon: Icon, label, items }: { icon: React.ElementType
 
 function ExternalDataDisplay({ sources }: { sources: ExternalSourceResult[] }) {
   const apiData = sources.find((s) => s.source === "API Própria" && s.status === "success")?.data;
-  if (!apiData) return null;
+  const brasilApiData = sources.find((s) => s.source === "BrasilAPI (Receita Federal)" && s.status === "success")?.data;
+  const data = apiData || brasilApiData;
+  if (!data) return null;
 
   return (
     <div className="grid md:grid-cols-2 gap-4">
