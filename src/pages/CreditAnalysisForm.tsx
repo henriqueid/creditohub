@@ -1414,7 +1414,41 @@ export default function CreditAnalysisForm() {
             </motion.div>
           </TabsContent>
 
-          {/* TAB: Parecer & Decisão */}
+          {/* TAB: Indicadores */}
+          <TabsContent value="indicadores" className="flex-1 overflow-y-auto mt-0 p-0">
+            <motion.div initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.35, ease: "easeOut" }} className="max-w-5xl mx-auto px-6 py-6">
+              <div className="flex items-center gap-2 mb-5">
+                <Activity className="h-5 w-5 text-primary" />
+                <div>
+                  <h2 className="text-base font-semibold">Indicadores & Gráficos</h2>
+                  <p className="text-xs text-muted-foreground">Dashboard completo de indicadores financeiros, radar de risco e análise comparativa</p>
+                </div>
+              </div>
+
+              <FinancialIndicatorsPanel
+                creditScore={scoreNum}
+                faturamentoMedio={fatNum}
+                receitaLiquida={receitaLiquida ? parseFloat(receitaLiquida) : null}
+                capitalSocial={capitalSocial ? parseFloat(capitalSocial) : null}
+                limiteSugerido={limiteNum}
+                volumeEstimado={volNum}
+                numeroFuncionarios={numeroFuncionarios ? parseInt(numeroFuncionarios) : null}
+                margemLiquida={margemLiquida || null}
+                indiceLiquidez={indiceLiquidez || null}
+                prazoMedioTitulos={prazoMedioTitulos ? parseInt(prazoMedioTitulos) : null}
+                protestos={protestos}
+                pendencias={pendencias}
+                acoesJudiciais={acoesJudiciais}
+                chequesSemFundo={chequesSemFundo}
+                historicoPagamentos={historicoPagamentos}
+                tempoAtividade={tempoAtividade}
+                faturamentoDetalhado={faturamentoDetalhado}
+                sacados={sacados}
+                socios={socios}
+              />
+            </motion.div>
+          </TabsContent>
+
           <TabsContent value="parecer" className="flex-1 overflow-y-auto mt-0 p-0">
             <motion.div initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.35, ease: "easeOut" }} className="max-w-4xl mx-auto px-6 py-6 space-y-6">
               <div className="flex items-center gap-2 mb-2">
