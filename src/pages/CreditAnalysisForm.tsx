@@ -463,7 +463,23 @@ export default function CreditAnalysisForm() {
         parecer_analista: parecerAnalista || null,
         recommendation: (recommendation || null) as any,
         status: status as any,
-      };
+        referencias_bancarias: referenciasBancarias || null,
+        referencias_comerciais: referenciasComerciais || null,
+        tipo_imovel_sede: tipoImovelSede || null,
+        numero_funcionarios: numeroFuncionarios ? parseInt(numeroFuncionarios) : null,
+        capital_social: capitalSocial ? parseFloat(capitalSocial) : null,
+        receita_liquida: receitaLiquida ? parseFloat(receitaLiquida) : null,
+        margem_liquida: margemLiquida || null,
+        indice_liquidez: indiceLiquidez || null,
+        historico_pagamentos: historicoPagamentos || null,
+        restricoes_cnpj: restricoesCnpj || null,
+        tempo_atividade: tempoAtividade || null,
+        faturamento_detalhado: faturamentoDetalhado || null,
+        condicoes_especiais: condicoesEspeciais || null,
+        modalidade_operacao: modalidadeOperacao || null,
+        taxa_sugerida: taxaSugerida ? parseFloat(taxaSugerida) : null,
+        fonte_informacao: fonteInformacao || null,
+      } as any;
 
       let analysisId = id;
       if (isEditing) {
