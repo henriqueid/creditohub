@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, History, LayoutGrid, List, FileText, Building2, GripVertical } from "lucide-react";
+import { Plus, Search, History, LayoutGrid, List, FileText, Building2, GripVertical, Pencil } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { formatCNPJorCPF, formatDate, formatBRL } from "@/lib/formatters";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -307,10 +307,24 @@ export default function Clients() {
                                             </span>
                                             <p className="text-sm font-semibold leading-tight line-clamp-2">{client.razao_social}</p>
                                           </div>
+                                          <div className="flex items-center gap-0.5 shrink-0">
                                           <Button
                                             variant="ghost"
                                             size="icon"
                                             className="h-6 w-6 shrink-0"
+                                            title="Editar cadastro"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              navigate(`/cedentes/${client.id}`);
+                                            }}
+                                          >
+                                            <Pencil className="h-3 w-3" />
+                                          </Button>
+                                          <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-6 w-6 shrink-0"
+                                            title="Histórico"
                                             onClick={(e) => {
                                               e.stopPropagation();
                                               navigate(`/cedentes/${client.id}/historico`);
@@ -318,6 +332,7 @@ export default function Clients() {
                                           >
                                             <History className="h-3 w-3" />
                                           </Button>
+                                          </div>
                                         </div>
                                         <p className="text-xs text-muted-foreground tabular-nums pl-5">
                                           {formatCNPJorCPF(client.cnpj_cpf)}
