@@ -370,6 +370,7 @@ export default function CreditAnalysisForm() {
       setModalidadeOperacao((analysis as any).modalidade_operacao || "");
       setTaxaSugerida((analysis as any).taxa_sugerida?.toString() || "");
       setFonteInformacao((analysis as any).fonte_informacao || "");
+    }
   }, [analysis]);
 
   useEffect(() => {
