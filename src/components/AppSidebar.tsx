@@ -26,11 +26,10 @@ const menuItems = [
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
-  const location = useLocation();
 
   return (
-    <Sidebar collapsible="icon" className="glass-sidebar">
-      <SidebarContent className="backdrop-blur-2xl bg-sidebar-background/80 border-r border-white/[0.08]">
+    <Sidebar collapsible="icon" className="floating-sidebar border-0 bg-transparent">
+      <SidebarContent className="bg-sidebar rounded-2xl border border-sidebar-border shadow-lg">
         <div className="px-4 py-5">
           {!collapsed && (
             <h1 className="text-lg font-bold tracking-tight text-sidebar-primary-foreground">
@@ -39,9 +38,7 @@ export function AppSidebar() {
           )}
         </div>
         <SidebarGroup>
-          <SidebarGroupLabel className="text-sidebar-foreground/50 uppercase text-[10px] tracking-widest font-semibold">
-            Menu
-          </SidebarGroupLabel>
+          <SidebarGroupLabel>Menu</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {menuItems.map((item) => (
@@ -50,8 +47,8 @@ export function AppSidebar() {
                     <NavLink
                       to={item.url}
                       end={item.url === "/"}
-                      className="rounded-lg transition-all duration-200 hover:bg-white/[0.08] hover:backdrop-blur-sm"
-                      activeClassName="bg-white/[0.12] text-sidebar-primary font-medium shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1)]"
+                      className="rounded-lg hover:bg-sidebar-accent/50"
+                      activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
                     >
                       <item.icon className="mr-2 h-4 w-4" />
                       {!collapsed && <span>{item.title}</span>}
