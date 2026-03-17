@@ -1201,9 +1201,17 @@ export default function CreditAnalysisForm() {
                     <Textarea value={dependenciaClientes} onChange={(e) => setDependenciaClientes(e.target.value)} disabled={isReadOnly} rows={3} className="text-sm resize-none" />
                   </Field>
                 </div>
+                <FieldGroup cols={2}>
+                  <Field label="Margem Líquida" hint="Percentual ou descrição qualitativa">
+                    <Input value={margemLiquida} onChange={(e) => setMargemLiquida(e.target.value)} disabled={isReadOnly} className="h-9 text-sm" placeholder="Ex: 8,5% ou Adequada" />
+                  </Field>
+                  <Field label="Índice de Liquidez" hint="Corrente, seca, geral">
+                    <Input value={indiceLiquidez} onChange={(e) => setIndiceLiquidez(e.target.value)} disabled={isReadOnly} className="h-9 text-sm" placeholder="Ex: LC 1,35 / LS 0,98" />
+                  </Field>
+                </FieldGroup>
               </SectionWrapper>
 
-              {/* 6. Riscos */}
+              {/* 7. Riscos */}
               <SectionWrapper title="Riscos e Pontos Positivos" icon={AlertTriangle} section="riscos"
                 analysisId={isEditing ? id! : null} attachments={sectionAttachments.riscos || []}
                 onAttachmentsChange={updateSectionAttachments("riscos")}
@@ -1220,7 +1228,7 @@ export default function CreditAnalysisForm() {
                 </div>
               </SectionWrapper>
 
-              {/* 7. Operação */}
+              {/* 8. Operação */}
               <SectionWrapper title="Operação Proposta" icon={Settings2} section="operacao"
                 analysisId={isEditing ? id! : null} attachments={sectionAttachments.operacao || []}
                 onAttachmentsChange={updateSectionAttachments("operacao")}
@@ -1228,6 +1236,19 @@ export default function CreditAnalysisForm() {
                 compactMode={compactMode} summary={sectionSummaries.operacao}
               >
                 <FieldGroup cols={3}>
+                  <Field label="Modalidade da Operação" hint="Factoring, FIDC, antecipação, etc.">
+                    <Select value={modalidadeOperacao} onValueChange={setModalidadeOperacao} disabled={isReadOnly}>
+                      <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="factoring">Factoring</SelectItem>
+                        <SelectItem value="fidc">FIDC</SelectItem>
+                        <SelectItem value="antecipacao">Antecipação de Recebíveis</SelectItem>
+                        <SelectItem value="desconto_duplicatas">Desconto de Duplicatas</SelectItem>
+                        <SelectItem value="capital_giro">Capital de Giro</SelectItem>
+                        <SelectItem value="outro">Outro</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </Field>
                   <Field label="Limite Sugerido (R$)">
                     <div className="space-y-1">
                       <Input type="number" step="0.01" value={limiteSugerido} onChange={(e) => setLimiteSugerido(e.target.value)} disabled={isReadOnly} className="h-9 text-sm tabular-nums font-semibold" placeholder="0,00" />
@@ -1239,6 +1260,9 @@ export default function CreditAnalysisForm() {
                       )}
                     </div>
                   </Field>
+                  <Field label="Taxa Sugerida (% a.m.)">
+                    <Input type="number" step="0.01" value={taxaSugerida} onChange={(e) => setTaxaSugerida(e.target.value)} disabled={isReadOnly} className="h-9 text-sm tabular-nums" placeholder="0,00" />
+                  </Field>
                   <Field label="Prazo Médio Permitido (dias)">
                     <Input type="number" value={prazoMedioPermitido} onChange={(e) => setPrazoMedioPermitido(e.target.value)} disabled={isReadOnly} className="h-9 text-sm tabular-nums" placeholder="0" />
                   </Field>
@@ -1246,9 +1270,12 @@ export default function CreditAnalysisForm() {
                     <Input type="number" step="0.1" value={concentracaoMaxima} onChange={(e) => setConcentracaoMaxima(e.target.value)} disabled={isReadOnly} className="h-9 text-sm tabular-nums" placeholder="0" />
                   </Field>
                 </FieldGroup>
-                <div className="pt-3">
+                <div className="pt-3 grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
                   <Field label="Garantias">
-                    <Textarea value={garantias} onChange={(e) => setGarantias(e.target.value)} disabled={isReadOnly} rows={2} className="text-sm resize-none" />
+                    <Textarea value={garantias} onChange={(e) => setGarantias(e.target.value)} disabled={isReadOnly} rows={2} className="text-sm resize-none" placeholder="Aval dos sócios, nota promissória, etc." />
+                  </Field>
+                  <Field label="Condições Especiais" hint="Condições adicionais da operação">
+                    <Textarea value={condicoesEspeciais} onChange={(e) => setCondicoesEspeciais(e.target.value)} disabled={isReadOnly} rows={2} className="text-sm resize-none" placeholder="Ex: Requer certidão negativa mensal, revisão trimestral..." />
                   </Field>
                 </div>
               </SectionWrapper>
