@@ -18,24 +18,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { formatCNPJorCPF, formatBRL, formatDate, formatPercent, statusLabels, statusColors } from "@/lib/formatters";
 import { motion, AnimatePresence } from "framer-motion";
-
-// --- External source placeholder ---
-interface ExternalSourceResult {
-  source: string;
-  status: "success" | "error" | "pending";
-  data?: Record<string, unknown>;
-  message?: string;
-}
-
-async function fetchExternalSources(_document: string): Promise<ExternalSourceResult[]> {
-  // TODO: Plug real external APIs here (Serasa, BigDataCorp, Receita Federal, etc.)
-  // Each source returns { source, status, data }
-  return [
-    { source: "Receita Federal", status: "pending", message: "Integração não configurada" },
-    { source: "Serasa / Bureau", status: "pending", message: "Integração não configurada" },
-    { source: "SCR / Bacen", status: "pending", message: "Integração não configurada" },
-  ];
-}
+import { fetchExternalConsulta, type ExternalSourceResult, type ExternalConsultaData } from "@/lib/external-consulta";
 
 // --- Helpers ---
 function cleanDocument(value: string) {
