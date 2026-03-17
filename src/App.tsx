@@ -14,6 +14,7 @@ import CommitteeVoting from "@/pages/CommitteeVoting";
 import ClientHistory from "@/pages/ClientHistory";
 import ConsultaCPFCNPJ from "@/pages/ConsultaCPFCNPJ";
 import Blacklist from "@/pages/Blacklist";
+import Settings from "@/pages/Settings";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
