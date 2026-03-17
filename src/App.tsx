@@ -12,6 +12,7 @@ import CreditAnalysisForm from "@/pages/CreditAnalysisForm";
 import CommitteeQueue from "@/pages/CommitteeQueue";
 import CommitteeVoting from "@/pages/CommitteeVoting";
 import ClientHistory from "@/pages/ClientHistory";
+import ConsultaCPFCNPJ from "@/pages/ConsultaCPFCNPJ";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,6 +35,7 @@ const App = () => (
             <Route path="/analises/:id" element={<CreditAnalysisForm />} />
             <Route path="/comite" element={<CommitteeQueue />} />
             <Route path="/comite/:id" element={<CommitteeVoting />} />
+            <Route path="/consulta" element={<ConsultaCPFCNPJ />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -15,6 +15,7 @@ import {
 
 const menuItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
+  { title: "Consulta CPF/CNPJ", url: "/consulta", icon: SearchCheck },
   { title: "Cedentes", url: "/cedentes", icon: Building2 },
   { title: "Análises de Crédito", url: "/analises", icon: FileText },
   { title: "Comitê de Crédito", url: "/comite", icon: Users },
