@@ -833,6 +833,24 @@ export default function CreditAnalysisForm() {
             <div className="h-8 w-px bg-border/60 shrink-0" />
 
             <div className="shrink-0">
+              <p className="text-[10px] text-muted-foreground">Score Global</p>
+              <p className={cn("text-xs font-bold tabular-nums",
+                overallRiskScore >= 70 ? "text-emerald-600" : overallRiskScore >= 40 ? "text-amber-600" : "text-red-600"
+              )}>
+                {overallRiskScore}/100
+              </p>
+            </div>
+
+            <div className="h-8 w-px bg-border/60 shrink-0" />
+
+            <div className="shrink-0">
+              <p className="text-[10px] text-muted-foreground">Taxa IA</p>
+              <p className="text-xs font-semibold tabular-nums">{autoRate}% a.m.</p>
+            </div>
+
+            <div className="h-8 w-px bg-border/60 shrink-0" />
+
+            <div className="shrink-0">
               <p className="text-[10px] text-muted-foreground">Anexos</p>
               <p className="text-xs font-semibold tabular-nums flex items-center gap-1">
                 <FileText className="h-3 w-3" />
