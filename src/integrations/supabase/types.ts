@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      blacklist: {
+        Row: {
+          adicionado_por: string | null
+          created_at: string
+          documento: string
+          id: string
+          motivo: string | null
+          tipo: string
+        }
+        Insert: {
+          adicionado_por?: string | null
+          created_at?: string
+          documento: string
+          id?: string
+          motivo?: string | null
+          tipo: string
+        }
+        Update: {
+          adicionado_por?: string | null
+          created_at?: string
+          documento?: string
+          id?: string
+          motivo?: string | null
+          tipo?: string
+        }
+        Relationships: []
+      }
       clients: {
         Row: {
           cidade: string | null
