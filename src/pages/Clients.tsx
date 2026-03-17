@@ -332,6 +332,7 @@ export default function Clients() {
                                           >
                                             <History className="h-3 w-3" />
                                           </Button>
+                                          </div>
                                         </div>
                                         <p className="text-xs text-muted-foreground tabular-nums pl-5">
                                           {formatCNPJorCPF(client.cnpj_cpf)}
