@@ -782,6 +782,32 @@ function ExternalDataDisplay({ sources }: { sources: ExternalSourceResult[] }) {
           {!data.endereco && !data.telefone_1 && !data.email && (
             <p className="text-muted-foreground text-center py-2">Sem dados de contato</p>
           )}
+          {/* Google Maps Embed */}
+          {data.endereco && (data.endereco.logradouro || data.endereco.cidade) && (() => {
+            const parts = [
+              data.endereco!.tipo_logradouro,
+              data.endereco!.logradouro,
+              data.endereco!.numero,
+              data.endereco!.bairro,
+              data.endereco!.cidade,
+              data.endereco!.uf,
+              data.endereco!.cep,
+            ].filter(Boolean).join(", ");
+            const q = encodeURIComponent(parts);
+            return (
+              <div className="mt-4 rounded-lg overflow-hidden border">
+                <iframe
+                  title="Localização no mapa"
+                  width="100%"
+                  height="220"
+                  style={{ border: 0 }}
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  src={`https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=${q}`}
+                />
+              </div>
+            );
+          })()}
         </CardContent>
       </Card>
 
