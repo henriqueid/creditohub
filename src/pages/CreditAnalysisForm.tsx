@@ -571,12 +571,12 @@ export default function CreditAnalysisForm() {
     const sections = [
       {
         key: "identificacao", label: "Identificação", icon: Building2,
-        fields: [clientId, dataAnalise, responsavelComercial, analistaCredito],
+        fields: [clientId, dataAnalise, responsavelComercial, analistaCredito, tempoAtividade, tipoImovelSede, numeroFuncionarios],
         required: [clientId],
       },
       {
         key: "operacional", label: "Operacional", icon: BarChart3,
-        fields: [faturamentoMedio, volumeEstimado, prazoMedioTitulos],
+        fields: [faturamentoMedio, volumeEstimado, prazoMedioTitulos, faturamentoDetalhado, receitaLiquida, capitalSocial],
         required: [faturamentoMedio],
       },
       {
@@ -586,12 +586,17 @@ export default function CreditAnalysisForm() {
       },
       {
         key: "credito", label: "Crédito", icon: ShieldCheck,
-        fields: [creditScore, protestos, pendencias, chequesSemFundo, acoesJudiciais, observacoesCredito],
+        fields: [creditScore, protestos, pendencias, chequesSemFundo, acoesJudiciais, observacoesCredito, restricoesCnpj, historicoPagamentos],
         required: [creditScore],
       },
       {
+        key: "referencias", label: "Referências", icon: Handshake,
+        fields: [referenciasBancarias, referenciasComerciais, fonteInformacao],
+        required: [],
+      },
+      {
         key: "financeira", label: "Financeira", icon: TrendingUp,
-        fields: [analiseFaturamento, estruturaFinanceira, endividamento, dependenciaClientes],
+        fields: [analiseFaturamento, estruturaFinanceira, endividamento, dependenciaClientes, margemLiquida, indiceLiquidez],
         required: [],
       },
       {
@@ -601,7 +606,7 @@ export default function CreditAnalysisForm() {
       },
       {
         key: "operacao", label: "Operação", icon: Settings2,
-        fields: [limiteSugerido, prazoMedioPermitido, concentracaoMaxima, garantias],
+        fields: [limiteSugerido, prazoMedioPermitido, concentracaoMaxima, garantias, modalidadeOperacao, taxaSugerida, condicoesEspeciais],
         required: [limiteSugerido],
       },
     ];
@@ -613,7 +618,7 @@ export default function CreditAnalysisForm() {
       const requiredOk = s.required.every(f => f && String(f).trim() !== "");
       return { ...s, filled, total, pct, requiredOk };
     });
-  }, [clientId, dataAnalise, responsavelComercial, analistaCredito, faturamentoMedio, volumeEstimado, prazoMedioTitulos, historicoSocios, socios.length, creditScore, protestos, pendencias, chequesSemFundo, acoesJudiciais, observacoesCredito, analiseFaturamento, estruturaFinanceira, endividamento, dependenciaClientes, riscos, pontosPositivos, limiteSugerido, prazoMedioPermitido, concentracaoMaxima, garantias]);
+  }, [clientId, dataAnalise, responsavelComercial, analistaCredito, tempoAtividade, tipoImovelSede, numeroFuncionarios, faturamentoMedio, volumeEstimado, prazoMedioTitulos, faturamentoDetalhado, receitaLiquida, capitalSocial, historicoSocios, socios.length, creditScore, protestos, pendencias, chequesSemFundo, acoesJudiciais, observacoesCredito, restricoesCnpj, historicoPagamentos, referenciasBancarias, referenciasComerciais, fonteInformacao, analiseFaturamento, estruturaFinanceira, endividamento, dependenciaClientes, margemLiquida, indiceLiquidez, riscos, pontosPositivos, limiteSugerido, prazoMedioPermitido, concentracaoMaxima, garantias, modalidadeOperacao, taxaSugerida, condicoesEspeciais]);
 
   const overallProgress = useMemo(() => {
     const totalFilled = sectionProgress.reduce((a, s) => a + s.filled, 0);
@@ -623,16 +628,23 @@ export default function CreditAnalysisForm() {
 
   const sectionSummaries = useMemo(() => {
     const f = (v: string, label: string) => v.trim() ? `${label}: ${v.trim().substring(0, 60)}${v.trim().length > 60 ? "…" : ""}` : null;
+    const recLiqNum = receitaLiquida ? parseFloat(receitaLiquida) : null;
+    const capSocNum = capitalSocial ? parseFloat(capitalSocial) : null;
     return {
       identificacao: [
         selectedClient ? `Cedente: ${selectedClient.razao_social}` : null,
         f(dataAnalise, "Data"),
         f(responsavelComercial, "Comercial"),
         f(analistaCredito, "Analista"),
+        f(tempoAtividade, "Tempo Ativ."),
+        f(tipoImovelSede, "Imóvel"),
+        numeroFuncionarios ? `Funcionários: ${numeroFuncionarios}` : null,
       ].filter(Boolean) as string[],
       operacional: [
         fatNum ? `Faturamento: ${formatBRL(fatNum)}` : null,
         volNum ? `Volume: ${formatBRL(volNum)}` : null,
+        recLiqNum ? `Receita Líq.: ${formatBRL(recLiqNum)}` : null,
+        capSocNum ? `Capital Social: ${formatBRL(capSocNum)}` : null,
         prazoMedioTitulos ? `Prazo: ${prazoMedioTitulos} dias` : null,
         sacados.length > 0 ? `${sacados.length} sacado(s)` : null,
       ].filter(Boolean) as string[],
@@ -646,12 +658,21 @@ export default function CreditAnalysisForm() {
         f(pendencias, "Pendências"),
         f(chequesSemFundo, "Cheques s/ fundo"),
         f(acoesJudiciais, "Ações judiciais"),
+        f(restricoesCnpj, "Restrições CNPJ"),
+        f(historicoPagamentos, "Hist. Pagamentos"),
+      ].filter(Boolean) as string[],
+      referencias: [
+        f(referenciasBancarias, "Bancárias"),
+        f(referenciasComerciais, "Comerciais"),
+        f(fonteInformacao, "Fonte"),
       ].filter(Boolean) as string[],
       financeira: [
         f(analiseFaturamento, "Faturamento"),
         f(estruturaFinanceira, "Estrutura"),
         f(endividamento, "Endividamento"),
         f(dependenciaClientes, "Dependência"),
+        f(margemLiquida, "Margem"),
+        f(indiceLiquidez, "Liquidez"),
       ].filter(Boolean) as string[],
       riscos: [
         f(riscos, "Riscos"),
@@ -659,12 +680,15 @@ export default function CreditAnalysisForm() {
       ].filter(Boolean) as string[],
       operacao: [
         limiteNum ? `Limite: ${formatBRL(limiteNum)}` : null,
+        f(modalidadeOperacao, "Modalidade"),
+        taxaSugerida ? `Taxa: ${taxaSugerida}%` : null,
         prazoMedioPermitido ? `Prazo: ${prazoMedioPermitido} dias` : null,
         concentracaoMaxima ? `Conc. máx: ${concentracaoMaxima}%` : null,
         f(garantias, "Garantias"),
+        f(condicoesEspeciais, "Condições"),
       ].filter(Boolean) as string[],
     };
-  }, [selectedClient, dataAnalise, responsavelComercial, analistaCredito, fatNum, volNum, prazoMedioTitulos, sacados.length, socios.length, sociosTotal, historicoSocios, scoreNum, grade, protestos, pendencias, chequesSemFundo, acoesJudiciais, analiseFaturamento, estruturaFinanceira, endividamento, dependenciaClientes, riscos, pontosPositivos, limiteNum, prazoMedioPermitido, concentracaoMaxima, garantias]);
+  }, [selectedClient, dataAnalise, responsavelComercial, analistaCredito, tempoAtividade, tipoImovelSede, numeroFuncionarios, fatNum, volNum, receitaLiquida, capitalSocial, prazoMedioTitulos, sacados.length, socios.length, sociosTotal, historicoSocios, scoreNum, grade, protestos, pendencias, chequesSemFundo, acoesJudiciais, restricoesCnpj, historicoPagamentos, referenciasBancarias, referenciasComerciais, fonteInformacao, analiseFaturamento, estruturaFinanceira, endividamento, dependenciaClientes, margemLiquida, indiceLiquidez, riscos, pontosPositivos, limiteNum, modalidadeOperacao, taxaSugerida, prazoMedioPermitido, concentracaoMaxima, garantias, condicoesEspeciais]);
 
   return (
     <div className="flex h-[calc(100vh-3.5rem)] overflow-hidden">
