@@ -353,7 +353,23 @@ export default function CreditAnalysisForm() {
       setParecerAnalista(analysis.parecer_analista || "");
       setRecommendation(analysis.recommendation || "");
       setStatus(analysis.status);
-    }
+      // New fields
+      setReferenciasBancarias((analysis as any).referencias_bancarias || "");
+      setReferenciasComerciais((analysis as any).referencias_comerciais || "");
+      setTipoImovelSede((analysis as any).tipo_imovel_sede || "");
+      setNumeroFuncionarios((analysis as any).numero_funcionarios?.toString() || "");
+      setCapitalSocial((analysis as any).capital_social?.toString() || "");
+      setReceitaLiquida((analysis as any).receita_liquida?.toString() || "");
+      setMargemLiquida((analysis as any).margem_liquida || "");
+      setIndiceLiquidez((analysis as any).indice_liquidez || "");
+      setHistoricoPagamentos((analysis as any).historico_pagamentos || "");
+      setRestricoesCnpj((analysis as any).restricoes_cnpj || "");
+      setTempoAtividade((analysis as any).tempo_atividade || "");
+      setFaturamentoDetalhado((analysis as any).faturamento_detalhado || "");
+      setCondicoesEspeciais((analysis as any).condicoes_especiais || "");
+      setModalidadeOperacao((analysis as any).modalidade_operacao || "");
+      setTaxaSugerida((analysis as any).taxa_sugerida?.toString() || "");
+      setFonteInformacao((analysis as any).fonte_informacao || "");
   }, [analysis]);
 
   useEffect(() => {
