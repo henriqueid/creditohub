@@ -1,4 +1,4 @@
-import { Building2, FileText, Users, LayoutDashboard, SearchCheck } from "lucide-react";
+import { Building2, FileText, Users, LayoutDashboard, SearchCheck, ShieldBan } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import {
