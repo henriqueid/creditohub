@@ -611,3 +611,132 @@ function RestrictiveItem({ icon: Icon, label, items }: { icon: React.ElementType
     </div>
   );
 }
+
+function ExternalDataDisplay({ sources }: { sources: ExternalSourceResult[] }) {
+  const apiData = sources.find((s) => s.source === "API Própria" && s.status === "success")?.data;
+  if (!apiData) return null;
+
+  return (
+    <div className="grid md:grid-cols-2 gap-4">
+      {/* Cadastral from external */}
+      {(apiData.razao_social || apiData.situacao_cadastral || apiData.cnae_descricao) && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Building2 className="h-4 w-4" /> Dados Cadastrais (Externo)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm">
+            {apiData.razao_social && <Row label="Razão Social" value={apiData.razao_social} />}
+            {apiData.nome_fantasia && <Row label="Nome Fantasia" value={apiData.nome_fantasia} />}
+            {apiData.situacao_cadastral && <Row label="Situação Cadastral" value={apiData.situacao_cadastral} />}
+            {apiData.natureza_juridica && <Row label="Natureza Jurídica" value={apiData.natureza_juridica} />}
+            {apiData.porte && <Row label="Porte" value={apiData.porte} />}
+            {apiData.cnae_descricao && <Row label="CNAE" value={apiData.cnae_descricao} />}
+            {apiData.data_abertura && <Row label="Abertura" value={apiData.data_abertura} />}
+            {apiData.endereco && (
+              <Row
+                label="Endereço"
+                value={`${apiData.endereco.logradouro || ""} ${apiData.endereco.numero || ""}, ${apiData.endereco.bairro || ""} - ${apiData.endereco.cidade || ""}/${apiData.endereco.uf || ""}`}
+              />
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Score from external */}
+      {(apiData.score != null || apiData.classe_risco) && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Shield className="h-4 w-4" /> Score Externo
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {apiData.score != null && (
+              <>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Score</span>
+                  <span className="text-2xl font-bold">{apiData.score}</span>
+                </div>
+                <Progress value={(apiData.score / 1000) * 100} className="h-2" />
+              </>
+            )}
+            {apiData.score_descricao && <Row label="Descrição" value={apiData.score_descricao} />}
+            {apiData.classe_risco && <Row label="Classe de Risco" value={apiData.classe_risco} />}
+            {apiData.probabilidade_inadimplencia != null && (
+              <Row label="Prob. Inadimplência" value={`${(apiData.probabilidade_inadimplencia * 100).toFixed(1)}%`} />
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Protestos from external */}
+      {apiData.protestos && apiData.protestos.length > 0 && (
+        <Card className="md:col-span-2">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-destructive" /> Protestos (Externo)
+              <Badge variant="outline" className="ml-auto">{apiData.protestos.length}</Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Cartório</TableHead>
+                  <TableHead>Valor</TableHead>
+                  <TableHead>Data</TableHead>
+                  <TableHead>Cidade</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {apiData.protestos.map((p, i) => (
+                  <TableRow key={i}>
+                    <TableCell>{p.cartorio || "—"}</TableCell>
+                    <TableCell>{p.valor ? formatBRL(p.valor) : "—"}</TableCell>
+                    <TableCell>{p.data || "—"}</TableCell>
+                    <TableCell>{p.cidade || "—"}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Sócios from external */}
+      {apiData.socios && apiData.socios.length > 0 && (
+        <Card className="md:col-span-2">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Users className="h-4 w-4" /> Quadro Societário (Externo)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nome</TableHead>
+                  <TableHead>CPF/CNPJ</TableHead>
+                  <TableHead>Qualificação</TableHead>
+                  <TableHead>Entrada</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {apiData.socios.map((s, i) => (
+                  <TableRow key={i}>
+                    <TableCell className="font-medium">{s.nome}</TableCell>
+                    <TableCell className="font-mono">{s.cpf_cnpj || "—"}</TableCell>
+                    <TableCell>{s.qualificacao || "—"}</TableCell>
+                    <TableCell>{s.data_entrada || "—"}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
