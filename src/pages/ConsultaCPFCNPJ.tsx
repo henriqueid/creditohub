@@ -184,6 +184,23 @@ export default function ConsultaCPFCNPJ() {
   const hasSearched = searchDoc !== null;
   const found = !!client || socioRecords.length > 0;
 
+  // Get BrasilAPI data for pre-filling registration
+  const brasilApiData = externalSources.find((s) => s.source === "BrasilAPI (Receita Federal)" && s.status === "success")?.data;
+  const externalName = brasilApiData?.razao_social || brasilApiData?.nome_fantasia;
+
+  function handleCadastrarCedente() {
+    const prefill: Record<string, string> = { cnpj_cpf: digits };
+    if (brasilApiData) {
+      if (brasilApiData.razao_social) prefill.razao_social = brasilApiData.razao_social;
+      if (brasilApiData.nome_fantasia) prefill.nome_fantasia = brasilApiData.nome_fantasia;
+      if (brasilApiData.data_abertura) prefill.data_fundacao = brasilApiData.data_abertura;
+      if (brasilApiData.cnae_descricao) prefill.segmento = brasilApiData.cnae_descricao;
+      if (brasilApiData.endereco?.cidade) prefill.cidade = brasilApiData.endereco.cidade;
+      if (brasilApiData.endereco?.uf) prefill.estado = brasilApiData.endereco.uf;
+    }
+    navigate("/cedentes/novo", { state: { prefill } });
+  }
+
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
     const d = cleanDocument(inputValue);
