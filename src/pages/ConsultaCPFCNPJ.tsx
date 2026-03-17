@@ -18,24 +18,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { formatCNPJorCPF, formatBRL, formatDate, formatPercent, statusLabels, statusColors } from "@/lib/formatters";
 import { motion, AnimatePresence } from "framer-motion";
-
-// --- External source placeholder ---
-interface ExternalSourceResult {
-  source: string;
-  status: "success" | "error" | "pending";
-  data?: Record<string, unknown>;
-  message?: string;
-}
-
-async function fetchExternalSources(_document: string): Promise<ExternalSourceResult[]> {
-  // TODO: Plug real external APIs here (Serasa, BigDataCorp, Receita Federal, etc.)
-  // Each source returns { source, status, data }
-  return [
-    { source: "Receita Federal", status: "pending", message: "Integração não configurada" },
-    { source: "Serasa / Bureau", status: "pending", message: "Integração não configurada" },
-    { source: "SCR / Bacen", status: "pending", message: "Integração não configurada" },
-  ];
-}
+import { fetchExternalConsulta, type ExternalSourceResult, type ExternalConsultaData } from "@/lib/external-consulta";
 
 // --- Helpers ---
 function cleanDocument(value: string) {
@@ -172,7 +155,7 @@ export default function ConsultaCPFCNPJ() {
   const { data: externalSources = [], isLoading: loadingExternal } = useQuery({
     queryKey: ["consulta-external", digits],
     enabled: digits.length >= 11,
-    queryFn: () => fetchExternalSources(digits),
+    queryFn: () => fetchExternalConsulta(digits),
   });
 
   // Derived metrics
@@ -536,14 +519,15 @@ export default function ConsultaCPFCNPJ() {
               )}
 
               {/* TAB: Fontes Externas */}
-              <TabsContent value="fontes" className="mt-4">
+              <TabsContent value="fontes" className="mt-4 space-y-4">
+                {/* Source status cards */}
                 <Card>
                   <CardHeader className="pb-3">
                     <CardTitle className="text-base flex items-center gap-2">
                       <ExternalLink className="h-4 w-4" /> Fontes Externas
                     </CardTitle>
                     <CardDescription>
-                      Integre APIs externas (Serasa, Receita Federal, SCR/Bacen, etc.) para enriquecer a consulta
+                      Sua API REST própria + fontes adicionais. Configure as credenciais para ativar.
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -576,11 +560,21 @@ export default function ConsultaCPFCNPJ() {
                       ))}
                     </div>
                     <Separator className="my-4" />
-                    <p className="text-xs text-muted-foreground">
-                      Para ativar fontes externas, entre em contato com o administrador para configurar as chaves de API necessárias.
-                    </p>
+                    <div className="rounded-lg border border-dashed p-4 bg-muted/20">
+                      <p className="text-sm font-medium mb-2">Como conectar sua API própria:</p>
+                      <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
+                        <li>Configure o secret <code className="bg-muted px-1 rounded">EXTERNAL_CONSULTA_API_URL</code> com a URL base da sua API</li>
+                        <li>Configure o secret <code className="bg-muted px-1 rounded">EXTERNAL_CONSULTA_API_KEY</code> com a chave de autenticação</li>
+                        <li>A API deve responder em <code className="bg-muted px-1 rounded">GET /{'<documento>'}</code> com JSON</li>
+                      </ol>
+                    </div>
                   </CardContent>
                 </Card>
+
+                {/* External data display (when API returns data) */}
+                {externalSources.some((s) => s.status === "success" && s.data) && (
+                  <ExternalDataDisplay sources={externalSources} />
+                )}
               </TabsContent>
             </Tabs>
           </motion.div>
@@ -614,6 +608,135 @@ function RestrictiveItem({ icon: Icon, label, items }: { icon: React.ElementType
           <p key={i} className="text-sm text-muted-foreground pl-6">{item}</p>
         ))}
       </div>
+    </div>
+  );
+}
+
+function ExternalDataDisplay({ sources }: { sources: ExternalSourceResult[] }) {
+  const apiData = sources.find((s) => s.source === "API Própria" && s.status === "success")?.data;
+  if (!apiData) return null;
+
+  return (
+    <div className="grid md:grid-cols-2 gap-4">
+      {/* Cadastral from external */}
+      {(apiData.razao_social || apiData.situacao_cadastral || apiData.cnae_descricao) && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Building2 className="h-4 w-4" /> Dados Cadastrais (Externo)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm">
+            {apiData.razao_social && <Row label="Razão Social" value={apiData.razao_social} />}
+            {apiData.nome_fantasia && <Row label="Nome Fantasia" value={apiData.nome_fantasia} />}
+            {apiData.situacao_cadastral && <Row label="Situação Cadastral" value={apiData.situacao_cadastral} />}
+            {apiData.natureza_juridica && <Row label="Natureza Jurídica" value={apiData.natureza_juridica} />}
+            {apiData.porte && <Row label="Porte" value={apiData.porte} />}
+            {apiData.cnae_descricao && <Row label="CNAE" value={apiData.cnae_descricao} />}
+            {apiData.data_abertura && <Row label="Abertura" value={apiData.data_abertura} />}
+            {apiData.endereco && (
+              <Row
+                label="Endereço"
+                value={`${apiData.endereco.logradouro || ""} ${apiData.endereco.numero || ""}, ${apiData.endereco.bairro || ""} - ${apiData.endereco.cidade || ""}/${apiData.endereco.uf || ""}`}
+              />
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Score from external */}
+      {(apiData.score != null || apiData.classe_risco) && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Shield className="h-4 w-4" /> Score Externo
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {apiData.score != null && (
+              <>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Score</span>
+                  <span className="text-2xl font-bold">{apiData.score}</span>
+                </div>
+                <Progress value={(apiData.score / 1000) * 100} className="h-2" />
+              </>
+            )}
+            {apiData.score_descricao && <Row label="Descrição" value={apiData.score_descricao} />}
+            {apiData.classe_risco && <Row label="Classe de Risco" value={apiData.classe_risco} />}
+            {apiData.probabilidade_inadimplencia != null && (
+              <Row label="Prob. Inadimplência" value={`${(apiData.probabilidade_inadimplencia * 100).toFixed(1)}%`} />
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Protestos from external */}
+      {apiData.protestos && apiData.protestos.length > 0 && (
+        <Card className="md:col-span-2">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-destructive" /> Protestos (Externo)
+              <Badge variant="outline" className="ml-auto">{apiData.protestos.length}</Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Cartório</TableHead>
+                  <TableHead>Valor</TableHead>
+                  <TableHead>Data</TableHead>
+                  <TableHead>Cidade</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {apiData.protestos.map((p, i) => (
+                  <TableRow key={i}>
+                    <TableCell>{p.cartorio || "—"}</TableCell>
+                    <TableCell>{p.valor ? formatBRL(p.valor) : "—"}</TableCell>
+                    <TableCell>{p.data || "—"}</TableCell>
+                    <TableCell>{p.cidade || "—"}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Sócios from external */}
+      {apiData.socios && apiData.socios.length > 0 && (
+        <Card className="md:col-span-2">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Users className="h-4 w-4" /> Quadro Societário (Externo)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nome</TableHead>
+                  <TableHead>CPF/CNPJ</TableHead>
+                  <TableHead>Qualificação</TableHead>
+                  <TableHead>Entrada</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {apiData.socios.map((s, i) => (
+                  <TableRow key={i}>
+                    <TableCell className="font-medium">{s.nome}</TableCell>
+                    <TableCell className="font-mono">{s.cpf_cnpj || "—"}</TableCell>
+                    <TableCell>{s.qualificacao || "—"}</TableCell>
+                    <TableCell>{s.data_entrada || "—"}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
