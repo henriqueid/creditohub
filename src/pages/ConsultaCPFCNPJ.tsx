@@ -13,7 +13,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Search, Building2, User, FileText, AlertTriangle, CheckCircle2,
   XCircle, Clock, TrendingUp, Shield, History, ExternalLink, Loader2,
-  Info, Ban, Scale, Banknote, Users, MapPin, Calendar,
+  Info, Ban, Scale, Banknote, Users, MapPin, Calendar, Phone, Briefcase,
+  Hash, Receipt, Landmark,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { formatCNPJorCPF, formatBRL, formatDate, formatPercent, statusLabels, statusColors } from "@/lib/formatters";
