@@ -16,7 +16,7 @@ import {
   ArrowLeft, Plus, Trash2, Send, Printer, Save, Building2, BarChart3,
   Users, ShieldCheck, TrendingUp, AlertTriangle, Settings2, FileCheck,
   Sparkles, Brain, Target, Gauge, FileText, Zap, ChevronDown, Check, Eye, EyeOff,
-  Landmark, Handshake, MapPin, DollarSign, Scale
+  Landmark, Handshake, MapPin, DollarSign, Scale, Activity
 } from "lucide-react";
 import { StatusBadge } from "@/components/StatusBadge";
 import { fetchPrintData, generatePrintHtml, openPrintWindow } from "@/lib/pdf-export";
@@ -26,9 +26,12 @@ import { RiskIndicator } from "@/components/RiskIndicator";
 import { ConcentrationChart } from "@/components/ConcentrationChart";
 import { SectionFileUpload } from "@/components/SectionFileUpload";
 import { AIInsightsPanel } from "@/components/AIInsightsPanel";
+import { FinancialIndicatorsPanel } from "@/components/FinancialIndicatorsPanel";
 import {
   classifyRisk, suggestLimit, calculateConcentration,
-  calculateSociosTotal, calculateLimitUtilization, getScoreGrade
+  calculateSociosTotal, calculateLimitUtilization, getScoreGrade,
+  suggestRate, calculateOverallRiskScore, calculateRiskRadar,
+  calculateFinancialRatios
 } from "@/lib/credit-calculations";
 
 interface SacadoRow {
@@ -262,6 +265,28 @@ export default function CreditAnalysisForm() {
   const concentration = useMemo(() => calculateConcentration(sacados), [sacados]);
   const sociosTotal = useMemo(() => calculateSociosTotal(socios), [socios]);
   const limitUtil = useMemo(() => calculateLimitUtilization(volNum, limiteNum), [volNum, limiteNum]);
+
+  const ratios = useMemo(() => calculateFinancialRatios({
+    receitaLiquida: receitaLiquida ? parseFloat(receitaLiquida) : null,
+    faturamentoMedio: fatNum,
+    capitalSocial: capitalSocial ? parseFloat(capitalSocial) : null,
+    limiteSugerido: limiteNum,
+    volumeEstimado: volNum,
+    numeroFuncionarios: numeroFuncionarios ? parseInt(numeroFuncionarios) : null,
+    margemLiquida: margemLiquida || null,
+    indiceLiquidez: indiceLiquidez || null,
+  }), [receitaLiquida, fatNum, capitalSocial, limiteNum, volNum, numeroFuncionarios, margemLiquida, indiceLiquidez]);
+
+  const radarDimensions = useMemo(() => calculateRiskRadar({
+    creditScore: scoreNum, faturamentoMedio: fatNum, limiteSugerido: limiteNum, volumeEstimado: volNum,
+    sacadosCount: sacados.length, sociosCount: socios.length,
+    protestos, pendencias, acoesJudiciais, chequesSemFundo,
+    historicoPagamentos, tempoAtividade,
+    hhi: concentration.hhi, coberturaDivida: ratios.coberturaDivida, margemLiquidaNum: ratios.margemLiquidaNum,
+  }), [scoreNum, fatNum, limiteNum, volNum, sacados.length, socios.length, protestos, pendencias, acoesJudiciais, chequesSemFundo, historicoPagamentos, tempoAtividade, concentration.hhi, ratios.coberturaDivida, ratios.margemLiquidaNum]);
+
+  const overallRiskScore = useMemo(() => calculateOverallRiskScore(radarDimensions), [radarDimensions]);
+  const autoRate = useMemo(() => suggestRate(scoreNum, prazoMedioTitulos ? parseInt(prazoMedioTitulos) : null), [scoreNum, prazoMedioTitulos]);
 
   // Queries
   const { data: clients = [] } = useQuery({
@@ -808,6 +833,24 @@ export default function CreditAnalysisForm() {
             <div className="h-8 w-px bg-border/60 shrink-0" />
 
             <div className="shrink-0">
+              <p className="text-[10px] text-muted-foreground">Score Global</p>
+              <p className={cn("text-xs font-bold tabular-nums",
+                overallRiskScore >= 70 ? "text-emerald-600" : overallRiskScore >= 40 ? "text-amber-600" : "text-red-600"
+              )}>
+                {overallRiskScore}/100
+              </p>
+            </div>
+
+            <div className="h-8 w-px bg-border/60 shrink-0" />
+
+            <div className="shrink-0">
+              <p className="text-[10px] text-muted-foreground">Taxa IA</p>
+              <p className="text-xs font-semibold tabular-nums">{autoRate}% a.m.</p>
+            </div>
+
+            <div className="h-8 w-px bg-border/60 shrink-0" />
+
+            <div className="shrink-0">
               <p className="text-[10px] text-muted-foreground">Anexos</p>
               <p className="text-xs font-semibold tabular-nums flex items-center gap-1">
                 <FileText className="h-3 w-3" />
@@ -829,6 +872,9 @@ export default function CreditAnalysisForm() {
               </TabsTrigger>
               <TabsTrigger value="concentracao" className="text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-t-md rounded-b-none px-4 gap-1.5">
                 <Target className="h-3.5 w-3.5" /> Concentração
+              </TabsTrigger>
+              <TabsTrigger value="indicadores" className="text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-t-md rounded-b-none px-4 gap-1.5">
+                <Activity className="h-3.5 w-3.5" /> Indicadores
               </TabsTrigger>
               <TabsTrigger value="parecer" className="text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-t-md rounded-b-none px-4 gap-1.5">
                 <Gauge className="h-3.5 w-3.5" /> Parecer & Decisão
@@ -1368,7 +1414,41 @@ export default function CreditAnalysisForm() {
             </motion.div>
           </TabsContent>
 
-          {/* TAB: Parecer & Decisão */}
+          {/* TAB: Indicadores */}
+          <TabsContent value="indicadores" className="flex-1 overflow-y-auto mt-0 p-0">
+            <motion.div initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.35, ease: "easeOut" }} className="max-w-5xl mx-auto px-6 py-6">
+              <div className="flex items-center gap-2 mb-5">
+                <Activity className="h-5 w-5 text-primary" />
+                <div>
+                  <h2 className="text-base font-semibold">Indicadores & Gráficos</h2>
+                  <p className="text-xs text-muted-foreground">Dashboard completo de indicadores financeiros, radar de risco e análise comparativa</p>
+                </div>
+              </div>
+
+              <FinancialIndicatorsPanel
+                creditScore={scoreNum}
+                faturamentoMedio={fatNum}
+                receitaLiquida={receitaLiquida ? parseFloat(receitaLiquida) : null}
+                capitalSocial={capitalSocial ? parseFloat(capitalSocial) : null}
+                limiteSugerido={limiteNum}
+                volumeEstimado={volNum}
+                numeroFuncionarios={numeroFuncionarios ? parseInt(numeroFuncionarios) : null}
+                margemLiquida={margemLiquida || null}
+                indiceLiquidez={indiceLiquidez || null}
+                prazoMedioTitulos={prazoMedioTitulos ? parseInt(prazoMedioTitulos) : null}
+                protestos={protestos}
+                pendencias={pendencias}
+                acoesJudiciais={acoesJudiciais}
+                chequesSemFundo={chequesSemFundo}
+                historicoPagamentos={historicoPagamentos}
+                tempoAtividade={tempoAtividade}
+                faturamentoDetalhado={faturamentoDetalhado}
+                sacados={sacados}
+                socios={socios}
+              />
+            </motion.div>
+          </TabsContent>
+
           <TabsContent value="parecer" className="flex-1 overflow-y-auto mt-0 p-0">
             <motion.div initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.35, ease: "easeOut" }} className="max-w-4xl mx-auto px-6 py-6 space-y-6">
               <div className="flex items-center gap-2 mb-2">
