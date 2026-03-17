@@ -99,3 +99,10 @@
     font-variant-numeric: tabular-nums;
   }
 }
+
+/* Glass sidebar overrides */
+.glass-sidebar [data-sidebar="sidebar"] {
+  background: transparent !important;
+  border: none !important;
+}
+
