@@ -184,6 +184,23 @@ export default function ConsultaCPFCNPJ() {
   const hasSearched = searchDoc !== null;
   const found = !!client || socioRecords.length > 0;
 
+  // Get BrasilAPI data for pre-filling registration
+  const brasilApiData = externalSources.find((s) => s.source === "BrasilAPI (Receita Federal)" && s.status === "success")?.data;
+  const externalName = brasilApiData?.razao_social || brasilApiData?.nome_fantasia;
+
+  function handleCadastrarCedente() {
+    const prefill: Record<string, string> = { cnpj_cpf: digits };
+    if (brasilApiData) {
+      if (brasilApiData.razao_social) prefill.razao_social = brasilApiData.razao_social;
+      if (brasilApiData.nome_fantasia) prefill.nome_fantasia = brasilApiData.nome_fantasia;
+      if (brasilApiData.data_abertura) prefill.data_fundacao = brasilApiData.data_abertura;
+      if (brasilApiData.cnae_descricao) prefill.segmento = brasilApiData.cnae_descricao;
+      if (brasilApiData.endereco?.cidade) prefill.cidade = brasilApiData.endereco.cidade;
+      if (brasilApiData.endereco?.uf) prefill.estado = brasilApiData.endereco.uf;
+    }
+    navigate("/cedentes/novo", { state: { prefill } });
+  }
+
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
     const d = cleanDocument(inputValue);
@@ -280,6 +297,11 @@ export default function ConsultaCPFCNPJ() {
                         </>
                       ) : socioRecords.length > 0 ? (
                         <p className="text-base font-medium">{socioRecords[0].nome}</p>
+                      ) : externalName ? (
+                        <>
+                          <p className="text-base font-medium">{externalName}</p>
+                          <p className="text-xs text-muted-foreground">Dados da Receita Federal (não cadastrado)</p>
+                        </>
                       ) : (
                         <p className="text-sm text-muted-foreground">Não encontrado na base interna</p>
                       )}
@@ -412,13 +434,40 @@ export default function ConsultaCPFCNPJ() {
                     )}
                   </div>
                 ) : !isLoading ? (
-                  <Card>
-                    <CardContent className="py-12 text-center">
-                      <Info className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
-                      <p className="text-muted-foreground">Nenhum cadastro encontrado na base interna para este documento.</p>
-                      <Button variant="outline" className="mt-4" onClick={() => navigate("/cedentes/novo")}>
-                        Cadastrar Cedente
-                      </Button>
+                  <Card className="border-dashed">
+                    <CardContent className="py-10 text-center space-y-4">
+                      <div className="mx-auto w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
+                        {isPJ ? <Building2 className="h-7 w-7 text-primary" /> : <User className="h-7 w-7 text-primary" />}
+                      </div>
+                      <div>
+                        <p className="font-medium text-lg">
+                          {externalName || formatCNPJorCPF(digits)}
+                        </p>
+                        <p className="text-muted-foreground text-sm mt-1">
+                          {brasilApiData
+                            ? "Encontrado na Receita Federal, mas não está na sua base interna."
+                            : "Nenhum cadastro encontrado na base interna para este documento."}
+                        </p>
+                      </div>
+                      {brasilApiData && (
+                        <div className="text-sm text-muted-foreground space-y-1">
+                          {brasilApiData.situacao_cadastral && <p>Situação: <span className="font-medium text-foreground">{brasilApiData.situacao_cadastral}</span></p>}
+                          {brasilApiData.cnae_descricao && <p>Atividade: <span className="font-medium text-foreground">{brasilApiData.cnae_descricao}</span></p>}
+                          {brasilApiData.endereco?.cidade && brasilApiData.endereco?.uf && (
+                            <p>Local: <span className="font-medium text-foreground">{brasilApiData.endereco.cidade}/{brasilApiData.endereco.uf}</span></p>
+                          )}
+                        </div>
+                      )}
+                      <Separator />
+                      <div>
+                        <p className="text-sm text-muted-foreground mb-3">
+                          Deseja cadastrar como cedente e iniciar a esteira de crédito?
+                        </p>
+                        <Button onClick={handleCadastrarCedente} className="gap-2">
+                          <User className="h-4 w-4" />
+                          Cadastrar Cedente {brasilApiData ? "(dados pré-preenchidos)" : ""}
+                        </Button>
+                      </div>
                     </CardContent>
                   </Card>
                 ) : null}

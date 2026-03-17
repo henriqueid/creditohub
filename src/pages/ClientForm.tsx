@@ -1,15 +1,15 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import { formatCNPJorCPF, ESTADOS_BR } from "@/lib/formatters";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Rocket } from "lucide-react";
 
 interface ClientFormData {
   cnpj_cpf: string;
@@ -34,9 +34,14 @@ const initialData: ClientFormData = {
 export default function ClientForm() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const queryClient = useQueryClient();
   const isEditing = !!id && id !== "novo";
   const [form, setForm] = useState<ClientFormData>(initialData);
+  const [startAnalysis, setStartAnalysis] = useState(false);
+
+  // Pre-fill from consulta page
+  const prefill = (location.state as { prefill?: Record<string, string> })?.prefill;
 
   const { data: client } = useQuery({
     queryKey: ["client", id],
@@ -60,8 +65,21 @@ export default function ClientForm() {
         cidade: client.cidade || "",
         estado: client.estado || "",
       });
+    } else if (prefill && !isEditing) {
+      setForm({
+        cnpj_cpf: prefill.cnpj_cpf || "",
+        razao_social: prefill.razao_social || "",
+        nome_fantasia: prefill.nome_fantasia || "",
+        data_fundacao: prefill.data_fundacao || "",
+        segmento: prefill.segmento || "",
+        cidade: prefill.cidade || "",
+        estado: prefill.estado || "",
+      });
+      if (prefill.razao_social) {
+        setStartAnalysis(true);
+      }
     }
-  }, [client]);
+  }, [client, prefill, isEditing]);
 
   const mutation = useMutation({
     mutationFn: async (data: ClientFormData) => {
@@ -73,15 +91,35 @@ export default function ClientForm() {
       if (isEditing) {
         const { error } = await supabase.from("clients").update(payload).eq("id", id);
         if (error) throw error;
+        return id!;
       } else {
-        const { error } = await supabase.from("clients").insert(payload);
+        const { data: inserted, error } = await supabase.from("clients").insert(payload).select("id").single();
         if (error) throw error;
+        return inserted.id;
       }
     },
-    onSuccess: () => {
+    onSuccess: async (clientId: string) => {
       queryClient.invalidateQueries({ queryKey: ["clients"] });
-      toast({ title: isEditing ? "Cedente atualizado" : "Cedente cadastrado" });
-      navigate("/cedentes");
+
+      if (startAnalysis && !isEditing) {
+        const { data: analysis, error } = await supabase
+          .from("credit_analysis")
+          .insert({ client_id: clientId })
+          .select("id")
+          .single();
+
+        if (error) {
+          toast({ title: "Cedente cadastrado, mas erro ao criar análise", description: error.message, variant: "destructive" });
+          navigate("/cedentes");
+          return;
+        }
+
+        toast({ title: "Cedente cadastrado! Análise de crédito iniciada." });
+        navigate(`/analises/${analysis.id}`);
+      } else {
+        toast({ title: isEditing ? "Cedente atualizado" : "Cedente cadastrado" });
+        navigate("/cedentes");
+      }
     },
     onError: (err: Error) => {
       toast({ title: "Erro", description: err.message, variant: "destructive" });
@@ -101,15 +139,32 @@ export default function ClientForm() {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
+  const hasPrefill = !!prefill?.razao_social;
+
   return (
     <div className="p-6 max-w-2xl">
-      <Button variant="ghost" size="sm" onClick={() => navigate("/cedentes")} className="mb-4">
+      <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="mb-4">
         <ArrowLeft className="h-4 w-4 mr-1" /> Voltar
       </Button>
+
+      {hasPrefill && !isEditing && (
+        <Card className="mb-4 border-primary/30 bg-primary/5">
+          <CardContent className="p-4 flex items-center gap-3">
+            <Rocket className="h-5 w-5 text-primary shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm font-medium">Dados pré-preenchidos da Receita Federal</p>
+              <p className="text-xs text-muted-foreground">Confira e ajuste os dados antes de salvar.</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>
           <CardTitle>{isEditing ? "Editar Cedente" : "Novo Cedente"}</CardTitle>
+          {hasPrefill && !isEditing && (
+            <CardDescription>Cadastre o cedente para iniciar a esteira de crédito</CardDescription>
+          )}
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -174,11 +229,31 @@ export default function ClientForm() {
               </div>
             </div>
 
+            {!isEditing && (
+              <div className="flex items-center gap-3 p-3 rounded-lg border bg-muted/30">
+                <input
+                  type="checkbox"
+                  id="start-analysis"
+                  checked={startAnalysis}
+                  onChange={(e) => setStartAnalysis(e.target.checked)}
+                  className="rounded border-border"
+                />
+                <label htmlFor="start-analysis" className="text-sm cursor-pointer">
+                  <span className="font-medium">Iniciar análise de crédito</span>
+                  <span className="text-muted-foreground"> — criar rascunho automaticamente após o cadastro</span>
+                </label>
+              </div>
+            )}
+
             <div className="flex gap-2 pt-4">
               <Button type="submit" disabled={mutation.isPending}>
-                {mutation.isPending ? "Salvando..." : "Salvar"}
+                {mutation.isPending
+                  ? "Salvando..."
+                  : startAnalysis && !isEditing
+                  ? "Cadastrar e Iniciar Análise"
+                  : "Salvar"}
               </Button>
-              <Button type="button" variant="outline" onClick={() => navigate("/cedentes")}>
+              <Button type="button" variant="outline" onClick={() => navigate(-1)}>
                 Cancelar
               </Button>
             </div>
