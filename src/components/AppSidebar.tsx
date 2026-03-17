@@ -1,4 +1,4 @@
-import { Building2, FileText, Users, LayoutDashboard, SearchCheck, ShieldBan } from "lucide-react";
+import { Building2, FileText, Users, LayoutDashboard, SearchCheck, ShieldBan, Settings } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import {
@@ -20,6 +20,7 @@ const menuItems = [
   { title: "Análises de Crédito", url: "/analises", icon: FileText },
   { title: "Comitê de Crédito", url: "/comite", icon: Users },
   { title: "Blacklist", url: "/blacklist", icon: ShieldBan },
+  { title: "Configurações", url: "/configuracoes", icon: Settings },
 ];
 
 export function AppSidebar() {
