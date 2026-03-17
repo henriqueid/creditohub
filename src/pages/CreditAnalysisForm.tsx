@@ -15,7 +15,8 @@ import { formatBRL } from "@/lib/formatters";
 import {
   ArrowLeft, Plus, Trash2, Send, Printer, Save, Building2, BarChart3,
   Users, ShieldCheck, TrendingUp, AlertTriangle, Settings2, FileCheck,
-  Sparkles, Brain, Target, Gauge, FileText, Zap, ChevronDown, Check, Eye, EyeOff
+  Sparkles, Brain, Target, Gauge, FileText, Zap, ChevronDown, Check, Eye, EyeOff,
+  Landmark, Handshake, MapPin, DollarSign, Scale
 } from "lucide-react";
 import { StatusBadge } from "@/components/StatusBadge";
 import { fetchPrintData, generatePrintHtml, openPrintWindow } from "@/lib/pdf-export";
@@ -230,6 +231,23 @@ export default function CreditAnalysisForm() {
   const [status, setStatus] = useState("draft");
   const [sacados, setSacados] = useState<SacadoRow[]>([]);
   const [socios, setSocios] = useState<SocioRow[]>([]);
+  // New enriched fields
+  const [referenciasBancarias, setReferenciasBancarias] = useState("");
+  const [referenciasComerciais, setReferenciasComerciais] = useState("");
+  const [tipoImovelSede, setTipoImovelSede] = useState("");
+  const [numeroFuncionarios, setNumeroFuncionarios] = useState("");
+  const [capitalSocial, setCapitalSocial] = useState("");
+  const [receitaLiquida, setReceitaLiquida] = useState("");
+  const [margemLiquida, setMargemLiquida] = useState("");
+  const [indiceLiquidez, setIndiceLiquidez] = useState("");
+  const [historicoPagamentos, setHistoricoPagamentos] = useState("");
+  const [restricoesCnpj, setRestricoesCnpj] = useState("");
+  const [tempoAtividade, setTempoAtividade] = useState("");
+  const [faturamentoDetalhado, setFaturamentoDetalhado] = useState("");
+  const [condicoesEspeciais, setCondicoesEspeciais] = useState("");
+  const [modalidadeOperacao, setModalidadeOperacao] = useState("");
+  const [taxaSugerida, setTaxaSugerida] = useState("");
+  const [fonteInformacao, setFonteInformacao] = useState("");
   const [sectionAttachments, setSectionAttachments] = useState<SectionAttachments>({});
 
   // Computed values
@@ -335,6 +353,23 @@ export default function CreditAnalysisForm() {
       setParecerAnalista(analysis.parecer_analista || "");
       setRecommendation(analysis.recommendation || "");
       setStatus(analysis.status);
+      // New fields
+      setReferenciasBancarias((analysis as any).referencias_bancarias || "");
+      setReferenciasComerciais((analysis as any).referencias_comerciais || "");
+      setTipoImovelSede((analysis as any).tipo_imovel_sede || "");
+      setNumeroFuncionarios((analysis as any).numero_funcionarios?.toString() || "");
+      setCapitalSocial((analysis as any).capital_social?.toString() || "");
+      setReceitaLiquida((analysis as any).receita_liquida?.toString() || "");
+      setMargemLiquida((analysis as any).margem_liquida || "");
+      setIndiceLiquidez((analysis as any).indice_liquidez || "");
+      setHistoricoPagamentos((analysis as any).historico_pagamentos || "");
+      setRestricoesCnpj((analysis as any).restricoes_cnpj || "");
+      setTempoAtividade((analysis as any).tempo_atividade || "");
+      setFaturamentoDetalhado((analysis as any).faturamento_detalhado || "");
+      setCondicoesEspeciais((analysis as any).condicoes_especiais || "");
+      setModalidadeOperacao((analysis as any).modalidade_operacao || "");
+      setTaxaSugerida((analysis as any).taxa_sugerida?.toString() || "");
+      setFonteInformacao((analysis as any).fonte_informacao || "");
     }
   }, [analysis]);
 
@@ -428,7 +463,23 @@ export default function CreditAnalysisForm() {
         parecer_analista: parecerAnalista || null,
         recommendation: (recommendation || null) as any,
         status: status as any,
-      };
+        referencias_bancarias: referenciasBancarias || null,
+        referencias_comerciais: referenciasComerciais || null,
+        tipo_imovel_sede: tipoImovelSede || null,
+        numero_funcionarios: numeroFuncionarios ? parseInt(numeroFuncionarios) : null,
+        capital_social: capitalSocial ? parseFloat(capitalSocial) : null,
+        receita_liquida: receitaLiquida ? parseFloat(receitaLiquida) : null,
+        margem_liquida: margemLiquida || null,
+        indice_liquidez: indiceLiquidez || null,
+        historico_pagamentos: historicoPagamentos || null,
+        restricoes_cnpj: restricoesCnpj || null,
+        tempo_atividade: tempoAtividade || null,
+        faturamento_detalhado: faturamentoDetalhado || null,
+        condicoes_especiais: condicoesEspeciais || null,
+        modalidade_operacao: modalidadeOperacao || null,
+        taxa_sugerida: taxaSugerida ? parseFloat(taxaSugerida) : null,
+        fonte_informacao: fonteInformacao || null,
+      } as any;
 
       let analysisId = id;
       if (isEditing) {
@@ -520,12 +571,12 @@ export default function CreditAnalysisForm() {
     const sections = [
       {
         key: "identificacao", label: "Identificação", icon: Building2,
-        fields: [clientId, dataAnalise, responsavelComercial, analistaCredito],
+        fields: [clientId, dataAnalise, responsavelComercial, analistaCredito, tempoAtividade, tipoImovelSede, numeroFuncionarios],
         required: [clientId],
       },
       {
         key: "operacional", label: "Operacional", icon: BarChart3,
-        fields: [faturamentoMedio, volumeEstimado, prazoMedioTitulos],
+        fields: [faturamentoMedio, volumeEstimado, prazoMedioTitulos, faturamentoDetalhado, receitaLiquida, capitalSocial],
         required: [faturamentoMedio],
       },
       {
@@ -535,12 +586,17 @@ export default function CreditAnalysisForm() {
       },
       {
         key: "credito", label: "Crédito", icon: ShieldCheck,
-        fields: [creditScore, protestos, pendencias, chequesSemFundo, acoesJudiciais, observacoesCredito],
+        fields: [creditScore, protestos, pendencias, chequesSemFundo, acoesJudiciais, observacoesCredito, restricoesCnpj, historicoPagamentos],
         required: [creditScore],
       },
       {
+        key: "referencias", label: "Referências", icon: Handshake,
+        fields: [referenciasBancarias, referenciasComerciais, fonteInformacao],
+        required: [],
+      },
+      {
         key: "financeira", label: "Financeira", icon: TrendingUp,
-        fields: [analiseFaturamento, estruturaFinanceira, endividamento, dependenciaClientes],
+        fields: [analiseFaturamento, estruturaFinanceira, endividamento, dependenciaClientes, margemLiquida, indiceLiquidez],
         required: [],
       },
       {
@@ -550,7 +606,7 @@ export default function CreditAnalysisForm() {
       },
       {
         key: "operacao", label: "Operação", icon: Settings2,
-        fields: [limiteSugerido, prazoMedioPermitido, concentracaoMaxima, garantias],
+        fields: [limiteSugerido, prazoMedioPermitido, concentracaoMaxima, garantias, modalidadeOperacao, taxaSugerida, condicoesEspeciais],
         required: [limiteSugerido],
       },
     ];
@@ -562,7 +618,7 @@ export default function CreditAnalysisForm() {
       const requiredOk = s.required.every(f => f && String(f).trim() !== "");
       return { ...s, filled, total, pct, requiredOk };
     });
-  }, [clientId, dataAnalise, responsavelComercial, analistaCredito, faturamentoMedio, volumeEstimado, prazoMedioTitulos, historicoSocios, socios.length, creditScore, protestos, pendencias, chequesSemFundo, acoesJudiciais, observacoesCredito, analiseFaturamento, estruturaFinanceira, endividamento, dependenciaClientes, riscos, pontosPositivos, limiteSugerido, prazoMedioPermitido, concentracaoMaxima, garantias]);
+  }, [clientId, dataAnalise, responsavelComercial, analistaCredito, tempoAtividade, tipoImovelSede, numeroFuncionarios, faturamentoMedio, volumeEstimado, prazoMedioTitulos, faturamentoDetalhado, receitaLiquida, capitalSocial, historicoSocios, socios.length, creditScore, protestos, pendencias, chequesSemFundo, acoesJudiciais, observacoesCredito, restricoesCnpj, historicoPagamentos, referenciasBancarias, referenciasComerciais, fonteInformacao, analiseFaturamento, estruturaFinanceira, endividamento, dependenciaClientes, margemLiquida, indiceLiquidez, riscos, pontosPositivos, limiteSugerido, prazoMedioPermitido, concentracaoMaxima, garantias, modalidadeOperacao, taxaSugerida, condicoesEspeciais]);
 
   const overallProgress = useMemo(() => {
     const totalFilled = sectionProgress.reduce((a, s) => a + s.filled, 0);
@@ -572,16 +628,23 @@ export default function CreditAnalysisForm() {
 
   const sectionSummaries = useMemo(() => {
     const f = (v: string, label: string) => v.trim() ? `${label}: ${v.trim().substring(0, 60)}${v.trim().length > 60 ? "…" : ""}` : null;
+    const recLiqNum = receitaLiquida ? parseFloat(receitaLiquida) : null;
+    const capSocNum = capitalSocial ? parseFloat(capitalSocial) : null;
     return {
       identificacao: [
         selectedClient ? `Cedente: ${selectedClient.razao_social}` : null,
         f(dataAnalise, "Data"),
         f(responsavelComercial, "Comercial"),
         f(analistaCredito, "Analista"),
+        f(tempoAtividade, "Tempo Ativ."),
+        f(tipoImovelSede, "Imóvel"),
+        numeroFuncionarios ? `Funcionários: ${numeroFuncionarios}` : null,
       ].filter(Boolean) as string[],
       operacional: [
         fatNum ? `Faturamento: ${formatBRL(fatNum)}` : null,
         volNum ? `Volume: ${formatBRL(volNum)}` : null,
+        recLiqNum ? `Receita Líq.: ${formatBRL(recLiqNum)}` : null,
+        capSocNum ? `Capital Social: ${formatBRL(capSocNum)}` : null,
         prazoMedioTitulos ? `Prazo: ${prazoMedioTitulos} dias` : null,
         sacados.length > 0 ? `${sacados.length} sacado(s)` : null,
       ].filter(Boolean) as string[],
@@ -595,12 +658,21 @@ export default function CreditAnalysisForm() {
         f(pendencias, "Pendências"),
         f(chequesSemFundo, "Cheques s/ fundo"),
         f(acoesJudiciais, "Ações judiciais"),
+        f(restricoesCnpj, "Restrições CNPJ"),
+        f(historicoPagamentos, "Hist. Pagamentos"),
+      ].filter(Boolean) as string[],
+      referencias: [
+        f(referenciasBancarias, "Bancárias"),
+        f(referenciasComerciais, "Comerciais"),
+        f(fonteInformacao, "Fonte"),
       ].filter(Boolean) as string[],
       financeira: [
         f(analiseFaturamento, "Faturamento"),
         f(estruturaFinanceira, "Estrutura"),
         f(endividamento, "Endividamento"),
         f(dependenciaClientes, "Dependência"),
+        f(margemLiquida, "Margem"),
+        f(indiceLiquidez, "Liquidez"),
       ].filter(Boolean) as string[],
       riscos: [
         f(riscos, "Riscos"),
@@ -608,12 +680,15 @@ export default function CreditAnalysisForm() {
       ].filter(Boolean) as string[],
       operacao: [
         limiteNum ? `Limite: ${formatBRL(limiteNum)}` : null,
+        f(modalidadeOperacao, "Modalidade"),
+        taxaSugerida ? `Taxa: ${taxaSugerida}%` : null,
         prazoMedioPermitido ? `Prazo: ${prazoMedioPermitido} dias` : null,
         concentracaoMaxima ? `Conc. máx: ${concentracaoMaxima}%` : null,
         f(garantias, "Garantias"),
+        f(condicoesEspeciais, "Condições"),
       ].filter(Boolean) as string[],
     };
-  }, [selectedClient, dataAnalise, responsavelComercial, analistaCredito, fatNum, volNum, prazoMedioTitulos, sacados.length, socios.length, sociosTotal, historicoSocios, scoreNum, grade, protestos, pendencias, chequesSemFundo, acoesJudiciais, analiseFaturamento, estruturaFinanceira, endividamento, dependenciaClientes, riscos, pontosPositivos, limiteNum, prazoMedioPermitido, concentracaoMaxima, garantias]);
+  }, [selectedClient, dataAnalise, responsavelComercial, analistaCredito, tempoAtividade, tipoImovelSede, numeroFuncionarios, fatNum, volNum, receitaLiquida, capitalSocial, prazoMedioTitulos, sacados.length, socios.length, sociosTotal, historicoSocios, scoreNum, grade, protestos, pendencias, chequesSemFundo, acoesJudiciais, restricoesCnpj, historicoPagamentos, referenciasBancarias, referenciasComerciais, fonteInformacao, analiseFaturamento, estruturaFinanceira, endividamento, dependenciaClientes, margemLiquida, indiceLiquidez, riscos, pontosPositivos, limiteNum, modalidadeOperacao, taxaSugerida, prazoMedioPermitido, concentracaoMaxima, garantias, condicoesEspeciais]);
 
   return (
     <div className="flex h-[calc(100vh-3.5rem)] overflow-hidden">
@@ -808,7 +883,7 @@ export default function CreditAnalysisForm() {
                     transition={{ duration: 0.6, ease: "easeOut", delay: 0.2 }}
                   />
                 </div>
-                <div className="grid grid-cols-7 gap-1.5">
+                <div className="grid grid-cols-4 md:grid-cols-8 gap-1.5">
                   {sectionProgress.map((s, i) => {
                     const Icon = s.icon;
                     const isComplete = s.pct === 100;
@@ -878,6 +953,25 @@ export default function CreditAnalysisForm() {
                     <Input value={analistaCredito} onChange={(e) => setAnalistaCredito(e.target.value)} disabled={isReadOnly} className="h-9 text-sm" placeholder="—" />
                   </Field>
                 </FieldGroup>
+                <FieldGroup cols={3}>
+                  <Field label="Tempo de Atividade" hint="Ex: 15 anos, desde 2009">
+                    <Input value={tempoAtividade} onChange={(e) => setTempoAtividade(e.target.value)} disabled={isReadOnly} className="h-9 text-sm" placeholder="Ex: 12 anos" />
+                  </Field>
+                  <Field label="Tipo Imóvel Sede" hint="Próprio, alugado, cedido">
+                    <Select value={tipoImovelSede} onValueChange={setTipoImovelSede} disabled={isReadOnly}>
+                      <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="proprio">Próprio</SelectItem>
+                        <SelectItem value="alugado">Alugado</SelectItem>
+                        <SelectItem value="cedido">Cedido</SelectItem>
+                        <SelectItem value="comodato">Comodato</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </Field>
+                  <Field label="Nº de Funcionários">
+                    <Input type="number" value={numeroFuncionarios} onChange={(e) => setNumeroFuncionarios(e.target.value)} disabled={isReadOnly} className="h-9 text-sm tabular-nums" placeholder="0" />
+                  </Field>
+                </FieldGroup>
               </SectionWrapper>
 
               {/* 2. Operacional */}
@@ -897,7 +991,18 @@ export default function CreditAnalysisForm() {
                   <Field label="Prazo Médio (dias)">
                     <Input type="number" value={prazoMedioTitulos} onChange={(e) => setPrazoMedioTitulos(e.target.value)} disabled={isReadOnly} className="h-9 text-sm tabular-nums" placeholder="0" />
                   </Field>
+                  <Field label="Capital Social (R$)">
+                    <Input type="number" step="0.01" value={capitalSocial} onChange={(e) => setCapitalSocial(e.target.value)} disabled={isReadOnly} className="h-9 text-sm tabular-nums" placeholder="0,00" />
+                  </Field>
+                  <Field label="Receita Líquida (R$)">
+                    <Input type="number" step="0.01" value={receitaLiquida} onChange={(e) => setReceitaLiquida(e.target.value)} disabled={isReadOnly} className="h-9 text-sm tabular-nums" placeholder="0,00" />
+                  </Field>
                 </FieldGroup>
+                <div className="pt-3">
+                  <Field label="Detalhamento de Faturamento" hint="Evolução mensal, sazonalidade, tendências">
+                    <Textarea value={faturamentoDetalhado} onChange={(e) => setFaturamentoDetalhado(e.target.value)} disabled={isReadOnly} rows={2} className="text-sm resize-none" placeholder="Ex: Jan R$100k, Fev R$120k... ou descrição qualitativa" />
+                  </Field>
+                </div>
 
                 {/* Sacados table */}
                 <div className="pt-3">
@@ -1039,15 +1144,43 @@ export default function CreditAnalysisForm() {
                   <Field label="Ações Judiciais">
                     <Input value={acoesJudiciais} onChange={(e) => setAcoesJudiciais(e.target.value)} disabled={isReadOnly} className="h-9 text-sm" placeholder="Nada consta" />
                   </Field>
+                  <Field label="Restrições CNPJ" hint="Situação cadastral, impedimentos">
+                    <Input value={restricoesCnpj} onChange={(e) => setRestricoesCnpj(e.target.value)} disabled={isReadOnly} className="h-9 text-sm" placeholder="Nada consta" />
+                  </Field>
                 </FieldGroup>
-                <div className="pt-3">
+                <div className="pt-3 grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
+                  <Field label="Histórico de Pagamentos" hint="Pontualidade, atrasos recorrentes, etc.">
+                    <Textarea value={historicoPagamentos} onChange={(e) => setHistoricoPagamentos(e.target.value)} disabled={isReadOnly} rows={2} className="text-sm resize-none" placeholder="Descreva o histórico de pagamentos..." />
+                  </Field>
                   <Field label="Observações da Consulta">
                     <Textarea value={observacoesCredito} onChange={(e) => setObservacoesCredito(e.target.value)} disabled={isReadOnly} rows={2} className="text-sm resize-none" placeholder="Observações relevantes..." />
                   </Field>
                 </div>
               </SectionWrapper>
 
-              {/* 5. Financeira */}
+              {/* 5. Referências */}
+              <SectionWrapper title="Referências Bancárias e Comerciais" icon={Handshake} section="referencias"
+                analysisId={isEditing ? id! : null} attachments={sectionAttachments.referencias || []}
+                onAttachmentsChange={updateSectionAttachments("referencias")}
+                onDataExtracted={handleDataExtracted} analysisContext={analysisDataForAI} disabled={isReadOnly}
+                compactMode={compactMode} summary={sectionSummaries.referencias}
+              >
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
+                  <Field label="Referências Bancárias" hint="Bancos, agências, limites, tempo de conta">
+                    <Textarea value={referenciasBancarias} onChange={(e) => setReferenciasBancarias(e.target.value)} disabled={isReadOnly} rows={3} className="text-sm resize-none" placeholder="Banco X — Ag. 1234 — Conta desde 2015 — Limite R$ 50k..." />
+                  </Field>
+                  <Field label="Referências Comerciais" hint="Fornecedores, parceiros, clientes">
+                    <Textarea value={referenciasComerciais} onChange={(e) => setReferenciasComerciais(e.target.value)} disabled={isReadOnly} rows={3} className="text-sm resize-none" placeholder="Fornecedor Y — Desde 2018 — Sem atrasos..." />
+                  </Field>
+                </div>
+                <div className="pt-3">
+                  <Field label="Fonte das Informações" hint="Serasa, Boa Vista, bureau interno, etc.">
+                    <Input value={fonteInformacao} onChange={(e) => setFonteInformacao(e.target.value)} disabled={isReadOnly} className="h-9 text-sm" placeholder="Ex: Serasa Experian, SCR Bacen" />
+                  </Field>
+                </div>
+              </SectionWrapper>
+
+              {/* 6. Financeira */}
               <SectionWrapper title="Análise Financeira" icon={TrendingUp} section="financeira"
                 analysisId={isEditing ? id! : null} attachments={sectionAttachments.financeira || []}
                 onAttachmentsChange={updateSectionAttachments("financeira")}
@@ -1068,9 +1201,17 @@ export default function CreditAnalysisForm() {
                     <Textarea value={dependenciaClientes} onChange={(e) => setDependenciaClientes(e.target.value)} disabled={isReadOnly} rows={3} className="text-sm resize-none" />
                   </Field>
                 </div>
+                <FieldGroup cols={2}>
+                  <Field label="Margem Líquida" hint="Percentual ou descrição qualitativa">
+                    <Input value={margemLiquida} onChange={(e) => setMargemLiquida(e.target.value)} disabled={isReadOnly} className="h-9 text-sm" placeholder="Ex: 8,5% ou Adequada" />
+                  </Field>
+                  <Field label="Índice de Liquidez" hint="Corrente, seca, geral">
+                    <Input value={indiceLiquidez} onChange={(e) => setIndiceLiquidez(e.target.value)} disabled={isReadOnly} className="h-9 text-sm" placeholder="Ex: LC 1,35 / LS 0,98" />
+                  </Field>
+                </FieldGroup>
               </SectionWrapper>
 
-              {/* 6. Riscos */}
+              {/* 7. Riscos */}
               <SectionWrapper title="Riscos e Pontos Positivos" icon={AlertTriangle} section="riscos"
                 analysisId={isEditing ? id! : null} attachments={sectionAttachments.riscos || []}
                 onAttachmentsChange={updateSectionAttachments("riscos")}
@@ -1087,7 +1228,7 @@ export default function CreditAnalysisForm() {
                 </div>
               </SectionWrapper>
 
-              {/* 7. Operação */}
+              {/* 8. Operação */}
               <SectionWrapper title="Operação Proposta" icon={Settings2} section="operacao"
                 analysisId={isEditing ? id! : null} attachments={sectionAttachments.operacao || []}
                 onAttachmentsChange={updateSectionAttachments("operacao")}
@@ -1095,6 +1236,19 @@ export default function CreditAnalysisForm() {
                 compactMode={compactMode} summary={sectionSummaries.operacao}
               >
                 <FieldGroup cols={3}>
+                  <Field label="Modalidade da Operação" hint="Factoring, FIDC, antecipação, etc.">
+                    <Select value={modalidadeOperacao} onValueChange={setModalidadeOperacao} disabled={isReadOnly}>
+                      <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="factoring">Factoring</SelectItem>
+                        <SelectItem value="fidc">FIDC</SelectItem>
+                        <SelectItem value="antecipacao">Antecipação de Recebíveis</SelectItem>
+                        <SelectItem value="desconto_duplicatas">Desconto de Duplicatas</SelectItem>
+                        <SelectItem value="capital_giro">Capital de Giro</SelectItem>
+                        <SelectItem value="outro">Outro</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </Field>
                   <Field label="Limite Sugerido (R$)">
                     <div className="space-y-1">
                       <Input type="number" step="0.01" value={limiteSugerido} onChange={(e) => setLimiteSugerido(e.target.value)} disabled={isReadOnly} className="h-9 text-sm tabular-nums font-semibold" placeholder="0,00" />
@@ -1106,6 +1260,9 @@ export default function CreditAnalysisForm() {
                       )}
                     </div>
                   </Field>
+                  <Field label="Taxa Sugerida (% a.m.)">
+                    <Input type="number" step="0.01" value={taxaSugerida} onChange={(e) => setTaxaSugerida(e.target.value)} disabled={isReadOnly} className="h-9 text-sm tabular-nums" placeholder="0,00" />
+                  </Field>
                   <Field label="Prazo Médio Permitido (dias)">
                     <Input type="number" value={prazoMedioPermitido} onChange={(e) => setPrazoMedioPermitido(e.target.value)} disabled={isReadOnly} className="h-9 text-sm tabular-nums" placeholder="0" />
                   </Field>
@@ -1113,9 +1270,12 @@ export default function CreditAnalysisForm() {
                     <Input type="number" step="0.1" value={concentracaoMaxima} onChange={(e) => setConcentracaoMaxima(e.target.value)} disabled={isReadOnly} className="h-9 text-sm tabular-nums" placeholder="0" />
                   </Field>
                 </FieldGroup>
-                <div className="pt-3">
+                <div className="pt-3 grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
                   <Field label="Garantias">
-                    <Textarea value={garantias} onChange={(e) => setGarantias(e.target.value)} disabled={isReadOnly} rows={2} className="text-sm resize-none" />
+                    <Textarea value={garantias} onChange={(e) => setGarantias(e.target.value)} disabled={isReadOnly} rows={2} className="text-sm resize-none" placeholder="Aval dos sócios, nota promissória, etc." />
+                  </Field>
+                  <Field label="Condições Especiais" hint="Condições adicionais da operação">
+                    <Textarea value={condicoesEspeciais} onChange={(e) => setCondicoesEspeciais(e.target.value)} disabled={isReadOnly} rows={2} className="text-sm resize-none" placeholder="Ex: Requer certidão negativa mensal, revisão trimestral..." />
                   </Field>
                 </div>
               </SectionWrapper>

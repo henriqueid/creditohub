@@ -96,20 +96,29 @@ export type Database = {
           acoes_judiciais: string | null
           analise_faturamento: string | null
           analista_credito: string | null
+          capital_social: number | null
           cheques_sem_fundo: string | null
           client_id: string
           concentracao_maxima: number | null
+          condicoes_especiais: string | null
           created_at: string
           credit_score: number | null
           data_analise: string | null
           dependencia_clientes: string | null
           endividamento: string | null
           estrutura_financeira: string | null
+          faturamento_detalhado: string | null
           faturamento_medio: number | null
+          fonte_informacao: string | null
           garantias: string | null
+          historico_pagamentos: string | null
           historico_socios: string | null
           id: string
+          indice_liquidez: string | null
           limite_sugerido: number | null
+          margem_liquida: string | null
+          modalidade_operacao: string | null
+          numero_funcionarios: number | null
           observacoes_credito: string | null
           parecer_analista: string | null
           pendencias: string | null
@@ -117,12 +126,19 @@ export type Database = {
           prazo_medio_permitido: number | null
           prazo_medio_titulos: number | null
           protestos: string | null
+          receita_liquida: number | null
           recommendation:
             | Database["public"]["Enums"]["credit_recommendation"]
             | null
+          referencias_bancarias: string | null
+          referencias_comerciais: string | null
           responsavel_comercial: string | null
+          restricoes_cnpj: string | null
           riscos: string | null
           status: Database["public"]["Enums"]["credit_status"]
+          taxa_sugerida: number | null
+          tempo_atividade: string | null
+          tipo_imovel_sede: string | null
           updated_at: string
           volume_estimado: number | null
         }
@@ -130,20 +146,29 @@ export type Database = {
           acoes_judiciais?: string | null
           analise_faturamento?: string | null
           analista_credito?: string | null
+          capital_social?: number | null
           cheques_sem_fundo?: string | null
           client_id: string
           concentracao_maxima?: number | null
+          condicoes_especiais?: string | null
           created_at?: string
           credit_score?: number | null
           data_analise?: string | null
           dependencia_clientes?: string | null
           endividamento?: string | null
           estrutura_financeira?: string | null
+          faturamento_detalhado?: string | null
           faturamento_medio?: number | null
+          fonte_informacao?: string | null
           garantias?: string | null
+          historico_pagamentos?: string | null
           historico_socios?: string | null
           id?: string
+          indice_liquidez?: string | null
           limite_sugerido?: number | null
+          margem_liquida?: string | null
+          modalidade_operacao?: string | null
+          numero_funcionarios?: number | null
           observacoes_credito?: string | null
           parecer_analista?: string | null
           pendencias?: string | null
@@ -151,12 +176,19 @@ export type Database = {
           prazo_medio_permitido?: number | null
           prazo_medio_titulos?: number | null
           protestos?: string | null
+          receita_liquida?: number | null
           recommendation?:
             | Database["public"]["Enums"]["credit_recommendation"]
             | null
+          referencias_bancarias?: string | null
+          referencias_comerciais?: string | null
           responsavel_comercial?: string | null
+          restricoes_cnpj?: string | null
           riscos?: string | null
           status?: Database["public"]["Enums"]["credit_status"]
+          taxa_sugerida?: number | null
+          tempo_atividade?: string | null
+          tipo_imovel_sede?: string | null
           updated_at?: string
           volume_estimado?: number | null
         }
@@ -164,20 +196,29 @@ export type Database = {
           acoes_judiciais?: string | null
           analise_faturamento?: string | null
           analista_credito?: string | null
+          capital_social?: number | null
           cheques_sem_fundo?: string | null
           client_id?: string
           concentracao_maxima?: number | null
+          condicoes_especiais?: string | null
           created_at?: string
           credit_score?: number | null
           data_analise?: string | null
           dependencia_clientes?: string | null
           endividamento?: string | null
           estrutura_financeira?: string | null
+          faturamento_detalhado?: string | null
           faturamento_medio?: number | null
+          fonte_informacao?: string | null
           garantias?: string | null
+          historico_pagamentos?: string | null
           historico_socios?: string | null
           id?: string
+          indice_liquidez?: string | null
           limite_sugerido?: number | null
+          margem_liquida?: string | null
+          modalidade_operacao?: string | null
+          numero_funcionarios?: number | null
           observacoes_credito?: string | null
           parecer_analista?: string | null
           pendencias?: string | null
@@ -185,12 +226,19 @@ export type Database = {
           prazo_medio_permitido?: number | null
           prazo_medio_titulos?: number | null
           protestos?: string | null
+          receita_liquida?: number | null
           recommendation?:
             | Database["public"]["Enums"]["credit_recommendation"]
             | null
+          referencias_bancarias?: string | null
+          referencias_comerciais?: string | null
           responsavel_comercial?: string | null
+          restricoes_cnpj?: string | null
           riscos?: string | null
           status?: Database["public"]["Enums"]["credit_status"]
+          taxa_sugerida?: number | null
+          tempo_atividade?: string | null
+          tipo_imovel_sede?: string | null
           updated_at?: string
           volume_estimado?: number | null
         }
