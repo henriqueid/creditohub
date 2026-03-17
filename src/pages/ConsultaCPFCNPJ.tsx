@@ -519,14 +519,15 @@ export default function ConsultaCPFCNPJ() {
               )}
 
               {/* TAB: Fontes Externas */}
-              <TabsContent value="fontes" className="mt-4">
+              <TabsContent value="fontes" className="mt-4 space-y-4">
+                {/* Source status cards */}
                 <Card>
                   <CardHeader className="pb-3">
                     <CardTitle className="text-base flex items-center gap-2">
                       <ExternalLink className="h-4 w-4" /> Fontes Externas
                     </CardTitle>
                     <CardDescription>
-                      Integre APIs externas (Serasa, Receita Federal, SCR/Bacen, etc.) para enriquecer a consulta
+                      Sua API REST própria + fontes adicionais. Configure as credenciais para ativar.
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -559,11 +560,21 @@ export default function ConsultaCPFCNPJ() {
                       ))}
                     </div>
                     <Separator className="my-4" />
-                    <p className="text-xs text-muted-foreground">
-                      Para ativar fontes externas, entre em contato com o administrador para configurar as chaves de API necessárias.
-                    </p>
+                    <div className="rounded-lg border border-dashed p-4 bg-muted/20">
+                      <p className="text-sm font-medium mb-2">Como conectar sua API própria:</p>
+                      <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
+                        <li>Configure o secret <code className="bg-muted px-1 rounded">EXTERNAL_CONSULTA_API_URL</code> com a URL base da sua API</li>
+                        <li>Configure o secret <code className="bg-muted px-1 rounded">EXTERNAL_CONSULTA_API_KEY</code> com a chave de autenticação</li>
+                        <li>A API deve responder em <code className="bg-muted px-1 rounded">GET /{'<documento>'}</code> com JSON</li>
+                      </ol>
+                    </div>
                   </CardContent>
                 </Card>
+
+                {/* External data display (when API returns data) */}
+                {externalSources.some((s) => s.status === "success" && s.data) && (
+                  <ExternalDataDisplay sources={externalSources} />
+                )}
               </TabsContent>
             </Tabs>
           </motion.div>
