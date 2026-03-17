@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, History, LayoutGrid, List, FileText, Building2, GripVertical } from "lucide-react";
+import { Plus, Search, History, LayoutGrid, List, FileText, Building2, GripVertical, Pencil } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { formatCNPJorCPF, formatDate, formatBRL } from "@/lib/formatters";
 import { StatusBadge } from "@/components/StatusBadge";
