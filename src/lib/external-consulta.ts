@@ -16,6 +16,7 @@ export interface ExternalConsultaData {
   razao_social?: string;
   nome_fantasia?: string;
   situacao_cadastral?: string;
+  descricao_motivo_situacao?: string;
   data_situacao?: string;
   natureza_juridica?: string;
   porte?: string;
@@ -24,6 +25,7 @@ export interface ExternalConsultaData {
   cnae_principal?: string;
   cnae_descricao?: string;
   endereco?: {
+    tipo_logradouro?: string;
     logradouro?: string;
     numero?: string;
     complemento?: string;
@@ -33,12 +35,43 @@ export interface ExternalConsultaData {
     cep?: string;
   };
 
+  // Telefones
+  telefone_1?: string;
+  telefone_2?: string;
+  fax?: string;
+  email?: string;
+
+  // Matriz/Filial
+  identificador_matriz_filial?: string; // "MATRIZ" | "FILIAL"
+
+  // CNAEs secundários
+  cnaes_secundarios?: Array<{
+    codigo: string;
+    descricao: string;
+  }>;
+
+  // Simples Nacional / MEI
+  opcao_simples?: boolean | null;
+  data_opcao_simples?: string | null;
+  data_exclusao_simples?: string | null;
+  opcao_mei?: boolean | null;
+  data_opcao_mei?: string | null;
+  data_exclusao_mei?: string | null;
+
+  // Regime Tributário (histórico)
+  regime_tributario?: Array<{
+    ano: number;
+    forma_tributacao: string;
+  }>;
+
   // Sócios (from external)
   socios?: Array<{
     nome: string;
     cpf_cnpj?: string;
     qualificacao?: string;
     data_entrada?: string;
+    faixa_etaria?: string;
+    representante_legal?: string;
   }>;
 
   // Credit / Score
@@ -86,11 +119,6 @@ export interface ExternalConsultaData {
 /**
  * Fetches external consultation data via the edge function proxy.
  * The edge function calls your custom REST API.
- * 
- * When ready to connect:
- * 1. Add secret EXTERNAL_CONSULTA_API_URL (your API base URL)
- * 2. Add secret EXTERNAL_CONSULTA_API_KEY (your API auth key)
- * 3. The edge function will proxy requests securely
  */
 export async function fetchExternalConsulta(document: string): Promise<ExternalSourceResult[]> {
   const results: ExternalSourceResult[] = [];
@@ -102,7 +130,6 @@ export async function fetchExternalConsulta(document: string): Promise<ExternalS
     });
 
     if (error) {
-      // If edge function returns not_configured, show as pending
       if (error.message?.includes("not_configured") || data?.status === "not_configured") {
         results.push({
           source: "API Própria",
@@ -145,10 +172,20 @@ export async function fetchExternalConsulta(document: string): Promise<ExternalS
       const response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cleanDoc}`);
       if (response.ok) {
         const raw = await response.json();
+
+        // Format phone numbers
+        const formatPhone = (ddd: string, num: string) => {
+          if (!ddd && !num) return undefined;
+          const clean = `${ddd || ""}${num || ""}`.replace(/\D/g, "");
+          return clean.length > 0 ? clean : undefined;
+        };
+
         const mappedData: ExternalConsultaData = {
+          // Cadastral
           razao_social: raw.razao_social,
           nome_fantasia: raw.nome_fantasia,
           situacao_cadastral: raw.descricao_situacao_cadastral,
+          descricao_motivo_situacao: raw.descricao_motivo_situacao_cadastral,
           data_situacao: raw.data_situacao_cadastral,
           natureza_juridica: raw.natureza_juridica,
           porte: raw.porte,
@@ -156,7 +193,10 @@ export async function fetchExternalConsulta(document: string): Promise<ExternalS
           data_abertura: raw.data_inicio_atividade,
           cnae_principal: raw.cnae_fiscal?.toString(),
           cnae_descricao: raw.cnae_fiscal_descricao,
+
+          // Endereço
           endereco: {
+            tipo_logradouro: raw.descricao_tipo_de_logradouro,
             logradouro: raw.logradouro,
             numero: raw.numero,
             complemento: raw.complemento,
@@ -165,13 +205,47 @@ export async function fetchExternalConsulta(document: string): Promise<ExternalS
             uf: raw.uf,
             cep: raw.cep,
           },
+
+          // Telefones
+          telefone_1: formatPhone(raw.ddd_telefone_1, ""),
+          telefone_2: formatPhone(raw.ddd_telefone_2, ""),
+          fax: formatPhone(raw.ddd_fax, ""),
+          email: raw.email || undefined,
+
+          // Matriz/Filial
+          identificador_matriz_filial: raw.descricao_identificador_matriz_filial,
+
+          // CNAEs secundários
+          cnaes_secundarios: raw.cnaes_secundarios?.map((c: any) => ({
+            codigo: c.codigo?.toString(),
+            descricao: c.descricao,
+          })) || [],
+
+          // Simples Nacional / MEI
+          opcao_simples: raw.opcao_pelo_simples,
+          data_opcao_simples: raw.data_opcao_pelo_simples,
+          data_exclusao_simples: raw.data_exclusao_do_simples,
+          opcao_mei: raw.opcao_pelo_mei,
+          data_opcao_mei: raw.data_opcao_pelo_mei,
+          data_exclusao_mei: raw.data_exclusao_do_mei,
+
+          // Regime Tributário
+          regime_tributario: raw.regime_tributario?.map((r: any) => ({
+            ano: r.ano,
+            forma_tributacao: r.forma_de_tributacao,
+          })) || [],
+
+          // Sócios (QSA)
           socios: raw.qsa?.map((s: any) => ({
             nome: s.nome_socio,
             cpf_cnpj: s.cnpj_cpf_do_socio,
             qualificacao: s.qualificacao_socio,
             data_entrada: s.data_entrada_sociedade,
+            faixa_etaria: s.faixa_etaria,
+            representante_legal: s.nome_representante_legal || undefined,
           })) || [],
         };
+
         results.push({
           source: "BrasilAPI (Receita Federal)",
           status: "success",
