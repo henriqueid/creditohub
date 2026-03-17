@@ -138,12 +138,67 @@ export async function fetchExternalConsulta(document: string): Promise<ExternalS
     });
   }
 
-  // --- Source 2: Placeholder for Receita Federal ---
-  results.push({
-    source: "Receita Federal",
-    status: "not_configured",
-    message: "Integração não configurada",
-  });
+  // --- Source 2: BrasilAPI (free, no key needed) — CNPJ only ---
+  const cleanDoc = document.replace(/\D/g, "");
+  if (cleanDoc.length === 14) {
+    try {
+      const response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cleanDoc}`);
+      if (response.ok) {
+        const raw = await response.json();
+        const mappedData: ExternalConsultaData = {
+          razao_social: raw.razao_social,
+          nome_fantasia: raw.nome_fantasia,
+          situacao_cadastral: raw.descricao_situacao_cadastral,
+          data_situacao: raw.data_situacao_cadastral,
+          natureza_juridica: raw.natureza_juridica,
+          porte: raw.porte,
+          capital_social: raw.capital_social,
+          data_abertura: raw.data_inicio_atividade,
+          cnae_principal: raw.cnae_fiscal?.toString(),
+          cnae_descricao: raw.cnae_fiscal_descricao,
+          endereco: {
+            logradouro: raw.logradouro,
+            numero: raw.numero,
+            complemento: raw.complemento,
+            bairro: raw.bairro,
+            cidade: raw.municipio,
+            uf: raw.uf,
+            cep: raw.cep,
+          },
+          socios: raw.qsa?.map((s: any) => ({
+            nome: s.nome_socio,
+            cpf_cnpj: s.cnpj_cpf_do_socio,
+            qualificacao: s.qualificacao_socio,
+            data_entrada: s.data_entrada_sociedade,
+          })) || [],
+        };
+        results.push({
+          source: "BrasilAPI (Receita Federal)",
+          status: "success",
+          data: mappedData,
+          message: "Dados públicos da Receita Federal via BrasilAPI (gratuito)",
+        });
+      } else {
+        results.push({
+          source: "BrasilAPI (Receita Federal)",
+          status: "error",
+          message: response.status === 404 ? "CNPJ não encontrado na Receita Federal" : `Erro HTTP ${response.status}`,
+        });
+      }
+    } catch {
+      results.push({
+        source: "BrasilAPI (Receita Federal)",
+        status: "error",
+        message: "Falha na comunicação com BrasilAPI",
+      });
+    }
+  } else {
+    results.push({
+      source: "BrasilAPI (Receita Federal)",
+      status: "not_configured",
+      message: "Disponível apenas para CNPJ (14 dígitos)",
+    });
+  }
 
   // --- Source 3: Placeholder for Bureau de Crédito ---
   results.push({
