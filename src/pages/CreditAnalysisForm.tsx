@@ -1144,10 +1144,38 @@ export default function CreditAnalysisForm() {
                   <Field label="Ações Judiciais">
                     <Input value={acoesJudiciais} onChange={(e) => setAcoesJudiciais(e.target.value)} disabled={isReadOnly} className="h-9 text-sm" placeholder="Nada consta" />
                   </Field>
+                  <Field label="Restrições CNPJ" hint="Situação cadastral, impedimentos">
+                    <Input value={restricoesCnpj} onChange={(e) => setRestricoesCnpj(e.target.value)} disabled={isReadOnly} className="h-9 text-sm" placeholder="Nada consta" />
+                  </Field>
                 </FieldGroup>
-                <div className="pt-3">
+                <div className="pt-3 grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
+                  <Field label="Histórico de Pagamentos" hint="Pontualidade, atrasos recorrentes, etc.">
+                    <Textarea value={historicoPagamentos} onChange={(e) => setHistoricoPagamentos(e.target.value)} disabled={isReadOnly} rows={2} className="text-sm resize-none" placeholder="Descreva o histórico de pagamentos..." />
+                  </Field>
                   <Field label="Observações da Consulta">
                     <Textarea value={observacoesCredito} onChange={(e) => setObservacoesCredito(e.target.value)} disabled={isReadOnly} rows={2} className="text-sm resize-none" placeholder="Observações relevantes..." />
+                  </Field>
+                </div>
+              </SectionWrapper>
+
+              {/* 5. Referências */}
+              <SectionWrapper title="Referências Bancárias e Comerciais" icon={Handshake} section="referencias"
+                analysisId={isEditing ? id! : null} attachments={sectionAttachments.referencias || []}
+                onAttachmentsChange={updateSectionAttachments("referencias")}
+                onDataExtracted={handleDataExtracted} analysisContext={analysisDataForAI} disabled={isReadOnly}
+                compactMode={compactMode} summary={sectionSummaries.referencias}
+              >
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
+                  <Field label="Referências Bancárias" hint="Bancos, agências, limites, tempo de conta">
+                    <Textarea value={referenciasBancarias} onChange={(e) => setReferenciasBancarias(e.target.value)} disabled={isReadOnly} rows={3} className="text-sm resize-none" placeholder="Banco X — Ag. 1234 — Conta desde 2015 — Limite R$ 50k..." />
+                  </Field>
+                  <Field label="Referências Comerciais" hint="Fornecedores, parceiros, clientes">
+                    <Textarea value={referenciasComerciais} onChange={(e) => setReferenciasComerciais(e.target.value)} disabled={isReadOnly} rows={3} className="text-sm resize-none" placeholder="Fornecedor Y — Desde 2018 — Sem atrasos..." />
+                  </Field>
+                </div>
+                <div className="pt-3">
+                  <Field label="Fonte das Informações" hint="Serasa, Boa Vista, bureau interno, etc.">
+                    <Input value={fonteInformacao} onChange={(e) => setFonteInformacao(e.target.value)} disabled={isReadOnly} className="h-9 text-sm" placeholder="Ex: Serasa Experian, SCR Bacen" />
                   </Field>
                 </div>
               </SectionWrapper>
