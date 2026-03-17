@@ -311,6 +311,19 @@ export default function Clients() {
                                             variant="ghost"
                                             size="icon"
                                             className="h-6 w-6 shrink-0"
+                                            title="Editar cadastro"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              navigate(`/cedentes/${client.id}`);
+                                            }}
+                                          >
+                                            <Pencil className="h-3 w-3" />
+                                          </Button>
+                                          <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-6 w-6 shrink-0"
+                                            title="Histórico"
                                             onClick={(e) => {
                                               e.stopPropagation();
                                               navigate(`/cedentes/${client.id}/historico`);
