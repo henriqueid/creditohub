@@ -307,6 +307,7 @@ export default function Clients() {
                                             </span>
                                             <p className="text-sm font-semibold leading-tight line-clamp-2">{client.razao_social}</p>
                                           </div>
+                                          <div className="flex items-center gap-0.5 shrink-0">
                                           <Button
                                             variant="ghost"
                                             size="icon"
