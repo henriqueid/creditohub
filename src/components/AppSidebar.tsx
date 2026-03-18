@@ -1,6 +1,7 @@
 import { Building2, FileText, Users, LayoutDashboard, SearchCheck, ShieldBan, Settings } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
+import logoSink from "@/assets/logo-sink.png";
 import {
   Sidebar,
   SidebarContent,
@@ -30,10 +31,11 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon" className="border-0">
       <SidebarContent className="bg-sidebar border-r border-sidebar-border">
-        <div className="px-4 py-5">
+        <div className="px-4 py-5 flex items-center gap-3">
+          <img src={logoSink} alt="Sink Logo" className="h-8 w-8 rounded" />
           {!collapsed && (
             <h1 className="text-lg font-bold tracking-tight text-sidebar-primary-foreground">
-              Crédito<span className="text-sidebar-primary">Hub</span>
+              Sink
             </h1>
           )}
         </div>
