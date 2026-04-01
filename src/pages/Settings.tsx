@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -116,8 +117,24 @@ export default function Settings() {
     );
   }
 
+  const navigate = useNavigate();
+
   return (
     <div className="p-6 space-y-4">
+      {/* Motor de Crédito Banner */}
+      <Card className="bg-primary/5 border-primary/20 cursor-pointer hover:bg-primary/10 transition-colors" onClick={() => navigate("/configuracoes/motor")}>
+        <CardContent className="py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Zap className="h-6 w-6 text-primary" />
+            <div>
+              <h3 className="font-semibold">Motor de Crédito</h3>
+              <p className="text-sm text-muted-foreground">Configure regras, pesos, faixas de score e políticas de decisão</p>
+            </div>
+          </div>
+          <Button variant="outline" size="sm">Configurar Motor →</Button>
+        </CardContent>
+      </Card>
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Configurações</h1>

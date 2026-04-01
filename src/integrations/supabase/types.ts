@@ -469,6 +469,42 @@ export type Database = {
           },
         ]
       }
+      credit_engine_rules: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          parameters: Json
+          priority: number
+          rule_name: string
+          rule_type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          parameters?: Json
+          priority?: number
+          rule_name: string
+          rule_type: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          parameters?: Json
+          priority?: number
+          rule_name?: string
+          rule_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       system_settings: {
         Row: {
           category: string

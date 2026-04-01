@@ -1,7 +1,6 @@
-import { Building2, FileText, Users, LayoutDashboard, SearchCheck, ShieldBan, Settings } from "lucide-react";
+import { Building2, FileText, Users, LayoutDashboard, SearchCheck, ShieldBan, Settings, Radar, UserSearch } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
-import logoSink from "@/assets/logo-sink.png";
 import {
   Sidebar,
   SidebarContent,
@@ -17,9 +16,11 @@ import {
 const menuItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Consulta CPF/CNPJ", url: "/consulta", icon: SearchCheck },
+  { title: "Prospects", url: "/prospects", icon: UserSearch },
   { title: "Cedentes", url: "/cedentes", icon: Building2 },
   { title: "Análises de Crédito", url: "/analises", icon: FileText },
   { title: "Comitê de Crédito", url: "/comite", icon: Users },
+  { title: "Monitoramento", url: "/monitoramento", icon: Radar },
   { title: "Blacklist", url: "/blacklist", icon: ShieldBan },
   { title: "Configurações", url: "/configuracoes", icon: Settings },
 ];
@@ -32,10 +33,10 @@ export function AppSidebar() {
     <Sidebar collapsible="icon" className="border-0">
       <SidebarContent className="bg-sidebar border-r border-sidebar-border">
         <div className="px-4 py-5 flex items-center gap-3">
-          <img src={logoSink} alt="Sink Logo" className="h-8 w-8 rounded" />
+          <div className="h-8 w-8 rounded bg-primary flex items-center justify-center text-primary-foreground font-bold text-sm">AT</div>
           {!collapsed && (
             <h1 className="text-lg font-bold tracking-tight text-sidebar-primary-foreground">
-              Sink
+              Ambiente Teste
             </h1>
           )}
         </div>
