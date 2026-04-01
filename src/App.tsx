@@ -16,7 +16,9 @@ import ConsultaCPFCNPJ from "@/pages/ConsultaCPFCNPJ";
 import Blacklist from "@/pages/Blacklist";
 import Settings from "@/pages/Settings";
 import Prospects from "@/pages/Prospects";
-import Monitoring from "@/pages/Monitoring";
+import InvoiceMonitoring from "@/pages/InvoiceMonitoring";
+import PatrimonialReport from "@/pages/PatrimonialReport";
+import Integrations from "@/pages/Integrations";
 import CreditEngineSettings from "@/pages/CreditEngineSettings";
 import NotFound from "@/pages/NotFound";
 
@@ -42,8 +44,10 @@ const App = () => (
             <Route path="/comite/:id" element={<CommitteeVoting />} />
             <Route path="/consulta" element={<ConsultaCPFCNPJ />} />
             <Route path="/prospects" element={<Prospects />} />
-            <Route path="/monitoramento" element={<Monitoring />} />
+            <Route path="/monitoramento-nfs" element={<InvoiceMonitoring />} />
+            <Route path="/patrimonial" element={<PatrimonialReport />} />
             <Route path="/blacklist" element={<Blacklist />} />
+            <Route path="/integracoes" element={<Integrations />} />
             <Route path="/configuracoes" element={<Settings />} />
             <Route path="/configuracoes/motor" element={<CreditEngineSettings />} />
           </Route>
