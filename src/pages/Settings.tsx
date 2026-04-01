@@ -48,10 +48,10 @@ function parseValue(val: any): string {
 }
 
 export default function Settings() {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [localSettings, setLocalSettings] = useState<Record<string, string>>({});
   const [dirty, setDirty] = useState(false);
-
   const { data: settings = [], isLoading } = useQuery({
     queryKey: ["system-settings"],
     queryFn: async () => {
