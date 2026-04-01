@@ -2,7 +2,7 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
-import { Sparkles, Loader2, RefreshCw, ChevronDown, ChevronUp } from "lucide-react";
+import { Sparkles, Loader2, RefreshCw, ChevronDown, ChevronUp, AlertTriangle, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 
@@ -17,11 +17,11 @@ interface AIInsightsPanelProps {
 }
 
 const typeLabels: Record<string, { label: string; description: string }> = {
-  client: { label: "Perfil do Cedente", description: "Análise completa do perfil de crédito do cliente" },
-  market: { label: "Análise de Mercado", description: "Insights sobre o setor e contexto econômico" },
-  financial: { label: "Análise Financeira", description: "Avaliação dos indicadores financeiros" },
-  risk: { label: "Análise de Risco", description: "Classificação de risco com justificativas" },
-  summary: { label: "Parecer Executivo", description: "Resumo executivo com recomendação final" },
+  client: { label: "Perfil do Cedente", description: "Análise do perfil baseada nos dados do dossiê" },
+  market: { label: "Análise de Mercado", description: "Contexto de mercado baseado nos dados reais" },
+  financial: { label: "Análise Financeira", description: "Indicadores financeiros do dossiê" },
+  risk: { label: "Análise de Risco", description: "Riscos identificados nos dados do dossiê" },
+  summary: { label: "Parecer Executivo", description: "Parecer baseado exclusivamente no dossiê" },
 };
 
 export function AIInsightsPanel({
@@ -36,17 +36,36 @@ export function AIInsightsPanel({
   const [loading, setLoading] = useState(false);
   const [content, setContent] = useState<string | null>(existingInsight || null);
   const [expanded, setExpanded] = useState(!!existingInsight);
+  const [insufficientData, setInsufficientData] = useState<{ missing: string[]; filled: number; total: number } | null>(null);
+  const [coverage, setCoverage] = useState<{ percent: number } | null>(null);
 
   const typeInfo = typeLabels[insightType] || typeLabels.summary;
 
   const generateInsight = async () => {
     setLoading(true);
+    setInsufficientData(null);
     try {
       const { data, error } = await supabase.functions.invoke("generate-insights", {
         body: { analysisData, clientData, insightType },
       });
 
       if (error) throw error;
+
+      // Handle insufficient data response
+      if (data?.insufficient_data) {
+        setInsufficientData({
+          missing: data.missing_fields,
+          filled: data.filled_count,
+          total: data.total_possible,
+        });
+        toast({
+          title: "Dados insuficientes",
+          description: data.message,
+          variant: "destructive",
+        });
+        return;
+      }
+
       if (data?.error) {
         toast({ title: "Erro da IA", description: data.error, variant: "destructive" });
         return;
@@ -55,22 +74,10 @@ export function AIInsightsPanel({
       const insightContent = data?.content || "Sem insights disponíveis.";
       setContent(insightContent);
       setExpanded(true);
+      if (data?.coverage) setCoverage(data.coverage);
 
-      // Save to DB if analysis exists
+      // Save to DB
       if (analysisId) {
-        await supabase.from("credit_analysis_insights").upsert(
-          {
-            credit_analysis_id: analysisId,
-            insight_type: insightType,
-            section: insightType,
-            content: insightContent,
-          },
-          { onConflict: "credit_analysis_id,insight_type" }
-        ).then(() => {
-          // Fallback: if upsert fails due to no unique constraint, just insert
-        });
-
-        // If upsert doesn't work (no unique constraint), delete old and insert new
         await supabase
           .from("credit_analysis_insights")
           .delete()
@@ -86,7 +93,7 @@ export function AIInsightsPanel({
       }
 
       onInsightGenerated?.(insightContent);
-      toast({ title: `${typeInfo.label} gerado pela IA` });
+      toast({ title: `${typeInfo.label} gerado com base no dossiê` });
     } catch (err: any) {
       toast({ title: "Erro ao gerar insight", description: err.message, variant: "destructive" });
     } finally {
@@ -95,14 +102,21 @@ export function AIInsightsPanel({
   };
 
   return (
-    <div className={cn("rounded-xl border overflow-hidden", 
-      content ? "border-primary/20 bg-gradient-to-br from-primary/5 to-transparent" : "border-dashed border-muted-foreground/30",
+    <div className={cn("rounded-xl border overflow-hidden",
+      content ? "border-primary/20 bg-gradient-to-br from-primary/5 to-transparent" : 
+      insufficientData ? "border-destructive/30 bg-destructive/5" : "border-dashed border-muted-foreground/30",
       className
     )}>
       <div className="flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-2">
-          <div className={cn("p-1.5 rounded-md", content ? "bg-primary/10" : "bg-muted")}>
-            <Sparkles className={cn("h-3.5 w-3.5", content ? "text-primary" : "text-muted-foreground")} />
+          <div className={cn("p-1.5 rounded-md", 
+            content ? "bg-primary/10" : insufficientData ? "bg-destructive/10" : "bg-muted"
+          )}>
+            {insufficientData ? (
+              <AlertTriangle className="h-3.5 w-3.5 text-destructive" />
+            ) : (
+              <Sparkles className={cn("h-3.5 w-3.5", content ? "text-primary" : "text-muted-foreground")} />
+            )}
           </div>
           <div>
             <p className="text-xs font-semibold">{typeInfo.label}</p>
@@ -110,49 +124,61 @@ export function AIInsightsPanel({
           </div>
         </div>
         <div className="flex items-center gap-1.5">
+          {coverage && content && (
+            <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+              Dossiê {coverage.percent}%
+            </span>
+          )}
           {content && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="h-7 text-xs gap-1"
-              onClick={generateInsight}
-              disabled={loading}
-            >
+            <Button type="button" variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={generateInsight} disabled={loading}>
               <RefreshCw className={cn("h-3 w-3", loading && "animate-spin")} />
               Regerar
             </Button>
           )}
           {!content && (
-            <Button
-              type="button"
-              variant="default"
-              size="sm"
-              className="h-7 text-xs gap-1"
-              onClick={generateInsight}
-              disabled={loading}
-            >
-              {loading ? (
-                <Loader2 className="h-3 w-3 animate-spin" />
-              ) : (
-                <Sparkles className="h-3 w-3" />
-              )}
-              {loading ? "Gerando..." : "Gerar Insight"}
+            <Button type="button" variant={insufficientData ? "outline" : "default"} size="sm" className="h-7 text-xs gap-1" onClick={generateInsight} disabled={loading}>
+              {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+              {loading ? "Analisando dossiê..." : "Gerar Insight"}
             </Button>
           )}
           {content && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
-              onClick={() => setExpanded(!expanded)}
-            >
+            <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => setExpanded(!expanded)}>
               {expanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
             </Button>
           )}
         </div>
       </div>
+
+      {/* Insufficient data warning */}
+      {insufficientData && !content && (
+        <div className="px-4 pb-4 border-t border-destructive/10">
+          <div className="pt-3 space-y-2">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+              <div>
+                <p className="text-xs font-medium text-destructive">Dados insuficientes no dossiê</p>
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  Preencha os seguintes campos obrigatórios antes de gerar esta análise:
+                </p>
+                <ul className="mt-1.5 space-y-1">
+                  {insufficientData.missing.map((field, i) => (
+                    <li key={i} className="text-[11px] text-destructive/80 flex items-center gap-1.5">
+                      <span className="h-1 w-1 rounded-full bg-destructive/60" />
+                      {field}
+                    </li>
+                  ))}
+                </ul>
+                <div className="mt-2 flex items-center gap-1.5">
+                  <Info className="h-3 w-3 text-muted-foreground" />
+                  <span className="text-[10px] text-muted-foreground">
+                    Dossiê preenchido: {insufficientData.filled}/{insufficientData.total} campos
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {content && expanded && (
         <div className="px-4 pb-4 border-t border-primary/10">
