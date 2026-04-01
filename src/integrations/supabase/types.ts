@@ -505,6 +505,169 @@ export type Database = {
         }
         Relationships: []
       }
+      integration_configs: {
+        Row: {
+          api_url: string | null
+          auth_secret_name: string | null
+          auth_type: string | null
+          created_at: string
+          field_mapping: Json | null
+          id: string
+          integration_type: string
+          is_active: boolean
+          last_sync_at: string | null
+          name: string
+          notes: string | null
+          updated_at: string
+        }
+        Insert: {
+          api_url?: string | null
+          auth_secret_name?: string | null
+          auth_type?: string | null
+          created_at?: string
+          field_mapping?: Json | null
+          id?: string
+          integration_type: string
+          is_active?: boolean
+          last_sync_at?: string | null
+          name: string
+          notes?: string | null
+          updated_at?: string
+        }
+        Update: {
+          api_url?: string | null
+          auth_secret_name?: string | null
+          auth_type?: string | null
+          created_at?: string
+          field_mapping?: Json | null
+          id?: string
+          integration_type?: string
+          is_active?: boolean
+          last_sync_at?: string | null
+          name?: string
+          notes?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      monitored_invoices: {
+        Row: {
+          chave_acesso: string | null
+          client_id: string
+          created_at: string
+          data_emissao: string | null
+          destinatario_cnpj: string | null
+          destinatario_nome: string | null
+          id: string
+          natureza_operacao: string | null
+          numero_nf: string | null
+          serie: string | null
+          source: string
+          updated_at: string
+          validation_message: string | null
+          validation_status: string
+          valor: number | null
+          xml_data: Json | null
+        }
+        Insert: {
+          chave_acesso?: string | null
+          client_id: string
+          created_at?: string
+          data_emissao?: string | null
+          destinatario_cnpj?: string | null
+          destinatario_nome?: string | null
+          id?: string
+          natureza_operacao?: string | null
+          numero_nf?: string | null
+          serie?: string | null
+          source?: string
+          updated_at?: string
+          validation_message?: string | null
+          validation_status?: string
+          valor?: number | null
+          xml_data?: Json | null
+        }
+        Update: {
+          chave_acesso?: string | null
+          client_id?: string
+          created_at?: string
+          data_emissao?: string | null
+          destinatario_cnpj?: string | null
+          destinatario_nome?: string | null
+          id?: string
+          natureza_operacao?: string | null
+          numero_nf?: string | null
+          serie?: string | null
+          source?: string
+          updated_at?: string
+          validation_message?: string | null
+          validation_status?: string
+          valor?: number | null
+          xml_data?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monitored_invoices_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      patrimonial_info: {
+        Row: {
+          client_id: string
+          created_at: string
+          descricao: string
+          documento_proprietario: string | null
+          id: string
+          localizacao: string | null
+          matricula_registro: string | null
+          observacoes: string | null
+          proprietario: string | null
+          tipo: string
+          updated_at: string
+          valor_estimado: number | null
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          descricao: string
+          documento_proprietario?: string | null
+          id?: string
+          localizacao?: string | null
+          matricula_registro?: string | null
+          observacoes?: string | null
+          proprietario?: string | null
+          tipo: string
+          updated_at?: string
+          valor_estimado?: number | null
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          descricao?: string
+          documento_proprietario?: string | null
+          id?: string
+          localizacao?: string | null
+          matricula_registro?: string | null
+          observacoes?: string | null
+          proprietario?: string | null
+          tipo?: string
+          updated_at?: string
+          valor_estimado?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patrimonial_info_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       system_settings: {
         Row: {
           category: string
