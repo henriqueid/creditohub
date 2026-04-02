@@ -96,7 +96,7 @@ function MegaMenuDropdown({
           "hover:bg-white/10 hover:text-white",
           isGroupActive
             ? "text-white bg-white/15"
-            : "text-navbar-foreground/70"
+            : "text-white/60"
         )}
       >
         <group.icon className="h-4 w-4" />
