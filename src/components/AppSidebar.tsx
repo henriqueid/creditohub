@@ -1,4 +1,4 @@
-import { Building2, FileText, Users, LayoutDashboard, SearchCheck, ShieldBan, Settings, Radar, UserSearch, FileBarChart, Landmark, Plug } from "lucide-react";
+import { Building2, FileText, Users, LayoutDashboard, SearchCheck, ShieldBan, Settings, Radar, UserSearch, FileBarChart, Scale, Plug } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
   Sidebar,
@@ -20,7 +20,7 @@ const menuItems = [
   { title: "Análises de Crédito", url: "/analises", icon: FileText },
   { title: "Comitê de Crédito", url: "/comite", icon: Users },
   { title: "Monitoramento NFs", url: "/monitoramento-nfs", icon: FileBarChart },
-  { title: "Informe Patrimonial", url: "/patrimonial", icon: Landmark },
+  { title: "Informe Falimentar", url: "/falimentar", icon: Scale },
   { title: "Blacklist", url: "/blacklist", icon: ShieldBan },
   { title: "Integrações", url: "/integracoes", icon: Plug },
   { title: "Configurações", url: "/configuracoes", icon: Settings },
