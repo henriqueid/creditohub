@@ -22,7 +22,6 @@ const menuItems = [
   { title: "Monitoramento NFs", url: "/monitoramento-nfs", icon: FileBarChart },
   { title: "Informe Falimentar", url: "/falimentar", icon: Scale },
   { title: "Blacklist", url: "/blacklist", icon: ShieldBan },
-  { title: "Integrações", url: "/integracoes", icon: Plug },
   { title: "Configurações", url: "/configuracoes", icon: Settings },
 ];
 
