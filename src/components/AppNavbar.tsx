@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { NotificationBell } from "@/components/NotificationBell";
 import { GlobalSearch } from "@/components/GlobalSearch";
+import { UserAvatar } from "@/components/UserAvatar";
 import {
   LayoutDashboard,
   SearchCheck,
@@ -329,6 +330,8 @@ export function AppNavbar() {
           <Settings className="h-4 w-4" />
           <span className="hidden xl:inline">Configurações</span>
         </Link>
+        <div className="h-5 w-px bg-white/20 mx-0.5" />
+        <UserAvatar />
       </div>
     </header>
   );
