@@ -1,3 +1,4 @@
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -5,7 +6,7 @@ import {
   Building2, FileText, CheckCircle, XCircle, Clock, TrendingUp,
   BarChart3, AlertTriangle, DollarSign, ShieldBan, Scale, FileBarChart,
   Layers, Activity, ArrowRight, Calendar, User, Hash, ArrowUpRight,
-  Gauge, CircleDot, ChevronRight, Zap
+  Gauge, CircleDot, ChevronRight, Zap, Filter
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { formatBRL, formatDate } from "@/lib/formatters";
