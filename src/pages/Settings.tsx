@@ -168,15 +168,19 @@ export default function Settings() {
       </div>
 
       <Tabs defaultValue="general" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="general" className="gap-1.5">
             <Building2 className="h-4 w-4" /> Geral
           </TabsTrigger>
           <TabsTrigger value="approval" className="gap-1.5">
-            <Shield className="h-4 w-4" /> Políticas de Aprovação
+            <Shield className="h-4 w-4" /> Aprovação
           </TabsTrigger>
           <TabsTrigger value="automation" className="gap-1.5">
-            <Zap className="h-4 w-4" /> Gestão Automática
+            <Zap className="h-4 w-4" /> Automação
+          </TabsTrigger>
+          <TabsTrigger value="integrations" className="gap-1.5">
+            <Plug className="h-4 w-4" /> Integrações
+            {totalIntegrations > 0 && <Badge variant="secondary" className="ml-1 text-xs px-1.5">{totalIntegrations}</Badge>}
           </TabsTrigger>
           <TabsTrigger value="access" className="gap-1.5">
             <Users className="h-4 w-4" /> Acessos
