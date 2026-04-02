@@ -161,7 +161,7 @@ export default function Dashboard() {
       {/* Alerts banner */}
       {alertItems.length > 0 && (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.1 }}>
-          <Card className="border-amber-200 bg-amber-50/50 dark:border-amber-800 dark:bg-amber-950/30">
+          <Card className="glass-card border-amber-200/60 dark:border-amber-800/40">
             <CardContent className="py-3 px-4 space-y-1.5">
               <div className="flex items-center gap-2 mb-1">
                 <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
