@@ -493,32 +493,56 @@ function SectionHeader({ title, icon: Icon }: { title: string; icon: React.Eleme
 }
 
 function KpiCard({
-  title, value, icon: Icon, accent, onClick,
+  title, value, icon: Icon, accent, onClick, sparkline,
 }: {
   title: string;
   value: number | string;
   icon: React.ElementType;
   accent?: "success" | "warning" | "danger";
   onClick?: () => void;
+  sparkline?: number[];
 }) {
   const accentMap = {
     success: "text-status-approved",
     warning: "text-status-committee",
     danger: "text-status-rejected",
   };
+  const strokeMap: Record<string, string> = {
+    success: "hsl(var(--status-approved))",
+    warning: "hsl(var(--status-committee))",
+    danger: "hsl(var(--status-rejected))",
+  };
   const color = accent ? accentMap[accent] : "text-foreground";
+  const strokeColor = accent ? strokeMap[accent] : "hsl(var(--primary))";
 
   return (
     <Card
-      className={cn("glass-card transition-all", onClick && "cursor-pointer hover:border-primary/30")}
+      className={cn("glass-card transition-all overflow-hidden", onClick && "cursor-pointer hover:border-primary/30")}
       onClick={onClick}
     >
-      <CardContent className="p-4 flex flex-col items-center text-center gap-1.5">
+      <CardContent className="p-4 flex flex-col items-center text-center gap-1 relative">
         <Icon className={cn("h-5 w-5", accent ? accentMap[accent] : "text-muted-foreground")} />
         <span className={cn("text-2xl font-bold tabular-nums leading-none", color)}>{value}</span>
         <span className="text-[11px] text-muted-foreground font-medium">{title}</span>
+        {sparkline && sparkline.some(v => v > 0) && <Sparkline data={sparkline} color={strokeColor} />}
       </CardContent>
     </Card>
+  );
+}
+
+function Sparkline({ data, color }: { data: number[]; color: string }) {
+  const max = Math.max(...data, 1);
+  const w = 80;
+  const h = 24;
+  const step = w / (data.length - 1);
+  const points = data.map((v, i) => `${i * step},${h - (v / max) * h}`).join(" ");
+  const fillPoints = `0,${h} ${points} ${w},${h}`;
+
+  return (
+    <svg width={w} height={h} className="mt-1 opacity-60" viewBox={`0 0 ${w} ${h}`}>
+      <polygon points={fillPoints} fill={color} opacity="0.15" />
+      <polyline points={points} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   );
 }
 
