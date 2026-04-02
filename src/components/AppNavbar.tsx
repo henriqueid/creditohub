@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { NotificationBell } from "@/components/NotificationBell";
+import { GlobalSearch } from "@/components/GlobalSearch";
 import {
   LayoutDashboard,
   SearchCheck,
@@ -312,7 +313,8 @@ export function AppNavbar() {
       </nav>
 
       {/* Right side */}
-      <div className="ml-auto flex items-center gap-1">
+      <div className="ml-auto flex items-center gap-2">
+        <GlobalSearch />
         <NotificationBell />
         <Link
           to="/configuracoes"
