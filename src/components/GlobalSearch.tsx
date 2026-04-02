@@ -255,11 +255,10 @@ export function GlobalSearch() {
                           )}
                         >
                           <div className="h-7 w-7 rounded-md flex items-center justify-center bg-muted shrink-0">
-                            {result.type === "client" ? (
-                              <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
-                            ) : (
-                              <FileText className="h-3.5 w-3.5 text-muted-foreground" />
-                            )}
+                            {result.type === "client" && <Building2 className="h-3.5 w-3.5 text-muted-foreground" />}
+                            {result.type === "analysis" && <FileText className="h-3.5 w-3.5 text-muted-foreground" />}
+                            {result.type === "bankruptcy" && <Scale className="h-3.5 w-3.5 text-muted-foreground" />}
+                            {result.type === "blacklist" && <ShieldBan className="h-3.5 w-3.5 text-destructive" />}
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="text-xs font-medium truncate">{result.title}</div>
