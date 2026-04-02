@@ -18,7 +18,7 @@ import Settings from "@/pages/Settings";
 import Prospects from "@/pages/Prospects";
 import InvoiceMonitoring from "@/pages/InvoiceMonitoring";
 import BankruptcyReport from "@/pages/BankruptcyReport";
-import Integrations from "@/pages/Integrations";
+
 import CreditEngineSettings from "@/pages/CreditEngineSettings";
 import NotFound from "@/pages/NotFound";
 

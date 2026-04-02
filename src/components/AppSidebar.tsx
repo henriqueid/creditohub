@@ -1,4 +1,4 @@
-import { Building2, FileText, Users, LayoutDashboard, SearchCheck, ShieldBan, Settings, Radar, UserSearch, FileBarChart, Scale, Plug } from "lucide-react";
+import { Building2, FileText, Users, LayoutDashboard, SearchCheck, ShieldBan, Settings, Radar, UserSearch, FileBarChart, Scale } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
   Sidebar,
