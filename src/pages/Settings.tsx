@@ -8,9 +8,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
+import { toast as toastHook } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import {
   Settings as SettingsIcon,
@@ -32,6 +36,10 @@ import {
   Bell,
   CalendarClock,
   Plug,
+  Plus,
+  Trash2,
+  Edit,
+  TestTube,
 } from "lucide-react";
 
 type SettingRow = {
