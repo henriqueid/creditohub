@@ -22,6 +22,7 @@ const fade = (delay = 0) => ({
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const [periodDays, setPeriodDays] = useState<number | null>(null); // null = all time
 
   const { data: analyses = [] } = useQuery({
     queryKey: ["dashboard-analyses"],
