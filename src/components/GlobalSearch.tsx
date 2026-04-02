@@ -59,7 +59,7 @@ export function GlobalSearch() {
     try {
       const searchTerm = `%${term}%`;
 
-      const [clientsRes, analysesRes] = await Promise.all([
+      const [clientsRes, analysesRes, bankruptcyRes, blacklistRes] = await Promise.all([
         supabase
           .from("clients")
           .select("id, razao_social, nome_fantasia, cnpj_cpf, cidade, estado")
@@ -69,6 +69,16 @@ export function GlobalSearch() {
           .from("credit_analysis")
           .select("id, status, credit_score, created_at, analista_credito, clients(razao_social, cnpj_cpf)")
           .or(`analista_credito.ilike.${searchTerm}`)
+          .limit(5),
+        supabase
+          .from("bankruptcy_records")
+          .select("id, company_name, document, type, status")
+          .or(`company_name.ilike.${searchTerm},document.ilike.${searchTerm}`)
+          .limit(5),
+        supabase
+          .from("blacklist")
+          .select("id, documento, tipo, motivo, adicionado_por")
+          .or(`documento.ilike.${searchTerm},motivo.ilike.${searchTerm}`)
           .limit(5),
       ]);
 
