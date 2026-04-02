@@ -170,7 +170,7 @@ export function GlobalSearch() {
         {loading ? (
           <Loader2 className="h-3.5 w-3.5 text-white/50 animate-spin" />
         ) : (
-          <Search className="h-3.5 w-3.5 text-navbar-foreground/60" />
+          <Search className="h-3.5 w-3.5 text-white/50" />
         )}
         <input
           ref={inputRef}
