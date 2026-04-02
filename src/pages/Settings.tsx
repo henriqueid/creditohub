@@ -169,8 +169,11 @@ export default function Settings() {
         </Button>
       </div>
 
-      <Tabs defaultValue="general" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-5">
+      <Tabs defaultValue="profile" className="space-y-4">
+        <TabsList className="grid w-full grid-cols-6">
+          <TabsTrigger value="profile" className="gap-1.5">
+            <User className="h-4 w-4" /> Perfil
+          </TabsTrigger>
           <TabsTrigger value="general" className="gap-1.5">
             <Building2 className="h-4 w-4" /> Geral
           </TabsTrigger>
@@ -188,6 +191,11 @@ export default function Settings() {
             <Users className="h-4 w-4" /> Acessos
           </TabsTrigger>
         </TabsList>
+
+        {/* === PERFIL === */}
+        <TabsContent value="profile">
+          <ProfileTab />
+        </TabsContent>
 
         {/* === GERAL === */}
         <TabsContent value="general">
