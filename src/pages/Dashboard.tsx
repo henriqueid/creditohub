@@ -194,9 +194,32 @@ export default function Dashboard() {
   return (
     <div className="p-6 space-y-6 overflow-auto">
       {/* Header */}
-      <motion.div {...fade(0)}>
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">Painel Inicial</h1>
-        <p className="text-sm text-muted-foreground">Visão consolidada da plataforma de inteligência de crédito</p>
+      <motion.div className="flex items-center justify-between flex-wrap gap-3" {...fade(0)}>
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Painel Inicial</h1>
+          <p className="text-sm text-muted-foreground">Visão consolidada da plataforma de inteligência de crédito</p>
+        </div>
+        <div className="flex items-center gap-1 bg-muted/60 rounded-lg p-1">
+          {([
+            { label: "7 dias", days: 7 },
+            { label: "30 dias", days: 30 },
+            { label: "90 dias", days: 90 },
+            { label: "Tudo", days: null },
+          ] as const).map(opt => (
+            <button
+              key={opt.label}
+              onClick={() => setPeriodDays(opt.days)}
+              className={cn(
+                "px-3 py-1.5 text-xs font-medium rounded-md transition-all",
+                periodDays === opt.days
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
       </motion.div>
 
       {/* Alerts */}
