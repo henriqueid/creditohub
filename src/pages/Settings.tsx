@@ -58,6 +58,91 @@ function parseValue(val: any): string {
   return JSON.stringify(val);
 }
 
+function ProfileTab() {
+  const [profile, setProfile] = useState({ full_name: "", cargo: "" });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session?.user) return;
+      setUserId(session.user.id);
+      supabase
+        .from("profiles")
+        .select("full_name, cargo")
+        .eq("user_id", session.user.id)
+        .maybeSingle()
+        .then(({ data }) => {
+          if (data) setProfile({ full_name: data.full_name || "", cargo: data.cargo || "" });
+          setLoading(false);
+        });
+    });
+  }, []);
+
+  const handleSave = async () => {
+    if (!userId) return;
+    setSaving(true);
+    const { error } = await supabase
+      .from("profiles")
+      .update({ full_name: profile.full_name, cargo: profile.cargo })
+      .eq("user_id", userId);
+    setSaving(false);
+    if (error) {
+      toast.error("Erro ao salvar perfil");
+    } else {
+      toast.success("Perfil atualizado!");
+    }
+  };
+
+  if (loading) {
+    return (
+      <Card>
+        <CardContent className="py-8 flex justify-center">
+          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <User className="h-5 w-5 text-primary" /> Meu Perfil
+          </CardTitle>
+          <CardDescription>Gerencie suas informações pessoais</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4 max-w-md">
+          <div className="space-y-2">
+            <Label htmlFor="profile-name">Nome completo</Label>
+            <Input
+              id="profile-name"
+              value={profile.full_name}
+              onChange={(e) => setProfile((p) => ({ ...p, full_name: e.target.value }))}
+              placeholder="Seu nome"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="profile-cargo">Cargo / Função</Label>
+            <Input
+              id="profile-cargo"
+              value={profile.cargo}
+              onChange={(e) => setProfile((p) => ({ ...p, cargo: e.target.value }))}
+              placeholder="Ex: Analista de Crédito"
+            />
+          </div>
+          <Button onClick={handleSave} disabled={saving}>
+            {saving ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Save className="h-4 w-4 mr-1" />}
+            Salvar Perfil
+          </Button>
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
+}
+
 export default function Settings() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
