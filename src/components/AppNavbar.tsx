@@ -254,7 +254,7 @@ export function AppNavbar() {
   if (isMobile) {
     return (
       <>
-        <header className="h-12 flex items-center justify-between px-4 border-b border-border bg-card">
+        <header className="h-12 flex items-center justify-between px-4 border-b border-navbar/20 bg-navbar text-navbar-foreground">
           <div className="flex items-center gap-2">
             <div className="h-7 w-7 rounded bg-primary flex items-center justify-center text-primary-foreground font-bold text-xs">AT</div>
             <span className="text-sm font-bold">Ambiente Teste</span>
