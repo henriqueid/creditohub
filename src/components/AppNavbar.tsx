@@ -288,7 +288,7 @@ export function AppNavbar() {
               className={cn(
                 "flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-md transition-colors",
                 "hover:bg-white/10 hover:text-white",
-                isActive ? "text-white bg-white/15" : "text-navbar-foreground/70"
+                isActive ? "text-white bg-white/15" : "text-white/60"
               )}
             >
               <item.icon className="h-4 w-4" />
