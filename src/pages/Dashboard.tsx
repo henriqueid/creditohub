@@ -221,16 +221,17 @@ export default function Dashboard() {
         <SectionHeader title="Esteira de Crédito" icon={Zap} />
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           <KpiCard title="Cedentes" value={clientCount} icon={Building2} onClick={() => navigate("/cedentes")} />
-          <KpiCard title="Análises" value={total} icon={FileText} onClick={() => navigate("/analises")} />
+          <KpiCard title="Análises" value={total} icon={FileText} sparkline={sparkAnalyses} onClick={() => navigate("/analises")} />
           <KpiCard
             title="Comitê"
             value={inCommittee}
             icon={Clock}
             accent={inCommittee > 0 ? "warning" : undefined}
+            sparkline={sparkCommittee}
             onClick={() => navigate("/comite")}
           />
-          <KpiCard title="Aprovadas" value={approved} icon={CheckCircle} accent="success" onClick={() => navigate("/analises")} />
-          <KpiCard title="Reprovadas" value={rejected} icon={XCircle} accent={rejected > 0 ? "danger" : undefined} onClick={() => navigate("/analises")} />
+          <KpiCard title="Aprovadas" value={approved} icon={CheckCircle} accent="success" sparkline={sparkApproved} onClick={() => navigate("/analises")} />
+          <KpiCard title="Reprovadas" value={rejected} icon={XCircle} accent={rejected > 0 ? "danger" : undefined} sparkline={sparkRejected} onClick={() => navigate("/analises")} />
           <KpiCard title="Score Médio" value={avgScore || "—"} icon={Gauge} />
         </div>
       </motion.div>
