@@ -107,17 +107,25 @@
   }
 
   .glass-card {
-    background: hsl(var(--card) / 0.65);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid hsl(var(--border) / 0.5);
-    box-shadow: 0 4px 24px -4px hsl(var(--foreground) / 0.06), 0 1px 2px hsl(var(--foreground) / 0.04);
+    background: hsl(var(--card) / 0.85);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid hsl(var(--border) / 0.6);
+    box-shadow: 0 2px 12px -2px hsl(var(--foreground) / 0.08), 0 1px 3px hsl(var(--foreground) / 0.05);
+  }
+
+  .glass-card:hover {
+    box-shadow: 0 4px 20px -4px hsl(var(--foreground) / 0.12), 0 2px 6px hsl(var(--foreground) / 0.06);
   }
 
   .dark .glass-card {
-    background: hsl(var(--card) / 0.45);
-    border-color: hsl(var(--border) / 0.3);
-    box-shadow: 0 4px 24px -4px hsl(0 0% 0% / 0.3);
+    background: hsl(var(--card) / 0.7);
+    border-color: hsl(var(--border) / 0.4);
+    box-shadow: 0 2px 12px -2px hsl(0 0% 0% / 0.25);
+  }
+
+  .dark .glass-card:hover {
+    box-shadow: 0 4px 20px -4px hsl(0 0% 0% / 0.4);
   }
 }
 
