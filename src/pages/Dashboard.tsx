@@ -205,7 +205,7 @@ export default function Dashboard() {
           ].map((card) => (
             <Card
               key={card.title}
-              className={cn("cursor-pointer hover:shadow-md transition-shadow", !card.href && "cursor-default")}
+              className={cn("glass-card cursor-pointer hover:shadow-md transition-shadow", !card.href && "cursor-default")}
               onClick={() => card.href && navigate(card.href)}
             >
               <CardContent className="p-3 flex flex-col items-center text-center gap-1">
