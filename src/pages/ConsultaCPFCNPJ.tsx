@@ -640,64 +640,6 @@ export default function ConsultaCPFCNPJ() {
                 </TabsContent>
               )}
 
-              {/* TAB: Fontes Externas */}
-              <TabsContent value="fontes" className="mt-4 space-y-4">
-                {/* Source status cards */}
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <ExternalLink className="h-4 w-4" /> Fontes Externas
-                    </CardTitle>
-                    <CardDescription>
-                      Sua API REST própria + fontes adicionais. Configure as credenciais para ativar.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      {externalSources.map((src, i) => (
-                        <div key={i} className="flex items-center justify-between p-4 rounded-lg border bg-muted/30">
-                          <div className="flex items-center gap-3">
-                            <div className="p-2 rounded-md bg-muted">
-                              {src.status === "success" ? (
-                                <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                              ) : src.status === "error" ? (
-                                <XCircle className="h-4 w-4 text-red-500" />
-                              ) : (
-                                <Clock className="h-4 w-4 text-muted-foreground" />
-                              )}
-                            </div>
-                            <div>
-                              <p className="text-sm font-medium">{src.source}</p>
-                              <p className="text-xs text-muted-foreground">{src.message || "Dados disponíveis"}</p>
-                            </div>
-                          </div>
-                          <Badge variant="outline" className={
-                            src.status === "success" ? "bg-emerald-500/15 text-emerald-600" :
-                            src.status === "error" ? "bg-red-500/15 text-red-600" :
-                            "bg-muted text-muted-foreground"
-                          }>
-                            {src.status === "success" ? "Conectado" : src.status === "error" ? "Erro" : "Não configurado"}
-                          </Badge>
-                        </div>
-                      ))}
-                    </div>
-                    <Separator className="my-4" />
-                    <div className="rounded-lg border border-dashed p-4 bg-muted/20">
-                      <p className="text-sm font-medium mb-2">Como conectar sua API própria:</p>
-                      <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
-                        <li>Configure o secret <code className="bg-muted px-1 rounded">EXTERNAL_CONSULTA_API_URL</code> com a URL base da sua API</li>
-                        <li>Configure o secret <code className="bg-muted px-1 rounded">EXTERNAL_CONSULTA_API_KEY</code> com a chave de autenticação</li>
-                        <li>A API deve responder em <code className="bg-muted px-1 rounded">GET /{'<documento>'}</code> com JSON</li>
-                      </ol>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* External data display (when API returns data) */}
-                {externalSources.some((s) => s.status === "success" && s.data) && (
-                  <ExternalDataDisplay sources={externalSources} />
-                )}
-              </TabsContent>
             </Tabs>
           </motion.div>
         )}
