@@ -14,6 +14,65 @@ export type Database = {
   }
   public: {
     Tables: {
+      bankruptcy_records: {
+        Row: {
+          company_name: string
+          court: string | null
+          created_at: string
+          document: string | null
+          filing_date: string | null
+          id: string
+          matched_client_id: string | null
+          matched_sacado_names: string[] | null
+          notes: string | null
+          process_number: string | null
+          source: string
+          status: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          company_name: string
+          court?: string | null
+          created_at?: string
+          document?: string | null
+          filing_date?: string | null
+          id?: string
+          matched_client_id?: string | null
+          matched_sacado_names?: string[] | null
+          notes?: string | null
+          process_number?: string | null
+          source?: string
+          status?: string
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          company_name?: string
+          court?: string | null
+          created_at?: string
+          document?: string | null
+          filing_date?: string | null
+          id?: string
+          matched_client_id?: string | null
+          matched_sacado_names?: string[] | null
+          notes?: string | null
+          process_number?: string | null
+          source?: string
+          status?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bankruptcy_records_matched_client_id_fkey"
+            columns: ["matched_client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       blacklist: {
         Row: {
           adicionado_por: string | null
