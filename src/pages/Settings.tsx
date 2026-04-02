@@ -8,9 +8,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
+import { toast as toastHook } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import {
   Settings as SettingsIcon,
@@ -32,6 +36,10 @@ import {
   Bell,
   CalendarClock,
   Plug,
+  Plus,
+  Trash2,
+  Edit,
+  TestTube,
 } from "lucide-react";
 
 type SettingRow = {
@@ -147,27 +155,6 @@ export default function Settings() {
         </CardContent>
       </Card>
 
-      {/* Integrações Banner */}
-      <Card className="bg-primary/5 border-primary/20 cursor-pointer hover:bg-primary/10 transition-colors" onClick={() => navigate("/integracoes")}>
-        <CardContent className="py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Plug className="h-6 w-6 text-primary" />
-            <div>
-              <h3 className="font-semibold">Integrações</h3>
-              <p className="text-sm text-muted-foreground">Gerencie conexões com sistemas externos via API e Webhooks</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
-              <Badge variant="secondary" className="tabular-nums">{totalIntegrations} configurada(s)</Badge>
-              {activeIntegrations > 0 && (
-                <Badge variant="default" className="tabular-nums bg-status-approved">{activeIntegrations} ativa(s)</Badge>
-              )}
-            </div>
-            <Button variant="outline" size="sm">Gerenciar →</Button>
-          </div>
-        </CardContent>
-      </Card>
 
       <div className="flex items-center justify-between">
         <div>
@@ -181,15 +168,19 @@ export default function Settings() {
       </div>
 
       <Tabs defaultValue="general" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="general" className="gap-1.5">
             <Building2 className="h-4 w-4" /> Geral
           </TabsTrigger>
           <TabsTrigger value="approval" className="gap-1.5">
-            <Shield className="h-4 w-4" /> Políticas de Aprovação
+            <Shield className="h-4 w-4" /> Aprovação
           </TabsTrigger>
           <TabsTrigger value="automation" className="gap-1.5">
-            <Zap className="h-4 w-4" /> Gestão Automática
+            <Zap className="h-4 w-4" /> Automação
+          </TabsTrigger>
+          <TabsTrigger value="integrations" className="gap-1.5">
+            <Plug className="h-4 w-4" /> Integrações
+            {totalIntegrations > 0 && <Badge variant="secondary" className="ml-1 text-xs px-1.5">{totalIntegrations}</Badge>}
           </TabsTrigger>
           <TabsTrigger value="access" className="gap-1.5">
             <Users className="h-4 w-4" /> Acessos
@@ -504,8 +495,240 @@ export default function Settings() {
             </Card>
           </motion.div>
         </TabsContent>
+        {/* === INTEGRAÇÕES === */}
+        <TabsContent value="integrations">
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+            <IntegrationsTab />
+          </motion.div>
+        </TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+/* ---- Integrations Tab ---- */
+
+interface IntegrationForm {
+  name: string;
+  integration_type: string;
+  api_url: string;
+  auth_type: string;
+  auth_secret_name: string;
+  notes: string;
+  is_active: boolean;
+}
+
+const emptyIntegrationForm: IntegrationForm = {
+  name: "",
+  integration_type: "export_cadastro",
+  api_url: "",
+  auth_type: "bearer",
+  auth_secret_name: "",
+  notes: "",
+  is_active: false,
+};
+
+function IntegrationsTab() {
+  const queryClient = useQueryClient();
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [form, setForm] = useState<IntegrationForm>(emptyIntegrationForm);
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  const { data: integrations, isLoading } = useQuery({
+    queryKey: ["integration-configs"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("integration_configs").select("*").order("created_at");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      const payload = {
+        name: form.name,
+        integration_type: form.integration_type,
+        api_url: form.api_url || null,
+        auth_type: form.auth_type,
+        auth_secret_name: form.auth_secret_name || null,
+        notes: form.notes || null,
+        is_active: form.is_active,
+      };
+      if (editingId) {
+        const { error } = await supabase.from("integration_configs").update(payload).eq("id", editingId);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("integration_configs").insert(payload);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      toastHook({ title: editingId ? "Integração atualizada!" : "Integração criada!" });
+      queryClient.invalidateQueries({ queryKey: ["integration-configs"] });
+      queryClient.invalidateQueries({ queryKey: ["integration-configs-count"] });
+      setDialogOpen(false);
+      setForm(emptyIntegrationForm);
+      setEditingId(null);
+    },
+    onError: () => toastHook({ title: "Erro ao salvar", variant: "destructive" }),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("integration_configs").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toastHook({ title: "Integração removida" });
+      queryClient.invalidateQueries({ queryKey: ["integration-configs"] });
+      queryClient.invalidateQueries({ queryKey: ["integration-configs-count"] });
+    },
+  });
+
+  const openEdit = (item: any) => {
+    setForm({
+      name: item.name,
+      integration_type: item.integration_type,
+      api_url: item.api_url || "",
+      auth_type: item.auth_type || "bearer",
+      auth_secret_name: item.auth_secret_name || "",
+      notes: item.notes || "",
+      is_active: item.is_active,
+    });
+    setEditingId(item.id);
+    setDialogOpen(true);
+  };
+
+  const typeLabels: Record<string, string> = {
+    export_cadastro: "Exportar Cadastro",
+    webhook: "Webhook",
+    api_sync: "Sincronização API",
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <Plug className="h-5 w-5 text-primary" />
+              Integrações
+            </CardTitle>
+            <CardDescription>Configure conexões com sistemas externos via API e Webhooks</CardDescription>
+          </div>
+          <Dialog open={dialogOpen} onOpenChange={(o) => { setDialogOpen(o); if (!o) { setForm(emptyIntegrationForm); setEditingId(null); } }}>
+            <DialogTrigger asChild>
+              <Button size="sm"><Plus className="mr-2 h-4 w-4" /> Nova Integração</Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-lg">
+              <DialogHeader><DialogTitle>{editingId ? "Editar" : "Nova"} Integração</DialogTitle></DialogHeader>
+              <div className="grid gap-4">
+                <div>
+                  <Label>Nome do Sistema *</Label>
+                  <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Ex: Sistema de Operações XYZ" />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label>Tipo</Label>
+                    <Select value={form.integration_type} onValueChange={(v) => setForm({ ...form, integration_type: v })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="export_cadastro">Exportar Cadastro</SelectItem>
+                        <SelectItem value="webhook">Webhook</SelectItem>
+                        <SelectItem value="api_sync">Sincronização API</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Autenticação</Label>
+                    <Select value={form.auth_type} onValueChange={(v) => setForm({ ...form, auth_type: v })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="bearer">Bearer Token</SelectItem>
+                        <SelectItem value="basic">Basic Auth</SelectItem>
+                        <SelectItem value="api_key">API Key</SelectItem>
+                        <SelectItem value="none">Nenhuma</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div>
+                  <Label>URL da API</Label>
+                  <Input value={form.api_url} onChange={(e) => setForm({ ...form, api_url: e.target.value })} placeholder="https://api.sistema.com/v1/cadastros" />
+                </div>
+                <div>
+                  <Label>Nome da Secret (token/chave)</Label>
+                  <Input value={form.auth_secret_name} onChange={(e) => setForm({ ...form, auth_secret_name: e.target.value })} placeholder="Ex: SISTEMA_XYZ_API_KEY" />
+                  <p className="text-xs text-muted-foreground mt-1">Nome da variável de ambiente que contém a credencial.</p>
+                </div>
+                <div>
+                  <Label>Observações</Label>
+                  <Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={2} />
+                </div>
+                <div className="flex items-center gap-2">
+                  <Switch checked={form.is_active} onCheckedChange={(v) => setForm({ ...form, is_active: v })} />
+                  <Label>Ativa</Label>
+                </div>
+                <Button onClick={() => saveMutation.mutate()} disabled={!form.name || saveMutation.isPending}>
+                  {saveMutation.isPending ? "Salvando..." : editingId ? "Atualizar" : "Criar"}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <div className="text-center py-8 text-muted-foreground">Carregando...</div>
+        ) : !integrations?.length ? (
+          <div className="border-dashed border-2 rounded-lg py-12 text-center">
+            <Plug className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="font-semibold mb-2">Nenhuma integração configurada</h3>
+            <p className="text-sm text-muted-foreground max-w-md mx-auto">
+              Configure integrações para enviar cadastros de cedentes aprovados para seu sistema de operações.
+            </p>
+          </div>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2">
+            {integrations.map((item: any) => (
+              <Card key={item.id} className={!item.is_active ? "opacity-60" : ""}>
+                <CardHeader className="pb-2">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Plug className="h-4 w-4" />
+                      {item.name}
+                    </CardTitle>
+                    <div className="flex gap-1">
+                      <Badge variant={item.is_active ? "default" : "secondary"}>
+                        {item.is_active ? "Ativa" : "Inativa"}
+                      </Badge>
+                      <Badge variant="outline">{typeLabels[item.integration_type] || item.integration_type}</Badge>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {item.api_url && (
+                    <div className="text-sm text-muted-foreground font-mono truncate">{item.api_url}</div>
+                  )}
+                  {item.notes && <p className="text-sm text-muted-foreground">{item.notes}</p>}
+                  <div className="flex gap-2 pt-2">
+                    <Button variant="outline" size="sm" onClick={() => openEdit(item)}>
+                      <Edit className="h-3.5 w-3.5 mr-1" /> Editar
+                    </Button>
+                    <Button variant="outline" size="sm" disabled>
+                      <TestTube className="h-3.5 w-3.5 mr-1" /> Testar
+                    </Button>
+                    <Button variant="ghost" size="sm" className="text-destructive ml-auto" onClick={() => deleteMutation.mutate(item.id)}>
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 

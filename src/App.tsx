@@ -18,7 +18,7 @@ import Settings from "@/pages/Settings";
 import Prospects from "@/pages/Prospects";
 import InvoiceMonitoring from "@/pages/InvoiceMonitoring";
 import BankruptcyReport from "@/pages/BankruptcyReport";
-import Integrations from "@/pages/Integrations";
+
 import CreditEngineSettings from "@/pages/CreditEngineSettings";
 import NotFound from "@/pages/NotFound";
 
@@ -47,7 +47,7 @@ const App = () => (
             <Route path="/monitoramento-nfs" element={<InvoiceMonitoring />} />
             <Route path="/falimentar" element={<BankruptcyReport />} />
             <Route path="/blacklist" element={<Blacklist />} />
-            <Route path="/integracoes" element={<Integrations />} />
+            
             <Route path="/configuracoes" element={<Settings />} />
             <Route path="/configuracoes/motor" element={<CreditEngineSettings />} />
           </Route>
