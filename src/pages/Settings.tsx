@@ -65,7 +65,18 @@ export default function Settings() {
     },
   });
 
-  useEffect(() => {
+  const { data: integrationCount = 0 } = useQuery({
+    queryKey: ["integration-configs-count"],
+    queryFn: async () => {
+      const { data } = await supabase.from("integration_configs").select("id, is_active");
+      return data || [];
+    },
+    select: (data) => data,
+  });
+
+  const activeIntegrations = Array.isArray(integrationCount) ? integrationCount.filter((i: any) => i.is_active).length : 0;
+  const totalIntegrations = Array.isArray(integrationCount) ? integrationCount.length : 0;
+
     if (settings.length > 0 && Object.keys(localSettings).length === 0) {
       const map: Record<string, string> = {};
       settings.forEach((s) => {
