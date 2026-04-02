@@ -313,6 +313,7 @@ export function AppNavbar() {
 
       {/* Right side */}
       <div className="ml-auto flex items-center gap-1">
+        <NotificationBell />
         <Link
           to="/configuracoes"
           className={cn(
