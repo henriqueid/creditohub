@@ -40,6 +40,8 @@ import {
   Trash2,
   Edit,
   TestTube,
+  User,
+  Loader2,
 } from "lucide-react";
 
 type SettingRow = {
