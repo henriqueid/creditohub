@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Building2, FileText, X, Loader2 } from "lucide-react";
+import { Search, Building2, FileText, X, Loader2, Scale, ShieldBan } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { StatusBadge } from "@/components/StatusBadge";
