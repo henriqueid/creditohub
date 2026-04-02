@@ -64,6 +64,10 @@ export function AppSidebar() {
   const collapsed = state === "collapsed";
   const location = useLocation();
 
+  const monitorActive = monitorItems.some((i) =>
+    location.pathname.startsWith(i.url)
+  );
+
   const esteiraActive = esteiraItems.some((i) =>
     i.url === "/" ? location.pathname === "/" : location.pathname.startsWith(i.url)
   );
