@@ -335,9 +335,8 @@ export default function ConsultaCPFCNPJ() {
               <TabsList className="w-full justify-start">
                 <TabsTrigger value="resumo">Resumo</TabsTrigger>
                 <TabsTrigger value="analises">Análises ({analyses.length})</TabsTrigger>
-                <TabsTrigger value="restricoes">Restritivos</TabsTrigger>
                 {!isPJ && <TabsTrigger value="participacoes">Participações ({socioRecords.length})</TabsTrigger>}
-                <TabsTrigger value="fontes">Fontes Externas</TabsTrigger>
+                <TabsTrigger value="restricoes">Restritivos</TabsTrigger>
               </TabsList>
 
               {/* TAB: Resumo */}
