@@ -168,7 +168,7 @@ export function GlobalSearch() {
     <div ref={containerRef} className="relative">
       <div className="flex items-center gap-2 bg-white/15 rounded-md px-2.5 py-1.5 min-w-[280px]">
         {loading ? (
-          <Loader2 className="h-3.5 w-3.5 text-navbar-foreground/60 animate-spin" />
+          <Loader2 className="h-3.5 w-3.5 text-white/50 animate-spin" />
         ) : (
           <Search className="h-3.5 w-3.5 text-navbar-foreground/60" />
         )}
