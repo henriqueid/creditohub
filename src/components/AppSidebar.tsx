@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/sidebar";
 
 const menuItems = [
-  { title: "Dashboard", url: "/", icon: LayoutDashboard },
+  { title: "Painel Inicial", url: "/", icon: LayoutDashboard },
   { title: "Consulta CPF/CNPJ", url: "/consulta", icon: SearchCheck },
   { title: "Prospects", url: "/prospects", icon: UserSearch },
   { title: "Cedentes", url: "/cedentes", icon: Building2 },
