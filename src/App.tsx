@@ -47,7 +47,7 @@ const App = () => (
             <Route path="/monitoramento-nfs" element={<InvoiceMonitoring />} />
             <Route path="/falimentar" element={<BankruptcyReport />} />
             <Route path="/blacklist" element={<Blacklist />} />
-            <Route path="/integracoes" element={<Integrations />} />
+            
             <Route path="/configuracoes" element={<Settings />} />
             <Route path="/configuracoes/motor" element={<CreditEngineSettings />} />
           </Route>
