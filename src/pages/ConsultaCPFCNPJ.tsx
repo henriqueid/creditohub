@@ -335,142 +335,168 @@ export default function ConsultaCPFCNPJ() {
               <TabsList className="w-full justify-start">
                 <TabsTrigger value="resumo">Resumo</TabsTrigger>
                 <TabsTrigger value="analises">Análises ({analyses.length})</TabsTrigger>
-                <TabsTrigger value="restricoes">Restritivos</TabsTrigger>
                 {!isPJ && <TabsTrigger value="participacoes">Participações ({socioRecords.length})</TabsTrigger>}
-                <TabsTrigger value="fontes">Fontes Externas</TabsTrigger>
+                <TabsTrigger value="restricoes">Restritivos</TabsTrigger>
               </TabsList>
 
               {/* TAB: Resumo */}
               <TabsContent value="resumo" className="space-y-4 mt-4">
                 {client ? (
-                  <div className="grid md:grid-cols-2 gap-4">
-                    {/* Cadastral */}
-                    <Card>
-                      <CardHeader className="pb-3">
-                        <CardTitle className="text-base flex items-center gap-2">
-                          <Building2 className="h-4 w-4" /> Dados Cadastrais
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-2 text-sm">
-                        <Row label="Razão Social" value={client.razao_social} />
-                        <Row label="Nome Fantasia" value={client.nome_fantasia || "—"} />
-                        <Row label="CNPJ/CPF" value={formatCNPJorCPF(client.cnpj_cpf)} mono />
-                        <Row label="Segmento" value={client.segmento || "—"} />
-                        <Row label="Fundação" value={formatDate(client.data_fundacao)} />
-                        <Row label="Cidade/UF" value={client.cidade && client.estado ? `${client.cidade}/${client.estado}` : "—"} />
-                      </CardContent>
-                    </Card>
-
-                    {/* Latest analysis summary */}
-                    <Card>
-                      <CardHeader className="pb-3">
-                        <CardTitle className="text-base flex items-center gap-2">
-                          <TrendingUp className="h-4 w-4" /> Última Análise
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        {latestAnalysis ? (
-                          <div className="space-y-3">
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm text-muted-foreground">Status</span>
-                              <Badge variant="outline" className={statusColors[latestAnalysis.status]}>
-                                {statusLabels[latestAnalysis.status]}
-                              </Badge>
-                            </div>
-                            <div className="space-y-2 text-sm">
-                              <Row label="Data" value={formatDate(latestAnalysis.data_analise)} />
-                              <Row label="Score" value={latestAnalysis.credit_score ? String(latestAnalysis.credit_score) : "—"} />
-                              <Row label="Limite Sugerido" value={formatBRL(latestAnalysis.limite_sugerido)} />
-                              <Row label="Fat. Médio" value={formatBRL(latestAnalysis.faturamento_medio)} />
-                              <Row label="Analista" value={latestAnalysis.analista_credito || "—"} />
-                            </div>
-                            {latestAnalysis.credit_score != null && (
-                              <div className="pt-2">
-                                <div className="flex items-center justify-between text-xs mb-1">
-                                  <span className="text-muted-foreground">Score</span>
-                                  <span className="font-medium">{latestAnalysis.credit_score}/1000</span>
-                                </div>
-                                <Progress value={(latestAnalysis.credit_score / 1000) * 100} className="h-2" />
-                              </div>
-                            )}
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="w-full mt-2"
-                              onClick={() => navigate(`/analises/${latestAnalysis.id}`)}
-                            >
-                              <ExternalLink className="h-3 w-3 mr-1" /> Abrir Análise
-                            </Button>
-                          </div>
-                        ) : (
-                          <p className="text-sm text-muted-foreground py-4 text-center">Nenhuma análise encontrada</p>
-                        )}
-                      </CardContent>
-                    </Card>
-
-                    {/* Committee history */}
-                    {votes.length > 0 && (
-                      <Card className="md:col-span-2">
+                  <>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      {/* Cadastral */}
+                      <Card>
                         <CardHeader className="pb-3">
                           <CardTitle className="text-base flex items-center gap-2">
-                            <Users className="h-4 w-4" /> Histórico de Votos
+                            <Building2 className="h-4 w-4" /> Dados Cadastrais
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-2 text-sm">
+                          <Row label="Razão Social" value={client.razao_social} />
+                          <Row label="Nome Fantasia" value={client.nome_fantasia || "—"} />
+                          <Row label="CNPJ/CPF" value={formatCNPJorCPF(client.cnpj_cpf)} mono />
+                          <Row label="Segmento" value={client.segmento || "—"} />
+                          <Row label="Fundação" value={formatDate(client.data_fundacao)} />
+                          <Row label="Cidade/UF" value={client.cidade && client.estado ? `${client.cidade}/${client.estado}` : "—"} />
+                        </CardContent>
+                      </Card>
+
+                      {/* Latest analysis summary */}
+                      <Card>
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-base flex items-center gap-2">
+                            <TrendingUp className="h-4 w-4" /> Última Análise
                           </CardTitle>
                         </CardHeader>
                         <CardContent>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                            {votes.slice(0, 6).map((v) => (
-                              <div key={v.id} className="flex items-center gap-3 p-3 rounded-lg border bg-card">
-                                {v.vote === "approve" && <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />}
-                                {v.vote === "restrict" && <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />}
-                                {v.vote === "reject" && <XCircle className="h-4 w-4 text-red-500 shrink-0" />}
-                                <div className="min-w-0">
-                                  <p className="text-sm font-medium truncate">{v.member_name}</p>
-                                  <p className="text-xs text-muted-foreground">{v.member_role} • {formatDate(v.vote_date)}</p>
-                                </div>
+                          {latestAnalysis ? (
+                            <div className="space-y-3">
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm text-muted-foreground">Status</span>
+                                <Badge variant="outline" className={statusColors[latestAnalysis.status]}>
+                                  {statusLabels[latestAnalysis.status]}
+                                </Badge>
                               </div>
-                            ))}
-                          </div>
+                              <div className="space-y-2 text-sm">
+                                <Row label="Data" value={formatDate(latestAnalysis.data_analise)} />
+                                <Row label="Score" value={latestAnalysis.credit_score ? String(latestAnalysis.credit_score) : "—"} />
+                                <Row label="Limite Sugerido" value={formatBRL(latestAnalysis.limite_sugerido)} />
+                                <Row label="Fat. Médio" value={formatBRL(latestAnalysis.faturamento_medio)} />
+                                <Row label="Analista" value={latestAnalysis.analista_credito || "—"} />
+                              </div>
+                              {latestAnalysis.credit_score != null && (
+                                <div className="pt-2">
+                                  <div className="flex items-center justify-between text-xs mb-1">
+                                    <span className="text-muted-foreground">Score</span>
+                                    <span className="font-medium">{latestAnalysis.credit_score}/1000</span>
+                                  </div>
+                                  <Progress value={(latestAnalysis.credit_score / 1000) * 100} className="h-2" />
+                                </div>
+                              )}
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="w-full mt-2"
+                                onClick={() => navigate(`/analises/${latestAnalysis.id}`)}
+                              >
+                                <ExternalLink className="h-3 w-3 mr-1" /> Abrir Análise
+                              </Button>
+                            </div>
+                          ) : (
+                            <p className="text-sm text-muted-foreground py-4 text-center">Nenhuma análise encontrada</p>
+                          )}
                         </CardContent>
                       </Card>
+
+                      {/* Committee history */}
+                      {votes.length > 0 && (
+                        <Card className="md:col-span-2">
+                          <CardHeader className="pb-3">
+                            <CardTitle className="text-base flex items-center gap-2">
+                              <Users className="h-4 w-4" /> Histórico de Votos
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                              {votes.slice(0, 6).map((v) => (
+                                <div key={v.id} className="flex items-center gap-3 p-3 rounded-lg border bg-card">
+                                  {v.vote === "approve" && <CheckCircle2 className="h-4 w-4 text-status-approved shrink-0" />}
+                                  {v.vote === "restrict" && <AlertTriangle className="h-4 w-4 text-status-committee shrink-0" />}
+                                  {v.vote === "reject" && <XCircle className="h-4 w-4 text-status-rejected shrink-0" />}
+                                  <div className="min-w-0">
+                                    <p className="text-sm font-medium truncate">{v.member_name}</p>
+                                    <p className="text-xs text-muted-foreground">{v.member_role} • {formatDate(v.vote_date)}</p>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )}
+                    </div>
+
+                    {/* External data inline in Resumo */}
+                    {externalSources.some((s) => s.status === "success" && s.data) && (
+                      <>
+                        <Separator />
+                        <div className="flex items-center gap-2">
+                          <ExternalLink className="h-4 w-4 text-primary" />
+                          <h3 className="text-sm font-semibold text-foreground">Dados de Fontes Externas</h3>
+                        </div>
+                        <ExternalDataDisplay sources={externalSources} />
+                      </>
+                    )}
+                  </>
+                ) : !isLoading ? (
+                  <div className="space-y-4">
+                    <Card className="border-dashed">
+                      <CardContent className="py-10 text-center space-y-4">
+                        <div className="mx-auto w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
+                          {isPJ ? <Building2 className="h-7 w-7 text-primary" /> : <User className="h-7 w-7 text-primary" />}
+                        </div>
+                        <div>
+                          <p className="font-medium text-lg">
+                            {externalName || formatCNPJorCPF(digits)}
+                          </p>
+                          <p className="text-muted-foreground text-sm mt-1">
+                            {brasilApiData
+                              ? "Encontrado na Receita Federal, mas não está na sua base interna."
+                              : "Nenhum cadastro encontrado na base interna para este documento."}
+                          </p>
+                        </div>
+                        {brasilApiData && (
+                          <div className="text-sm text-muted-foreground space-y-1">
+                            {brasilApiData.situacao_cadastral && <p>Situação: <span className="font-medium text-foreground">{brasilApiData.situacao_cadastral}</span></p>}
+                            {brasilApiData.cnae_descricao && <p>Atividade: <span className="font-medium text-foreground">{brasilApiData.cnae_descricao}</span></p>}
+                            {brasilApiData.endereco?.cidade && brasilApiData.endereco?.uf && (
+                              <p>Local: <span className="font-medium text-foreground">{brasilApiData.endereco.cidade}/{brasilApiData.endereco.uf}</span></p>
+                            )}
+                          </div>
+                        )}
+                        <Separator />
+                        <div>
+                          <p className="text-sm text-muted-foreground mb-3">
+                            Deseja cadastrar como cedente e iniciar a esteira de crédito?
+                          </p>
+                          <Button onClick={handleCadastrarCedente} className="gap-2">
+                            <User className="h-4 w-4" />
+                            Cadastrar Cedente {brasilApiData ? "(dados pré-preenchidos)" : ""}
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* External data for non-registered */}
+                    {externalSources.some((s) => s.status === "success" && s.data) && (
+                      <>
+                        <div className="flex items-center gap-2">
+                          <ExternalLink className="h-4 w-4 text-primary" />
+                          <h3 className="text-sm font-semibold text-foreground">Dados de Fontes Externas</h3>
+                        </div>
+                        <ExternalDataDisplay sources={externalSources} />
+                      </>
                     )}
                   </div>
-                ) : !isLoading ? (
-                  <Card className="border-dashed">
-                    <CardContent className="py-10 text-center space-y-4">
-                      <div className="mx-auto w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
-                        {isPJ ? <Building2 className="h-7 w-7 text-primary" /> : <User className="h-7 w-7 text-primary" />}
-                      </div>
-                      <div>
-                        <p className="font-medium text-lg">
-                          {externalName || formatCNPJorCPF(digits)}
-                        </p>
-                        <p className="text-muted-foreground text-sm mt-1">
-                          {brasilApiData
-                            ? "Encontrado na Receita Federal, mas não está na sua base interna."
-                            : "Nenhum cadastro encontrado na base interna para este documento."}
-                        </p>
-                      </div>
-                      {brasilApiData && (
-                        <div className="text-sm text-muted-foreground space-y-1">
-                          {brasilApiData.situacao_cadastral && <p>Situação: <span className="font-medium text-foreground">{brasilApiData.situacao_cadastral}</span></p>}
-                          {brasilApiData.cnae_descricao && <p>Atividade: <span className="font-medium text-foreground">{brasilApiData.cnae_descricao}</span></p>}
-                          {brasilApiData.endereco?.cidade && brasilApiData.endereco?.uf && (
-                            <p>Local: <span className="font-medium text-foreground">{brasilApiData.endereco.cidade}/{brasilApiData.endereco.uf}</span></p>
-                          )}
-                        </div>
-                      )}
-                      <Separator />
-                      <div>
-                        <p className="text-sm text-muted-foreground mb-3">
-                          Deseja cadastrar como cedente e iniciar a esteira de crédito?
-                        </p>
-                        <Button onClick={handleCadastrarCedente} className="gap-2">
-                          <User className="h-4 w-4" />
-                          Cadastrar Cedente {brasilApiData ? "(dados pré-preenchidos)" : ""}
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
                 ) : null}
               </TabsContent>
 
@@ -534,38 +560,6 @@ export default function ConsultaCPFCNPJ() {
                 </Card>
               </TabsContent>
 
-              {/* TAB: Restritivos */}
-              <TabsContent value="restricoes" className="mt-4">
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <Ban className="h-4 w-4" /> Restritivos e Apontamentos
-                    </CardTitle>
-                    <CardDescription>Consolidação de restritivos encontrados nas análises internas</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    {analyses.length === 0 ? (
-                      <p className="text-sm text-muted-foreground text-center py-6">Sem análises para consolidar restritivos</p>
-                    ) : (
-                      <div className="space-y-4">
-                        <RestrictiveItem icon={AlertTriangle} label="Protestos" items={analyses.map((a) => a.protestos).filter(Boolean) as string[]} />
-                        <RestrictiveItem icon={Ban} label="Pendências Financeiras" items={analyses.map((a) => a.pendencias).filter(Boolean) as string[]} />
-                        <RestrictiveItem icon={XCircle} label="Cheques sem Fundo" items={analyses.map((a) => a.cheques_sem_fundo).filter(Boolean) as string[]} />
-                        <RestrictiveItem icon={Scale} label="Ações Judiciais" items={analyses.map((a) => a.acoes_judiciais).filter(Boolean) as string[]} />
-                        <RestrictiveItem icon={Shield} label="Restrições CNPJ" items={analyses.map((a) => a.restricoes_cnpj).filter(Boolean) as string[]} />
-
-                        {!hasRestrictions && (
-                          <div className="flex items-center gap-3 py-6 justify-center text-emerald-600">
-                            <CheckCircle2 className="h-5 w-5" />
-                            <span className="text-sm font-medium">Nenhum restritivo encontrado nas análises internas</span>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
               {/* TAB: Participações (CPF only) */}
               {!isPJ && (
                 <TabsContent value="participacoes" className="mt-4">
@@ -614,64 +608,38 @@ export default function ConsultaCPFCNPJ() {
                 </TabsContent>
               )}
 
-              {/* TAB: Fontes Externas */}
-              <TabsContent value="fontes" className="mt-4 space-y-4">
-                {/* Source status cards */}
+              {/* TAB: Restritivos (last) */}
+              <TabsContent value="restricoes" className="mt-4">
                 <Card>
                   <CardHeader className="pb-3">
                     <CardTitle className="text-base flex items-center gap-2">
-                      <ExternalLink className="h-4 w-4" /> Fontes Externas
+                      <Ban className="h-4 w-4" /> Restritivos e Apontamentos
                     </CardTitle>
-                    <CardDescription>
-                      Sua API REST própria + fontes adicionais. Configure as credenciais para ativar.
-                    </CardDescription>
+                    <CardDescription>Consolidação de restritivos encontrados nas análises internas</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-3">
-                      {externalSources.map((src, i) => (
-                        <div key={i} className="flex items-center justify-between p-4 rounded-lg border bg-muted/30">
-                          <div className="flex items-center gap-3">
-                            <div className="p-2 rounded-md bg-muted">
-                              {src.status === "success" ? (
-                                <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                              ) : src.status === "error" ? (
-                                <XCircle className="h-4 w-4 text-red-500" />
-                              ) : (
-                                <Clock className="h-4 w-4 text-muted-foreground" />
-                              )}
-                            </div>
-                            <div>
-                              <p className="text-sm font-medium">{src.source}</p>
-                              <p className="text-xs text-muted-foreground">{src.message || "Dados disponíveis"}</p>
-                            </div>
+                    {analyses.length === 0 ? (
+                      <p className="text-sm text-muted-foreground text-center py-6">Sem análises para consolidar restritivos</p>
+                    ) : (
+                      <div className="space-y-4">
+                        <RestrictiveItem icon={AlertTriangle} label="Protestos" items={analyses.map((a) => a.protestos).filter(Boolean) as string[]} />
+                        <RestrictiveItem icon={Ban} label="Pendências Financeiras" items={analyses.map((a) => a.pendencias).filter(Boolean) as string[]} />
+                        <RestrictiveItem icon={XCircle} label="Cheques sem Fundo" items={analyses.map((a) => a.cheques_sem_fundo).filter(Boolean) as string[]} />
+                        <RestrictiveItem icon={Scale} label="Ações Judiciais" items={analyses.map((a) => a.acoes_judiciais).filter(Boolean) as string[]} />
+                        <RestrictiveItem icon={Shield} label="Restrições CNPJ" items={analyses.map((a) => a.restricoes_cnpj).filter(Boolean) as string[]} />
+
+                        {!hasRestrictions && (
+                          <div className="flex items-center gap-3 py-6 justify-center text-status-approved">
+                            <CheckCircle2 className="h-5 w-5" />
+                            <span className="text-sm font-medium">Nenhum restritivo encontrado nas análises internas</span>
                           </div>
-                          <Badge variant="outline" className={
-                            src.status === "success" ? "bg-emerald-500/15 text-emerald-600" :
-                            src.status === "error" ? "bg-red-500/15 text-red-600" :
-                            "bg-muted text-muted-foreground"
-                          }>
-                            {src.status === "success" ? "Conectado" : src.status === "error" ? "Erro" : "Não configurado"}
-                          </Badge>
-                        </div>
-                      ))}
-                    </div>
-                    <Separator className="my-4" />
-                    <div className="rounded-lg border border-dashed p-4 bg-muted/20">
-                      <p className="text-sm font-medium mb-2">Como conectar sua API própria:</p>
-                      <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
-                        <li>Configure o secret <code className="bg-muted px-1 rounded">EXTERNAL_CONSULTA_API_URL</code> com a URL base da sua API</li>
-                        <li>Configure o secret <code className="bg-muted px-1 rounded">EXTERNAL_CONSULTA_API_KEY</code> com a chave de autenticação</li>
-                        <li>A API deve responder em <code className="bg-muted px-1 rounded">GET /{'<documento>'}</code> com JSON</li>
-                      </ol>
-                    </div>
+                        )}
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
-
-                {/* External data display (when API returns data) */}
-                {externalSources.some((s) => s.status === "success" && s.data) && (
-                  <ExternalDataDisplay sources={externalSources} />
-                )}
               </TabsContent>
+
             </Tabs>
           </motion.div>
         )}
