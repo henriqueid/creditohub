@@ -560,38 +560,6 @@ export default function ConsultaCPFCNPJ() {
                 </Card>
               </TabsContent>
 
-              {/* TAB: Restritivos */}
-              <TabsContent value="restricoes" className="mt-4">
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <Ban className="h-4 w-4" /> Restritivos e Apontamentos
-                    </CardTitle>
-                    <CardDescription>Consolidação de restritivos encontrados nas análises internas</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    {analyses.length === 0 ? (
-                      <p className="text-sm text-muted-foreground text-center py-6">Sem análises para consolidar restritivos</p>
-                    ) : (
-                      <div className="space-y-4">
-                        <RestrictiveItem icon={AlertTriangle} label="Protestos" items={analyses.map((a) => a.protestos).filter(Boolean) as string[]} />
-                        <RestrictiveItem icon={Ban} label="Pendências Financeiras" items={analyses.map((a) => a.pendencias).filter(Boolean) as string[]} />
-                        <RestrictiveItem icon={XCircle} label="Cheques sem Fundo" items={analyses.map((a) => a.cheques_sem_fundo).filter(Boolean) as string[]} />
-                        <RestrictiveItem icon={Scale} label="Ações Judiciais" items={analyses.map((a) => a.acoes_judiciais).filter(Boolean) as string[]} />
-                        <RestrictiveItem icon={Shield} label="Restrições CNPJ" items={analyses.map((a) => a.restricoes_cnpj).filter(Boolean) as string[]} />
-
-                        {!hasRestrictions && (
-                          <div className="flex items-center gap-3 py-6 justify-center text-emerald-600">
-                            <CheckCircle2 className="h-5 w-5" />
-                            <span className="text-sm font-medium">Nenhum restritivo encontrado nas análises internas</span>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
               {/* TAB: Participações (CPF only) */}
               {!isPJ && (
                 <TabsContent value="participacoes" className="mt-4">
@@ -639,6 +607,38 @@ export default function ConsultaCPFCNPJ() {
                   </Card>
                 </TabsContent>
               )}
+
+              {/* TAB: Restritivos (last) */}
+              <TabsContent value="restricoes" className="mt-4">
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Ban className="h-4 w-4" /> Restritivos e Apontamentos
+                    </CardTitle>
+                    <CardDescription>Consolidação de restritivos encontrados nas análises internas</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {analyses.length === 0 ? (
+                      <p className="text-sm text-muted-foreground text-center py-6">Sem análises para consolidar restritivos</p>
+                    ) : (
+                      <div className="space-y-4">
+                        <RestrictiveItem icon={AlertTriangle} label="Protestos" items={analyses.map((a) => a.protestos).filter(Boolean) as string[]} />
+                        <RestrictiveItem icon={Ban} label="Pendências Financeiras" items={analyses.map((a) => a.pendencias).filter(Boolean) as string[]} />
+                        <RestrictiveItem icon={XCircle} label="Cheques sem Fundo" items={analyses.map((a) => a.cheques_sem_fundo).filter(Boolean) as string[]} />
+                        <RestrictiveItem icon={Scale} label="Ações Judiciais" items={analyses.map((a) => a.acoes_judiciais).filter(Boolean) as string[]} />
+                        <RestrictiveItem icon={Shield} label="Restrições CNPJ" items={analyses.map((a) => a.restricoes_cnpj).filter(Boolean) as string[]} />
+
+                        {!hasRestrictions && (
+                          <div className="flex items-center gap-3 py-6 justify-center text-status-approved">
+                            <CheckCircle2 className="h-5 w-5" />
+                            <span className="text-sm font-medium">Nenhum restritivo encontrado nas análises internas</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
 
             </Tabs>
           </motion.div>
