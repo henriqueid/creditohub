@@ -50,6 +50,10 @@
     --sidebar-accent-foreground: 215 20% 90%;
     --sidebar-border: 220 20% 18%;
     --sidebar-ring: 210 60% 60%;
+
+    /* Navbar */
+    --navbar: 220 50% 15%;
+    --navbar-foreground: 210 40% 95%;
   }
 
   .dark {
