@@ -122,6 +122,30 @@ export function GlobalSearch() {
         });
       });
 
+      // Bankruptcy records
+      (bankruptcyRes.data || []).forEach((b) => {
+        const typeLabel = b.type === "falencia" ? "Falência" : "Recuperação Judicial";
+        items.push({
+          id: b.id,
+          type: "bankruptcy",
+          title: b.company_name,
+          subtitle: [b.document, typeLabel].filter(Boolean).join(" · "),
+          status: b.status,
+          href: "/falimentar",
+        });
+      });
+
+      // Blacklist
+      (blacklistRes.data || []).forEach((bl) => {
+        items.push({
+          id: bl.id,
+          type: "blacklist",
+          title: bl.documento,
+          subtitle: [bl.tipo === "cpf" ? "CPF" : "CNPJ", bl.motivo].filter(Boolean).join(" · "),
+          href: "/blacklist",
+        });
+      });
+
       setResults(items);
       setSelectedIndex(0);
     } catch {
