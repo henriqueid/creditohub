@@ -674,6 +674,90 @@ export type Database = {
           },
         ]
       }
+      monitoring_group_clients: {
+        Row: {
+          client_id: string
+          created_at: string
+          group_id: string
+          id: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          group_id: string
+          id?: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          group_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monitoring_group_clients_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monitoring_group_clients_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "monitoring_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      monitoring_groups: {
+        Row: {
+          alerta_email: boolean
+          alerta_sistema: boolean
+          concentracao_maxima: number | null
+          created_at: string
+          description: string | null
+          frequency: string
+          id: string
+          is_active: boolean
+          limiar_atraso_dias: number | null
+          limiar_variacao: number | null
+          name: string
+          updated_at: string
+          volume_minimo: number | null
+        }
+        Insert: {
+          alerta_email?: boolean
+          alerta_sistema?: boolean
+          concentracao_maxima?: number | null
+          created_at?: string
+          description?: string | null
+          frequency?: string
+          id?: string
+          is_active?: boolean
+          limiar_atraso_dias?: number | null
+          limiar_variacao?: number | null
+          name: string
+          updated_at?: string
+          volume_minimo?: number | null
+        }
+        Update: {
+          alerta_email?: boolean
+          alerta_sistema?: boolean
+          concentracao_maxima?: number | null
+          created_at?: string
+          description?: string | null
+          frequency?: string
+          id?: string
+          is_active?: boolean
+          limiar_atraso_dias?: number | null
+          limiar_variacao?: number | null
+          name?: string
+          updated_at?: string
+          volume_minimo?: number | null
+        }
+        Relationships: []
+      }
       patrimonial_info: {
         Row: {
           client_id: string
