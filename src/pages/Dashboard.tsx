@@ -126,6 +126,26 @@ export default function Dashboard() {
   const activeGroups = monitoringGroups.filter(g => g.is_active).length;
   const recentAnalyses = analyses.slice(0, 6);
 
+  // Build sparkline data: count per week for last 8 weeks
+  const buildWeeklySparkline = (items: { created_at: string }[]) => {
+    const weeks = 8;
+    const msPerWeek = 7 * 24 * 60 * 60 * 1000;
+    const counts = Array(weeks).fill(0);
+    items.forEach(item => {
+      const age = now.getTime() - new Date(item.created_at).getTime();
+      const idx = Math.floor(age / msPerWeek);
+      if (idx >= 0 && idx < weeks) counts[weeks - 1 - idx]++;
+    });
+    return counts;
+  };
+
+  const sparkAnalyses = buildWeeklySparkline(analyses);
+  const sparkApproved = buildWeeklySparkline(analyses.filter(a => a.status === "approved" || a.status === "approved_restricted"));
+  const sparkRejected = buildWeeklySparkline(analyses.filter(a => a.status === "rejected"));
+  const sparkCommittee = buildWeeklySparkline(analyses.filter(a => a.status === "in_committee"));
+  const sparkBlacklist = buildWeeklySparkline(blacklistEntries);
+  const sparkInvoices = buildWeeklySparkline(invoices);
+
   const statusData = [
     { label: "Rascunho", value: drafts, color: "bg-muted-foreground/40", dotColor: "bg-muted-foreground", pct: total > 0 ? (drafts / total) * 100 : 0 },
     { label: "Em Comitê", value: inCommittee, color: "bg-status-committee", dotColor: "bg-status-committee", pct: total > 0 ? (inCommittee / total) * 100 : 0 },
@@ -201,16 +221,17 @@ export default function Dashboard() {
         <SectionHeader title="Esteira de Crédito" icon={Zap} />
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           <KpiCard title="Cedentes" value={clientCount} icon={Building2} onClick={() => navigate("/cedentes")} />
-          <KpiCard title="Análises" value={total} icon={FileText} onClick={() => navigate("/analises")} />
+          <KpiCard title="Análises" value={total} icon={FileText} sparkline={sparkAnalyses} onClick={() => navigate("/analises")} />
           <KpiCard
             title="Comitê"
             value={inCommittee}
             icon={Clock}
             accent={inCommittee > 0 ? "warning" : undefined}
+            sparkline={sparkCommittee}
             onClick={() => navigate("/comite")}
           />
-          <KpiCard title="Aprovadas" value={approved} icon={CheckCircle} accent="success" onClick={() => navigate("/analises")} />
-          <KpiCard title="Reprovadas" value={rejected} icon={XCircle} accent={rejected > 0 ? "danger" : undefined} onClick={() => navigate("/analises")} />
+          <KpiCard title="Aprovadas" value={approved} icon={CheckCircle} accent="success" sparkline={sparkApproved} onClick={() => navigate("/analises")} />
+          <KpiCard title="Reprovadas" value={rejected} icon={XCircle} accent={rejected > 0 ? "danger" : undefined} sparkline={sparkRejected} onClick={() => navigate("/analises")} />
           <KpiCard title="Score Médio" value={avgScore || "—"} icon={Gauge} />
         </div>
       </motion.div>
@@ -472,32 +493,56 @@ function SectionHeader({ title, icon: Icon }: { title: string; icon: React.Eleme
 }
 
 function KpiCard({
-  title, value, icon: Icon, accent, onClick,
+  title, value, icon: Icon, accent, onClick, sparkline,
 }: {
   title: string;
   value: number | string;
   icon: React.ElementType;
   accent?: "success" | "warning" | "danger";
   onClick?: () => void;
+  sparkline?: number[];
 }) {
   const accentMap = {
     success: "text-status-approved",
     warning: "text-status-committee",
     danger: "text-status-rejected",
   };
+  const strokeMap: Record<string, string> = {
+    success: "hsl(var(--status-approved))",
+    warning: "hsl(var(--status-committee))",
+    danger: "hsl(var(--status-rejected))",
+  };
   const color = accent ? accentMap[accent] : "text-foreground";
+  const strokeColor = accent ? strokeMap[accent] : "hsl(var(--primary))";
 
   return (
     <Card
-      className={cn("glass-card transition-all", onClick && "cursor-pointer hover:border-primary/30")}
+      className={cn("glass-card transition-all overflow-hidden", onClick && "cursor-pointer hover:border-primary/30")}
       onClick={onClick}
     >
-      <CardContent className="p-4 flex flex-col items-center text-center gap-1.5">
+      <CardContent className="p-4 flex flex-col items-center text-center gap-1 relative">
         <Icon className={cn("h-5 w-5", accent ? accentMap[accent] : "text-muted-foreground")} />
         <span className={cn("text-2xl font-bold tabular-nums leading-none", color)}>{value}</span>
         <span className="text-[11px] text-muted-foreground font-medium">{title}</span>
+        {sparkline && sparkline.some(v => v > 0) && <Sparkline data={sparkline} color={strokeColor} />}
       </CardContent>
     </Card>
+  );
+}
+
+function Sparkline({ data, color }: { data: number[]; color: string }) {
+  const max = Math.max(...data, 1);
+  const w = 80;
+  const h = 24;
+  const step = w / (data.length - 1);
+  const points = data.map((v, i) => `${i * step},${h - (v / max) * h}`).join(" ");
+  const fillPoints = `0,${h} ${points} ${w},${h}`;
+
+  return (
+    <svg width={w} height={h} className="mt-1 opacity-60" viewBox={`0 0 ${w} ${h}`}>
+      <polygon points={fillPoints} fill={color} opacity="0.15" />
+      <polyline points={points} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   );
 }
 
