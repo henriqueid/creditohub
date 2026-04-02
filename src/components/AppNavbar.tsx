@@ -269,7 +269,7 @@ export function AppNavbar() {
   }
 
   return (
-    <header className="h-12 flex items-center px-4 border-b border-border bg-card shrink-0">
+    <header className="h-12 flex items-center px-4 border-b border-navbar/20 bg-navbar text-navbar-foreground shrink-0">
       {/* Logo */}
       <Link to="/" className="flex items-center gap-2.5 mr-6">
         <div className="h-7 w-7 rounded bg-primary flex items-center justify-center text-primary-foreground font-bold text-xs">AT</div>
