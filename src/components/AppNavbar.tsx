@@ -298,7 +298,7 @@ export function AppNavbar() {
         })}
 
         {/* Divider */}
-        <div className="h-5 w-px bg-border mx-1.5" />
+        <div className="h-5 w-px bg-white/20 mx-1.5" />
 
         {/* Groups with mega menu */}
         {groups.map((group) => (
