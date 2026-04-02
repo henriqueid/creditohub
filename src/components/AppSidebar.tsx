@@ -64,6 +64,10 @@ export function AppSidebar() {
   const collapsed = state === "collapsed";
   const location = useLocation();
 
+  const monitorActive = monitorItems.some((i) =>
+    location.pathname.startsWith(i.url)
+  );
+
   const esteiraActive = esteiraItems.some((i) =>
     i.url === "/" ? location.pathname === "/" : location.pathname.startsWith(i.url)
   );
@@ -113,12 +117,24 @@ export function AppSidebar() {
 
         {/* Monitoramento */}
         <SidebarGroup>
-          <SidebarGroupLabel>Monitoramento</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {renderMenuItems(monitorItems, collapsed)}
-            </SidebarMenu>
-          </SidebarGroupContent>
+          <Collapsible defaultOpen={monitorActive || true}>
+            <CollapsibleTrigger className="w-full">
+              <SidebarGroupLabel className="cursor-pointer flex items-center justify-between w-full group">
+                <span className="flex items-center gap-1.5">
+                  <FileBarChart className="h-3.5 w-3.5" />
+                  {!collapsed && "Monitoramento"}
+                </span>
+                {!collapsed && <ChevronRight className="h-3.5 w-3.5 transition-transform group-data-[state=open]:rotate-90" />}
+              </SidebarGroupLabel>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {renderMenuItems(monitorItems, collapsed)}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </CollapsibleContent>
+          </Collapsible>
         </SidebarGroup>
 
         {/* Bottom */}
