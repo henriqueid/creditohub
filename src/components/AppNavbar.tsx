@@ -323,7 +323,7 @@ export function AppNavbar() {
             "hover:bg-white/10 hover:text-white",
             location.pathname.startsWith("/configuracoes")
               ? "text-white bg-white/15"
-              : "text-navbar-foreground/70"
+              : "text-white/60"
           )}
         >
           <Settings className="h-4 w-4" />
