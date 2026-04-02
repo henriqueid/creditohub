@@ -138,7 +138,7 @@ function MegaMenuDropdown({
                     <item.icon className={cn("h-4 w-4", isActive ? "text-primary" : "text-muted-foreground group-hover/item:text-primary")} />
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-sm font-medium leading-tight">{item.title}</span>
+                    <span className="text-sm font-medium leading-tight text-foreground">{item.title}</span>
                     {item.description && (
                       <span className="text-xs text-muted-foreground mt-0.5 leading-snug">{item.description}</span>
                     )}
