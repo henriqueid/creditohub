@@ -92,10 +92,10 @@ function MegaMenuDropdown({
       <button
         className={cn(
           "flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-md transition-colors",
-          "hover:bg-accent/10 hover:text-accent-foreground",
+          "hover:bg-white/10 hover:text-white",
           isGroupActive
-            ? "text-primary bg-primary/10"
-            : "text-muted-foreground"
+            ? "text-white bg-white/15"
+            : "text-navbar-foreground/70"
         )}
       >
         <group.icon className="h-4 w-4" />
