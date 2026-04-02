@@ -153,11 +153,11 @@ export function GlobalSearch() {
           setOpen(true);
           setTimeout(() => inputRef.current?.focus(), 50);
         }}
-        className="flex items-center gap-2 px-2.5 py-1.5 rounded-md bg-white/10 hover:bg-white/15 transition-colors text-navbar-foreground/60 hover:text-navbar-foreground/80 text-xs"
+        className="flex items-center gap-2 px-2.5 py-1.5 rounded-md bg-white/10 hover:bg-white/15 transition-colors text-white/50 hover:text-white/70 text-xs"
       >
         <Search className="h-3.5 w-3.5" />
         <span className="hidden lg:inline">Buscar...</span>
-        <kbd className="hidden lg:inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-white/10 text-[10px] font-mono text-navbar-foreground/40">
+        <kbd className="hidden lg:inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-white/10 text-[10px] font-mono text-white/35">
           ⌘K
         </kbd>
       </button>
@@ -168,9 +168,9 @@ export function GlobalSearch() {
     <div ref={containerRef} className="relative">
       <div className="flex items-center gap-2 bg-white/15 rounded-md px-2.5 py-1.5 min-w-[280px]">
         {loading ? (
-          <Loader2 className="h-3.5 w-3.5 text-navbar-foreground/60 animate-spin" />
+          <Loader2 className="h-3.5 w-3.5 text-white/50 animate-spin" />
         ) : (
-          <Search className="h-3.5 w-3.5 text-navbar-foreground/60" />
+          <Search className="h-3.5 w-3.5 text-white/50" />
         )}
         <input
           ref={inputRef}
@@ -178,9 +178,9 @@ export function GlobalSearch() {
           onChange={(e) => handleInputChange(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Buscar clientes, análises, CNPJ..."
-          className="bg-transparent border-none outline-none text-xs text-navbar-foreground placeholder:text-navbar-foreground/40 flex-1"
+          className="bg-transparent border-none outline-none text-xs text-white placeholder:text-white/35 flex-1"
         />
-        <button onClick={() => { setOpen(false); setQuery(""); setResults([]); }} className="text-navbar-foreground/40 hover:text-navbar-foreground/70">
+        <button onClick={() => { setOpen(false); setQuery(""); setResults([]); }} className="text-white/35 hover:text-white/60">
           <X className="h-3.5 w-3.5" />
         </button>
       </div>
