@@ -178,9 +178,9 @@ export function GlobalSearch() {
           onChange={(e) => handleInputChange(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Buscar clientes, análises, CNPJ..."
-          className="bg-transparent border-none outline-none text-xs text-navbar-foreground placeholder:text-navbar-foreground/40 flex-1"
+          className="bg-transparent border-none outline-none text-xs text-white placeholder:text-white/35 flex-1"
         />
-        <button onClick={() => { setOpen(false); setQuery(""); setResults([]); }} className="text-navbar-foreground/40 hover:text-navbar-foreground/70">
+        <button onClick={() => { setOpen(false); setQuery(""); setResults([]); }} className="text-white/35 hover:text-white/60">
           <X className="h-3.5 w-3.5" />
         </button>
       </div>
