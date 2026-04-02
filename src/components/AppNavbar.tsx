@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { NotificationBell } from "@/components/NotificationBell";
 import {
   LayoutDashboard,
   SearchCheck,
