@@ -7,7 +7,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 
 interface SearchResult {
   id: string;
-  type: "client" | "analysis";
+  type: "client" | "analysis" | "bankruptcy" | "blacklist";
   title: string;
   subtitle: string;
   status?: string;
