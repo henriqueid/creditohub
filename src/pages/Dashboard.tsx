@@ -93,7 +93,7 @@ export default function Dashboard() {
     queryFn: async () => {
       const { data } = await supabase
         .from("monitoring_groups")
-        .select("id, name, is_active, frequency, limiar_variacao, limiar_atraso_dias, concentracao_maxima, volume_minimo, alerta_email, alerta_sistema");
+        .select("id, name, is_active, frequency, limiar_variacao, limiar_atraso_dias, concentracao_maxima, volume_minimo, alerta_email, alerta_sistema, monitoring_group_clients(id)");
       return data || [];
     },
   });
