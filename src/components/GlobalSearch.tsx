@@ -1,13 +1,13 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Building2, FileText, X, Loader2 } from "lucide-react";
+import { Search, Building2, FileText, X, Loader2, Scale, ShieldBan } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { StatusBadge } from "@/components/StatusBadge";
 
 interface SearchResult {
   id: string;
-  type: "client" | "analysis";
+  type: "client" | "analysis" | "bankruptcy" | "blacklist";
   title: string;
   subtitle: string;
   status?: string;
@@ -59,7 +59,7 @@ export function GlobalSearch() {
     try {
       const searchTerm = `%${term}%`;
 
-      const [clientsRes, analysesRes] = await Promise.all([
+      const [clientsRes, analysesRes, bankruptcyRes, blacklistRes] = await Promise.all([
         supabase
           .from("clients")
           .select("id, razao_social, nome_fantasia, cnpj_cpf, cidade, estado")
@@ -69,6 +69,16 @@ export function GlobalSearch() {
           .from("credit_analysis")
           .select("id, status, credit_score, created_at, analista_credito, clients(razao_social, cnpj_cpf)")
           .or(`analista_credito.ilike.${searchTerm}`)
+          .limit(5),
+        supabase
+          .from("bankruptcy_records")
+          .select("id, company_name, document, type, status")
+          .or(`company_name.ilike.${searchTerm},document.ilike.${searchTerm}`)
+          .limit(5),
+        supabase
+          .from("blacklist")
+          .select("id, documento, tipo, motivo, adicionado_por")
+          .or(`documento.ilike.${searchTerm},motivo.ilike.${searchTerm}`)
           .limit(5),
       ]);
 
@@ -109,6 +119,30 @@ export function GlobalSearch() {
           subtitle: [client?.cnpj_cpf, a.analista_credito ? `Analista: ${a.analista_credito}` : null].filter(Boolean).join(" · "),
           status: a.status,
           href: `/analises/${a.id}`,
+        });
+      });
+
+      // Bankruptcy records
+      (bankruptcyRes.data || []).forEach((b) => {
+        const typeLabel = b.type === "falencia" ? "Falência" : "Recuperação Judicial";
+        items.push({
+          id: b.id,
+          type: "bankruptcy",
+          title: b.company_name,
+          subtitle: [b.document, typeLabel].filter(Boolean).join(" · "),
+          status: b.status,
+          href: "/falimentar",
+        });
+      });
+
+      // Blacklist
+      (blacklistRes.data || []).forEach((bl) => {
+        items.push({
+          id: bl.id,
+          type: "blacklist",
+          title: bl.documento,
+          subtitle: [bl.tipo === "cpf" ? "CPF" : "CNPJ", bl.motivo].filter(Boolean).join(" · "),
+          href: "/blacklist",
         });
       });
 
@@ -195,13 +229,19 @@ export function GlobalSearch() {
           ) : (
             <div className="max-h-[320px] overflow-y-auto">
               {/* Group by type */}
-              {["client", "analysis"].map((type) => {
+              {(["client", "analysis", "bankruptcy", "blacklist"] as const).map((type) => {
                 const group = results.filter((r) => r.type === type);
                 if (group.length === 0) return null;
+                const labels: Record<string, string> = {
+                  client: "Cedentes",
+                  analysis: "Análises de Crédito",
+                  bankruptcy: "Informe Falimentar",
+                  blacklist: "Blacklist",
+                };
                 return (
                   <div key={type}>
                     <div className="px-3 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider bg-muted/50">
-                      {type === "client" ? "Cedentes" : "Análises de Crédito"}
+                      {labels[type]}
                     </div>
                     {group.map((result) => {
                       const idx = results.indexOf(result);
@@ -215,11 +255,10 @@ export function GlobalSearch() {
                           )}
                         >
                           <div className="h-7 w-7 rounded-md flex items-center justify-center bg-muted shrink-0">
-                            {result.type === "client" ? (
-                              <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
-                            ) : (
-                              <FileText className="h-3.5 w-3.5 text-muted-foreground" />
-                            )}
+                            {result.type === "client" && <Building2 className="h-3.5 w-3.5 text-muted-foreground" />}
+                            {result.type === "analysis" && <FileText className="h-3.5 w-3.5 text-muted-foreground" />}
+                            {result.type === "bankruptcy" && <Scale className="h-3.5 w-3.5 text-muted-foreground" />}
+                            {result.type === "blacklist" && <ShieldBan className="h-3.5 w-3.5 text-destructive" />}
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="text-xs font-medium truncate">{result.title}</div>
