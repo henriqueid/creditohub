@@ -161,7 +161,7 @@ export default function Dashboard() {
       {/* Alerts banner */}
       {alertItems.length > 0 && (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.1 }}>
-          <Card className="border-amber-200 bg-amber-50/50 dark:border-amber-800 dark:bg-amber-950/30">
+          <Card className="glass-card border-amber-200/60 dark:border-amber-800/40">
             <CardContent className="py-3 px-4 space-y-1.5">
               <div className="flex items-center gap-2 mb-1">
                 <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
@@ -205,7 +205,7 @@ export default function Dashboard() {
           ].map((card) => (
             <Card
               key={card.title}
-              className={cn("cursor-pointer hover:shadow-md transition-shadow", !card.href && "cursor-default")}
+              className={cn("glass-card cursor-pointer hover:shadow-md transition-shadow", !card.href && "cursor-default")}
               onClick={() => card.href && navigate(card.href)}
             >
               <CardContent className="p-3 flex flex-col items-center text-center gap-1">
@@ -225,7 +225,7 @@ export default function Dashboard() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.3 }}
       >
-        <Card className="lg:col-span-2">
+        <Card className="glass-card lg:col-span-2">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
               <DollarSign className="h-4 w-4 text-primary" /> Resumo Financeiro
@@ -254,7 +254,7 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card className="lg:col-span-3">
+        <Card className="glass-card lg:col-span-3">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
               <TrendingUp className="h-4 w-4 text-primary" /> Distribuição por Status
@@ -297,7 +297,7 @@ export default function Dashboard() {
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* NFs */}
-          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/monitoramento-nfs")}>
+          <Card className="glass-card cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/monitoramento-nfs")}>
             <CardHeader className="pb-1.5 pt-4 px-4">
               <CardTitle className="text-xs flex items-center gap-2 font-medium">
                 <FileBarChart className="h-3.5 w-3.5 text-primary" /> Monitoramento NFs
@@ -317,7 +317,7 @@ export default function Dashboard() {
           </Card>
 
           {/* Grupos de Monitoramento */}
-          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/monitoramento-nfs")}>
+          <Card className="glass-card cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/monitoramento-nfs")}>
             <CardHeader className="pb-1.5 pt-4 px-4">
               <CardTitle className="text-xs flex items-center gap-2 font-medium">
                 <Layers className="h-3.5 w-3.5 text-primary" /> Grupos de Monitoramento
@@ -350,7 +350,7 @@ export default function Dashboard() {
           </Card>
 
           {/* Falimentar */}
-          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/falimentar")}>
+          <Card className="glass-card cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/falimentar")}>
             <CardHeader className="pb-1.5 pt-4 px-4">
               <CardTitle className="text-xs flex items-center gap-2 font-medium">
                 <Scale className="h-3.5 w-3.5 text-primary" /> Informe Falimentar
@@ -376,7 +376,7 @@ export default function Dashboard() {
           </Card>
 
           {/* Blacklist */}
-          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/blacklist")}>
+          <Card className="glass-card cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/blacklist")}>
             <CardHeader className="pb-1.5 pt-4 px-4">
               <CardTitle className="text-xs flex items-center gap-2 font-medium">
                 <ShieldBan className="h-3.5 w-3.5 text-primary" /> Blacklist
@@ -419,7 +419,7 @@ export default function Dashboard() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.5 }}
       >
-        <Card>
+        <Card className="glass-card">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm flex items-center gap-2">

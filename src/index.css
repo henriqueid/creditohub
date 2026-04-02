@@ -50,6 +50,10 @@
     --sidebar-accent-foreground: 215 20% 90%;
     --sidebar-border: 220 20% 18%;
     --sidebar-ring: 210 60% 60%;
+
+    /* Navbar */
+    --navbar: 220 50% 15%;
+    --navbar-foreground: 210 40% 95%;
   }
 
   .dark {
@@ -80,6 +84,9 @@
     --sidebar-accent-foreground: 215 20% 85%;
     --sidebar-border: 220 20% 12%;
     --sidebar-ring: 210 60% 55%;
+
+    --navbar: 220 40% 8%;
+    --navbar-foreground: 210 30% 90%;
   }
 }
 
@@ -97,6 +104,20 @@
 @layer utilities {
   .tabular-nums {
     font-variant-numeric: tabular-nums;
+  }
+
+  .glass-card {
+    background: hsl(var(--card) / 0.65);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid hsl(var(--border) / 0.5);
+    box-shadow: 0 4px 24px -4px hsl(var(--foreground) / 0.06), 0 1px 2px hsl(var(--foreground) / 0.04);
+  }
+
+  .dark .glass-card {
+    background: hsl(var(--card) / 0.45);
+    border-color: hsl(var(--border) / 0.3);
+    box-shadow: 0 4px 24px -4px hsl(0 0% 0% / 0.3);
   }
 }
 
