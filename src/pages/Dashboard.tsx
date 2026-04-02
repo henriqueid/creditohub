@@ -1,9 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Building2, FileText, Users, CheckCircle, XCircle, Clock, TrendingUp, BarChart3, AlertTriangle, DollarSign } from "lucide-react";
+import {
+  Building2, FileText, Users, CheckCircle, XCircle, Clock, TrendingUp,
+  BarChart3, AlertTriangle, DollarSign, ShieldBan, Scale, FileBarChart, UserSearch, Percent
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { formatBRL } from "@/lib/formatters";
+import { formatBRL, formatDate } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 import { StatusBadge } from "@/components/StatusBadge";
 import { motion } from "framer-motion";
@@ -11,7 +14,6 @@ import { motion } from "framer-motion";
 export default function Dashboard() {
   const navigate = useNavigate();
 
-  // All analyses with details
   const { data: analyses = [] } = useQuery({
     queryKey: ["dashboard-analyses"],
     queryFn: async () => {
@@ -40,26 +42,64 @@ export default function Dashboard() {
     },
   });
 
-  // Computed metrics
+  const { data: blacklistCount = 0 } = useQuery({
+    queryKey: ["dashboard-blacklist-count"],
+    queryFn: async () => {
+      const { count } = await supabase.from("blacklist").select("*", { count: "exact", head: true });
+      return count ?? 0;
+    },
+  });
+
+  const { data: bankruptcyRecords = [] } = useQuery({
+    queryKey: ["dashboard-bankruptcy"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("bankruptcy_records")
+        .select("id, status, matched_client_id, matched_sacado_names, type, created_at, company_name")
+        .order("created_at", { ascending: false })
+        .limit(50);
+      return data || [];
+    },
+  });
+
+  const { data: invoices = [] } = useQuery({
+    queryKey: ["dashboard-invoices"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("monitored_invoices")
+        .select("id, validation_status, valor, created_at")
+        .order("created_at", { ascending: false })
+        .limit(200);
+      return data || [];
+    },
+  });
+
+  // Credit metrics
   const total = analyses.length;
   const drafts = analyses.filter(a => a.status === "draft").length;
   const inCommittee = analyses.filter(a => a.status === "in_committee").length;
   const approved = analyses.filter(a => a.status === "approved" || a.status === "approved_restricted").length;
   const approvedRestricted = analyses.filter(a => a.status === "approved_restricted").length;
   const rejected = analyses.filter(a => a.status === "rejected").length;
-
   const totalLimiteSugerido = analyses.reduce((sum, a) => sum + (a.limite_sugerido ?? 0), 0);
   const totalLimiteAprovado = committeeResults.reduce((sum, r) => sum + (r.limite_aprovado ?? 0), 0);
   const avgScore = analyses.filter(a => a.credit_score).length > 0
     ? Math.round(analyses.reduce((sum, a) => sum + (a.credit_score ?? 0), 0) / analyses.filter(a => a.credit_score).length)
     : 0;
-
   const approvalRate = total > 0 ? ((approved / (approved + rejected || 1)) * 100) : 0;
 
-  // Recent analyses (last 5)
-  const recentAnalyses = analyses.slice(0, 8);
+  // Invoice metrics
+  const invoiceValid = invoices.filter(i => i.validation_status === "valid").length;
+  const invoiceInvalid = invoices.filter(i => i.validation_status === "invalid").length;
+  const invoicePending = invoices.filter(i => i.validation_status === "pending").length;
+  const invoiceTotalValue = invoices.reduce((sum, i) => sum + (i.valor ?? 0), 0);
 
-  // Status distribution for bar chart
+  // Bankruptcy metrics
+  const bankruptcyMatched = bankruptcyRecords.filter(b => b.matched_client_id || (b.matched_sacado_names && b.matched_sacado_names.length > 0)).length;
+  const bankruptcyActive = bankruptcyRecords.filter(b => b.status === "active").length;
+
+  const recentAnalyses = analyses.slice(0, 6);
+
   const statusData = [
     { label: "Rascunho", value: drafts, color: "bg-muted-foreground/40", pct: total > 0 ? (drafts / total) * 100 : 0 },
     { label: "Em Comitê", value: inCommittee, color: "bg-status-committee", pct: total > 0 ? (inCommittee / total) * 100 : 0 },
@@ -79,8 +119,8 @@ export default function Dashboard() {
   return (
     <div className="p-6 space-y-6 overflow-auto">
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
-        <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground">Painel consolidado do módulo de crédito</p>
+        <h1 className="text-2xl font-bold tracking-tight">Painel Inicial</h1>
+        <p className="text-muted-foreground">Visão consolidada da plataforma de inteligência de crédito</p>
       </motion.div>
 
       {/* KPI Cards */}
@@ -110,9 +150,8 @@ export default function Dashboard() {
         ))}
       </div>
 
-      {/* Second row: Financial + Pipeline */}
+      {/* Row: Financial + Distribution + Recent */}
       <motion.div className="grid grid-cols-1 lg:grid-cols-3 gap-4" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.5 }}>
-        {/* Financial summary */}
         <Card className="lg:col-span-1">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm flex items-center gap-2">
@@ -140,7 +179,6 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        {/* Status Distribution */}
         <Card className="lg:col-span-1">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm flex items-center gap-2">
@@ -162,7 +200,6 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        {/* Recent analyses */}
         <Card className="lg:col-span-1">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm flex items-center gap-2">
@@ -195,17 +232,106 @@ export default function Dashboard() {
         </Card>
       </motion.div>
 
+      {/* Row: Monitoring modules */}
+      <motion.div className="grid grid-cols-1 md:grid-cols-3 gap-4" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.65 }}>
+        {/* Invoice Monitoring Summary */}
+        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/monitoramento-nfs")}>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <FileBarChart className="h-4 w-4 text-primary" /> Monitoramento NFs
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <p className="text-[10px] text-muted-foreground">Total NFs</p>
+                <p className="text-lg font-bold tabular-nums">{invoices.length}</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-muted-foreground">Volume Total</p>
+                <p className="text-sm font-bold tabular-nums">{formatBRL(invoiceTotalValue)}</p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <div className="flex items-center gap-1 text-[10px]">
+                <div className="h-2 w-2 rounded-full bg-status-approved" />
+                <span>{invoiceValid} válidas</span>
+              </div>
+              <div className="flex items-center gap-1 text-[10px]">
+                <div className="h-2 w-2 rounded-full bg-status-rejected" />
+                <span>{invoiceInvalid} inválidas</span>
+              </div>
+              <div className="flex items-center gap-1 text-[10px]">
+                <div className="h-2 w-2 rounded-full bg-muted-foreground/40" />
+                <span>{invoicePending} pendentes</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Bankruptcy Summary */}
+        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/falimentar")}>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Scale className="h-4 w-4 text-primary" /> Informe Falimentar
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <p className="text-[10px] text-muted-foreground">Registros Ativos</p>
+                <p className="text-lg font-bold tabular-nums">{bankruptcyActive}</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-muted-foreground">Total Monitorado</p>
+                <p className="text-lg font-bold tabular-nums">{bankruptcyRecords.length}</p>
+              </div>
+            </div>
+            {bankruptcyMatched > 0 ? (
+              <div className="flex items-center gap-1.5 px-2 py-1.5 rounded bg-destructive/10 text-destructive text-xs">
+                <AlertTriangle className="h-3 w-3 shrink-0" />
+                <span className="font-medium">{bankruptcyMatched} coincidência(s) com a carteira</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5 px-2 py-1.5 rounded bg-muted text-muted-foreground text-xs">
+                <CheckCircle className="h-3 w-3 shrink-0" />
+                <span>Nenhuma coincidência com a carteira</span>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Blacklist Summary */}
+        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/blacklist")}>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <ShieldBan className="h-4 w-4 text-primary" /> Blacklist
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div>
+              <p className="text-[10px] text-muted-foreground">Registros na Blacklist</p>
+              <p className="text-lg font-bold tabular-nums">{blacklistCount}</p>
+            </div>
+            <p className="text-[10px] text-muted-foreground leading-relaxed">
+              CPFs e CNPJs bloqueados para operações. Consultas automáticas verificam a blacklist antes de prosseguir.
+            </p>
+          </CardContent>
+        </Card>
+      </motion.div>
+
       {/* Alerts */}
-      {(inCommittee > 0 || drafts > 0) && (
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.7 }}>
+      {(inCommittee > 0 || drafts > 0 || bankruptcyMatched > 0) && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.8 }}>
           <Card className="border-amber-200 bg-amber-50/50 dark:border-amber-800 dark:bg-amber-950/30">
             <CardContent className="py-4 flex items-start gap-3">
               <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
               <div className="space-y-1">
-                <p className="text-sm font-semibold text-amber-700 dark:text-amber-300">Pendências</p>
+                <p className="text-sm font-semibold text-amber-700 dark:text-amber-300">Pendências e Alertas</p>
                 <div className="text-xs text-amber-600 dark:text-amber-400 space-y-0.5">
                   {inCommittee > 0 && <p>• {inCommittee} análise(s) aguardando votação no comitê</p>}
                   {drafts > 0 && <p>• {drafts} análise(s) em rascunho para finalizar</p>}
+                  {bankruptcyMatched > 0 && <p>• {bankruptcyMatched} registro(s) falimentar(es) coincidem com a carteira</p>}
                 </div>
               </div>
             </CardContent>
