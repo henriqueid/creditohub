@@ -155,27 +155,6 @@ export default function Settings() {
         </CardContent>
       </Card>
 
-      {/* Integrações Banner */}
-      <Card className="bg-primary/5 border-primary/20 cursor-pointer hover:bg-primary/10 transition-colors" onClick={() => navigate("/integracoes")}>
-        <CardContent className="py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Plug className="h-6 w-6 text-primary" />
-            <div>
-              <h3 className="font-semibold">Integrações</h3>
-              <p className="text-sm text-muted-foreground">Gerencie conexões com sistemas externos via API e Webhooks</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
-              <Badge variant="secondary" className="tabular-nums">{totalIntegrations} configurada(s)</Badge>
-              {activeIntegrations > 0 && (
-                <Badge variant="default" className="tabular-nums bg-status-approved">{activeIntegrations} ativa(s)</Badge>
-              )}
-            </div>
-            <Button variant="outline" size="sm">Gerenciar →</Button>
-          </div>
-        </CardContent>
-      </Card>
 
       <div className="flex items-center justify-between">
         <div>
