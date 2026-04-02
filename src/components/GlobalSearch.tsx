@@ -229,13 +229,19 @@ export function GlobalSearch() {
           ) : (
             <div className="max-h-[320px] overflow-y-auto">
               {/* Group by type */}
-              {["client", "analysis"].map((type) => {
+              {(["client", "analysis", "bankruptcy", "blacklist"] as const).map((type) => {
                 const group = results.filter((r) => r.type === type);
                 if (group.length === 0) return null;
+                const labels: Record<string, string> = {
+                  client: "Cedentes",
+                  analysis: "Análises de Crédito",
+                  bankruptcy: "Informe Falimentar",
+                  blacklist: "Blacklist",
+                };
                 return (
                   <div key={type}>
                     <div className="px-3 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider bg-muted/50">
-                      {type === "client" ? "Cedentes" : "Análises de Crédito"}
+                      {labels[type]}
                     </div>
                     {group.map((result) => {
                       const idx = results.indexOf(result);
