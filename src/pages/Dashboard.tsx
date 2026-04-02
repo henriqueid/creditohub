@@ -126,6 +126,26 @@ export default function Dashboard() {
   const activeGroups = monitoringGroups.filter(g => g.is_active).length;
   const recentAnalyses = analyses.slice(0, 6);
 
+  // Build sparkline data: count per week for last 8 weeks
+  const buildWeeklySparkline = (items: { created_at: string }[]) => {
+    const weeks = 8;
+    const msPerWeek = 7 * 24 * 60 * 60 * 1000;
+    const counts = Array(weeks).fill(0);
+    items.forEach(item => {
+      const age = now.getTime() - new Date(item.created_at).getTime();
+      const idx = Math.floor(age / msPerWeek);
+      if (idx >= 0 && idx < weeks) counts[weeks - 1 - idx]++;
+    });
+    return counts;
+  };
+
+  const sparkAnalyses = buildWeeklySparkline(analyses);
+  const sparkApproved = buildWeeklySparkline(analyses.filter(a => a.status === "approved" || a.status === "approved_restricted"));
+  const sparkRejected = buildWeeklySparkline(analyses.filter(a => a.status === "rejected"));
+  const sparkCommittee = buildWeeklySparkline(analyses.filter(a => a.status === "in_committee"));
+  const sparkBlacklist = buildWeeklySparkline(blacklistEntries);
+  const sparkInvoices = buildWeeklySparkline(invoices);
+
   const statusData = [
     { label: "Rascunho", value: drafts, color: "bg-muted-foreground/40", dotColor: "bg-muted-foreground", pct: total > 0 ? (drafts / total) * 100 : 0 },
     { label: "Em Comitê", value: inCommittee, color: "bg-status-committee", dotColor: "bg-status-committee", pct: total > 0 ? (inCommittee / total) * 100 : 0 },
