@@ -346,7 +346,7 @@ export default function Dashboard() {
           <MonitorCard
             title="Monitoramento NFs"
             icon={FileBarChart}
-            mainValue={invoices.length}
+            mainValue={fInvoices.length}
             mainSuffix={formatBRL(invoiceTotalValue)}
             onClick={() => navigate("/monitoramento-nfs")}
           >
@@ -357,7 +357,7 @@ export default function Dashboard() {
             </div>
           </MonitorCard>
 
-          {/* Groups */}
+          {/* Groups - enhanced */}
           <MonitorCard
             title="Grupos de Monitoramento"
             icon={Layers}
@@ -366,16 +366,31 @@ export default function Dashboard() {
             onClick={() => navigate("/monitoramento-nfs")}
           >
             {monitoringGroups.length > 0 ? (
-              <div className="space-y-1.5">
-                {monitoringGroups.slice(0, 3).map(g => (
-                  <div key={g.id} className="flex items-center justify-between text-[11px]">
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      <CircleDot className={cn("h-2.5 w-2.5 shrink-0", g.is_active ? "text-status-approved" : "text-muted-foreground/40")} />
-                      <span className="truncate text-foreground">{g.name}</span>
+              <div className="space-y-2">
+                {monitoringGroups.slice(0, 3).map(g => {
+                  const grpClients = (g as any).monitoring_group_clients?.length ?? 0;
+                  return (
+                    <div key={g.id} className="rounded-md border border-border/50 p-2 space-y-1">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <CircleDot className={cn("h-2.5 w-2.5 shrink-0", g.is_active ? "text-status-approved" : "text-muted-foreground/40")} />
+                          <span className="truncate text-[11px] font-medium text-foreground">{g.name}</span>
+                        </div>
+                        <span className="text-[10px] text-muted-foreground shrink-0 ml-2">{frequencyLabel[g.frequency] || g.frequency}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-[10px] text-muted-foreground flex-wrap">
+                        <span className="flex items-center gap-0.5"><Building2 className="h-2.5 w-2.5" />{grpClients} cedente(s)</span>
+                        {g.concentracao_maxima != null && <span>Conc. {g.concentracao_maxima}%</span>}
+                        {g.limiar_variacao != null && <span>Var. {g.limiar_variacao}%</span>}
+                        {g.limiar_atraso_dias != null && <span>Atraso {g.limiar_atraso_dias}d</span>}
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        {g.alerta_sistema && <span className="text-[9px] bg-primary/10 text-primary rounded px-1 py-0.5">Sistema</span>}
+                        {g.alerta_email && <span className="text-[9px] bg-status-committee/10 text-status-committee rounded px-1 py-0.5">E-mail</span>}
+                      </div>
                     </div>
-                    <span className="text-muted-foreground shrink-0 ml-2">{frequencyLabel[g.frequency] || g.frequency}</span>
-                  </div>
-                ))}
+                  );
+                })}
                 {monitoringGroups.length > 3 && <p className="text-[10px] text-muted-foreground">+{monitoringGroups.length - 3} grupo(s)</p>}
               </div>
             ) : (
@@ -387,7 +402,7 @@ export default function Dashboard() {
           <MonitorCard
             title="Informe Falimentar"
             icon={Scale}
-            mainValue={bankruptcyRecords.length}
+            mainValue={fBankruptcy.length}
             mainSuffix={`${bankruptcyActive} ativo(s)`}
             onClick={() => navigate("/falimentar")}
           >
@@ -404,7 +419,7 @@ export default function Dashboard() {
             )}
           </MonitorCard>
 
-          {/* Blacklist */}
+          {/* Blacklist - enhanced */}
           <MonitorCard
             title="Blacklist"
             icon={ShieldBan}
@@ -413,15 +428,25 @@ export default function Dashboard() {
             onClick={() => navigate("/blacklist")}
             alert={newBlacklistCount > 0 ? `${newBlacklistCount} novo(s) em 7 dias` : undefined}
           >
-            {blacklistEntries.length > 0 ? (
-              <div className="space-y-1">
-                {blacklistEntries.slice(0, 3).map(b => (
-                  <div key={b.id} className="flex items-center justify-between text-[11px]">
-                    <span className="font-mono text-foreground truncate">{b.documento}</span>
-                    <span className="text-muted-foreground uppercase shrink-0 ml-2 text-[9px] font-semibold">{b.tipo}</span>
+            {fBlacklist.length > 0 ? (
+              <div className="space-y-1.5">
+                {fBlacklist.slice(0, 4).map(b => (
+                  <div key={b.id} className="rounded-md border border-border/50 px-2 py-1.5">
+                    <div className="flex items-center justify-between mb-0.5">
+                      <span className="font-mono text-[11px] text-foreground truncate">{b.documento}</span>
+                      <span className={cn(
+                        "text-[9px] uppercase shrink-0 ml-2 font-bold rounded px-1 py-0.5",
+                        b.tipo === "CNPJ" ? "bg-status-rejected/10 text-status-rejected" : "bg-status-committee/10 text-status-committee"
+                      )}>{b.tipo}</span>
+                    </div>
+                    {b.motivo && <p className="text-[10px] text-muted-foreground truncate">{b.motivo}</p>}
+                    <div className="flex items-center justify-between mt-0.5">
+                      <span className="text-[9px] text-muted-foreground">{b.adicionado_por === "system" ? "🤖 Automático" : b.adicionado_por || "Manual"}</span>
+                      <span className="text-[9px] text-muted-foreground">{formatDate(b.created_at)}</span>
+                    </div>
                   </div>
                 ))}
-                {blacklistCount > 3 && <p className="text-[10px] text-muted-foreground">+{blacklistCount - 3} registro(s)</p>}
+                {blacklistCount > 4 && <p className="text-[10px] text-muted-foreground text-center">+{blacklistCount - 4} registro(s)</p>}
               </div>
             ) : (
               <p className="text-[11px] text-muted-foreground">Nenhum registro</p>
@@ -430,7 +455,7 @@ export default function Dashboard() {
         </div>
       </motion.div>
 
-      {/* Recent Analyses */}
+      {/* Recent Analyses - enhanced */}
       <motion.div {...fade(0.4)}>
         <Card className="glass-card">
           <CardHeader className="pb-2">
@@ -453,27 +478,47 @@ export default function Dashboard() {
               <div className="space-y-2">
                 {recentAnalyses.map((a) => {
                   const client = a.clients as any;
+                  const daysAgo = Math.floor((now.getTime() - new Date(a.created_at).getTime()) / (1000 * 60 * 60 * 24));
+                  const daysLabel = daysAgo === 0 ? "Hoje" : daysAgo === 1 ? "Ontem" : `${daysAgo}d atrás`;
+                  const recLabel: Record<string, { text: string; cls: string }> = {
+                    approve: { text: "Aprovar", cls: "text-status-approved" },
+                    restrict: { text: "Restringir", cls: "text-status-committee" },
+                    reject: { text: "Rejeitar", cls: "text-status-rejected" },
+                  };
+                  const rec = a.recommendation ? recLabel[a.recommendation] : null;
+
                   return (
                     <div
                       key={a.id}
                       className="flex items-center gap-3 py-3 px-3 rounded-lg border border-border/60 hover:border-primary/30 hover:bg-accent/30 cursor-pointer transition-all group"
                       onClick={() => navigate(`/analises/${a.id}`)}
                     >
-                      {/* Score */}
-                      <div className={cn(
-                        "h-10 w-10 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 border",
-                        scoreBg(a.credit_score)
-                      )}>
-                        <span className={scoreColor(a.credit_score)}>{a.credit_score || "—"}</span>
+                      {/* Score with bar */}
+                      <div className="flex flex-col items-center gap-1 shrink-0">
+                        <div className={cn(
+                          "h-10 w-10 rounded-lg flex items-center justify-center text-xs font-bold border",
+                          scoreBg(a.credit_score)
+                        )}>
+                          <span className={scoreColor(a.credit_score)}>{a.credit_score || "—"}</span>
+                        </div>
+                        {a.credit_score && (
+                          <div className="w-10 h-1 rounded-full bg-muted overflow-hidden">
+                            <div
+                              className={cn("h-full rounded-full", a.credit_score >= 700 ? "bg-status-approved" : a.credit_score >= 400 ? "bg-status-committee" : "bg-status-rejected")}
+                              style={{ width: `${Math.min((a.credit_score / 1000) * 100, 100)}%` }}
+                            />
+                          </div>
+                        )}
                       </div>
 
                       {/* Info */}
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-0.5">
+                        <div className="flex items-center gap-2 mb-0.5 flex-wrap">
                           <p className="text-sm font-semibold text-foreground truncate">{client?.razao_social || "—"}</p>
                           <StatusBadge status={a.status} />
+                          {rec && <span className={cn("text-[10px] font-semibold", rec.cls)}>• {rec.text}</span>}
                         </div>
-                        <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+                        <div className="flex items-center gap-3 text-[11px] text-muted-foreground flex-wrap">
                           {client?.cnpj_cpf && (
                             <span className="flex items-center gap-0.5 font-mono">
                               <Hash className="h-2.5 w-2.5" />{client.cnpj_cpf}
@@ -484,16 +529,14 @@ export default function Dashboard() {
                               <User className="h-2.5 w-2.5" />{a.analista_credito}
                             </span>
                           )}
-                          {a.created_at && (
-                            <span className="flex items-center gap-0.5">
-                              <Calendar className="h-2.5 w-2.5" />{formatDate(a.created_at)}
-                            </span>
-                          )}
+                          <span className="flex items-center gap-0.5">
+                            <Clock className="h-2.5 w-2.5" />{daysLabel}
+                          </span>
                         </div>
                       </div>
 
                       {/* Values */}
-                      <div className="text-right shrink-0">
+                      <div className="text-right shrink-0 space-y-0.5">
                         <p className="text-sm font-bold tabular-nums text-foreground">
                           {a.limite_sugerido ? formatBRL(a.limite_sugerido) : "—"}
                         </p>
