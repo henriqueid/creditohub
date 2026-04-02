@@ -31,6 +31,7 @@ import {
   Bot,
   Bell,
   CalendarClock,
+  Plug,
 } from "lucide-react";
 
 type SettingRow = {
