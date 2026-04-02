@@ -3,12 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
@@ -31,6 +31,7 @@ import {
   Bot,
   Bell,
   CalendarClock,
+  Plug,
 } from "lucide-react";
 
 type SettingRow = {
@@ -63,6 +64,18 @@ export default function Settings() {
       return data as SettingRow[];
     },
   });
+
+  const { data: integrationCount = 0 } = useQuery({
+    queryKey: ["integration-configs-count"],
+    queryFn: async () => {
+      const { data } = await supabase.from("integration_configs").select("id, is_active");
+      return data || [];
+    },
+    select: (data) => data,
+  });
+
+  const activeIntegrations = Array.isArray(integrationCount) ? integrationCount.filter((i: any) => i.is_active).length : 0;
+  const totalIntegrations = Array.isArray(integrationCount) ? integrationCount.length : 0;
 
   useEffect(() => {
     if (settings.length > 0 && Object.keys(localSettings).length === 0) {
@@ -131,6 +144,28 @@ export default function Settings() {
             </div>
           </div>
           <Button variant="outline" size="sm">Configurar Motor →</Button>
+        </CardContent>
+      </Card>
+
+      {/* Integrações Banner */}
+      <Card className="bg-primary/5 border-primary/20 cursor-pointer hover:bg-primary/10 transition-colors" onClick={() => navigate("/integracoes")}>
+        <CardContent className="py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Plug className="h-6 w-6 text-primary" />
+            <div>
+              <h3 className="font-semibold">Integrações</h3>
+              <p className="text-sm text-muted-foreground">Gerencie conexões com sistemas externos via API e Webhooks</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary" className="tabular-nums">{totalIntegrations} configurada(s)</Badge>
+              {activeIntegrations > 0 && (
+                <Badge variant="default" className="tabular-nums bg-status-approved">{activeIntegrations} ativa(s)</Badge>
+              )}
+            </div>
+            <Button variant="outline" size="sm">Gerenciar →</Button>
+          </div>
         </CardContent>
       </Card>
 
