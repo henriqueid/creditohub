@@ -1,3 +1,4 @@
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -5,7 +6,7 @@ import {
   Building2, FileText, CheckCircle, XCircle, Clock, TrendingUp,
   BarChart3, AlertTriangle, DollarSign, ShieldBan, Scale, FileBarChart,
   Layers, Activity, ArrowRight, Calendar, User, Hash, ArrowUpRight,
-  Gauge, CircleDot, ChevronRight, Zap
+  Gauge, CircleDot, ChevronRight, Zap, Filter
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { formatBRL, formatDate } from "@/lib/formatters";
@@ -21,6 +22,7 @@ const fade = (delay = 0) => ({
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const [periodDays, setPeriodDays] = useState<number | null>(null); // null = all time
 
   const { data: analyses = [] } = useQuery({
     queryKey: ["dashboard-analyses"],
@@ -96,35 +98,46 @@ export default function Dashboard() {
     },
   });
 
-  // Metrics
-  const total = analyses.length;
-  const drafts = analyses.filter(a => a.status === "draft").length;
-  const inCommittee = analyses.filter(a => a.status === "in_committee").length;
-  const approved = analyses.filter(a => a.status === "approved" || a.status === "approved_restricted").length;
-  const approvedRestricted = analyses.filter(a => a.status === "approved_restricted").length;
-  const rejected = analyses.filter(a => a.status === "rejected").length;
-  const totalLimiteSugerido = analyses.reduce((sum, a) => sum + (a.limite_sugerido ?? 0), 0);
-  const totalLimiteAprovado = committeeResults.reduce((sum, r) => sum + (r.limite_aprovado ?? 0), 0);
-  const avgScore = analyses.filter(a => a.credit_score).length > 0
-    ? Math.round(analyses.reduce((sum, a) => sum + (a.credit_score ?? 0), 0) / analyses.filter(a => a.credit_score).length)
+  // Period filter
+  const now = new Date();
+  const cutoff = periodDays ? new Date(now.getTime() - periodDays * 24 * 60 * 60 * 1000) : null;
+  const inPeriod = <T extends { created_at: string }>(items: T[]) =>
+    cutoff ? items.filter(i => new Date(i.created_at) >= cutoff) : items;
+
+  const fAnalyses = useMemo(() => inPeriod(analyses), [analyses, periodDays]);
+  const fCommitteeResults = useMemo(() => inPeriod(committeeResults), [committeeResults, periodDays]);
+  const fBlacklist = useMemo(() => inPeriod(blacklistEntries), [blacklistEntries, periodDays]);
+  const fBankruptcy = useMemo(() => inPeriod(bankruptcyRecords), [bankruptcyRecords, periodDays]);
+  const fInvoices = useMemo(() => inPeriod(invoices), [invoices, periodDays]);
+
+  // Metrics (use filtered data)
+  const total = fAnalyses.length;
+  const drafts = fAnalyses.filter(a => a.status === "draft").length;
+  const inCommittee = fAnalyses.filter(a => a.status === "in_committee").length;
+  const approved = fAnalyses.filter(a => a.status === "approved" || a.status === "approved_restricted").length;
+  const approvedRestricted = fAnalyses.filter(a => a.status === "approved_restricted").length;
+  const rejected = fAnalyses.filter(a => a.status === "rejected").length;
+  const totalLimiteSugerido = fAnalyses.reduce((sum, a) => sum + (a.limite_sugerido ?? 0), 0);
+  const totalLimiteAprovado = fCommitteeResults.reduce((sum, r) => sum + (r.limite_aprovado ?? 0), 0);
+  const avgScore = fAnalyses.filter(a => a.credit_score).length > 0
+    ? Math.round(fAnalyses.reduce((sum, a) => sum + (a.credit_score ?? 0), 0) / fAnalyses.filter(a => a.credit_score).length)
     : 0;
   const approvalRate = total > 0 ? ((approved / (approved + rejected || 1)) * 100) : 0;
 
-  const invoiceValid = invoices.filter(i => i.validation_status === "valid").length;
-  const invoiceInvalid = invoices.filter(i => i.validation_status === "invalid").length;
-  const invoicePending = invoices.filter(i => i.validation_status === "pending").length;
-  const invoiceTotalValue = invoices.reduce((sum, i) => sum + (i.valor ?? 0), 0);
+  const invoiceValid = fInvoices.filter(i => i.validation_status === "valid").length;
+  const invoiceInvalid = fInvoices.filter(i => i.validation_status === "invalid").length;
+  const invoicePending = fInvoices.filter(i => i.validation_status === "pending").length;
+  const invoiceTotalValue = fInvoices.reduce((sum, i) => sum + (i.valor ?? 0), 0);
 
-  const bankruptcyMatched = bankruptcyRecords.filter(b => b.matched_client_id || (b.matched_sacado_names && b.matched_sacado_names.length > 0)).length;
-  const bankruptcyActive = bankruptcyRecords.filter(b => b.status === "active" || b.status === "em_andamento").length;
+  const bankruptcyMatched = fBankruptcy.filter(b => b.matched_client_id || (b.matched_sacado_names && b.matched_sacado_names.length > 0)).length;
+  const bankruptcyActive = fBankruptcy.filter(b => b.status === "active" || b.status === "em_andamento").length;
 
-  const blacklistCount = blacklistEntries.length;
-  const now = new Date();
+  const blacklistCount = fBlacklist.length;
   const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-  const newBlacklistCount = blacklistEntries.filter(b => new Date(b.created_at) >= sevenDaysAgo).length;
+  const newBlacklistCount = fBlacklist.filter(b => new Date(b.created_at) >= sevenDaysAgo).length;
 
   const activeGroups = monitoringGroups.filter(g => g.is_active).length;
-  const recentAnalyses = analyses.slice(0, 6);
+  const recentAnalyses = fAnalyses.slice(0, 6);
 
   // Build sparkline data: count per week for last 8 weeks
   const buildWeeklySparkline = (items: { created_at: string }[]) => {
@@ -139,12 +152,12 @@ export default function Dashboard() {
     return counts;
   };
 
-  const sparkAnalyses = buildWeeklySparkline(analyses);
-  const sparkApproved = buildWeeklySparkline(analyses.filter(a => a.status === "approved" || a.status === "approved_restricted"));
-  const sparkRejected = buildWeeklySparkline(analyses.filter(a => a.status === "rejected"));
-  const sparkCommittee = buildWeeklySparkline(analyses.filter(a => a.status === "in_committee"));
-  const sparkBlacklist = buildWeeklySparkline(blacklistEntries);
-  const sparkInvoices = buildWeeklySparkline(invoices);
+  const sparkAnalyses = buildWeeklySparkline(fAnalyses);
+  const sparkApproved = buildWeeklySparkline(fAnalyses.filter(a => a.status === "approved" || a.status === "approved_restricted"));
+  const sparkRejected = buildWeeklySparkline(fAnalyses.filter(a => a.status === "rejected"));
+  const sparkCommittee = buildWeeklySparkline(fAnalyses.filter(a => a.status === "in_committee"));
+  const sparkBlacklist = buildWeeklySparkline(fBlacklist);
+  const sparkInvoices = buildWeeklySparkline(fInvoices);
 
   const statusData = [
     { label: "Rascunho", value: drafts, color: "bg-muted-foreground/40", dotColor: "bg-muted-foreground", pct: total > 0 ? (drafts / total) * 100 : 0 },
@@ -181,9 +194,32 @@ export default function Dashboard() {
   return (
     <div className="p-6 space-y-6 overflow-auto">
       {/* Header */}
-      <motion.div {...fade(0)}>
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">Painel Inicial</h1>
-        <p className="text-sm text-muted-foreground">Visão consolidada da plataforma de inteligência de crédito</p>
+      <motion.div className="flex items-center justify-between flex-wrap gap-3" {...fade(0)}>
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Painel Inicial</h1>
+          <p className="text-sm text-muted-foreground">Visão consolidada da plataforma de inteligência de crédito</p>
+        </div>
+        <div className="flex items-center gap-1 bg-muted/60 rounded-lg p-1">
+          {([
+            { label: "7 dias", days: 7 },
+            { label: "30 dias", days: 30 },
+            { label: "90 dias", days: 90 },
+            { label: "Tudo", days: null },
+          ] as const).map(opt => (
+            <button
+              key={opt.label}
+              onClick={() => setPeriodDays(opt.days)}
+              className={cn(
+                "px-3 py-1.5 text-xs font-medium rounded-md transition-all",
+                periodDays === opt.days
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
       </motion.div>
 
       {/* Alerts */}
