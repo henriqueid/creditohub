@@ -266,7 +266,7 @@ export default function CommitteeVoting() {
                 </div>
                 {/* Score visual */}
                 <div className="shrink-0 text-center">
-                  <ScoreGauge score={analysis?.credit_score || 0} size={100} />
+                  <ScoreGauge score={analysis?.credit_score || 0} size="sm" />
                   <div className="mt-1">
                     <Badge className={riskClass.bgColor + " " + riskClass.color + " text-[10px]"}>
                       {riskClass.label}
