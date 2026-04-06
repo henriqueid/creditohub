@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Plus, Phone, Mail, Users, FileText, MessageSquare, Calendar, Building2, Search, Filter } from "lucide-react";
+import { Plus, Phone, Mail, Users, FileText, MessageSquare, Calendar, Building2, Search, Filter, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,12 +20,35 @@ const ACTIVITY_TYPES = [
   { value: "message", label: "Mensagem", icon: MessageSquare, color: "text-purple-500" },
 ];
 
+const OWNER_FILTERS = [
+  { value: "all", label: "Todas" },
+  { value: "mine", label: "Minhas" },
+  { value: "team", label: "Equipe" },
+];
+
 export default function CRMActivities() {
   const qc = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
+  const [ownerFilter, setOwnerFilter] = useState("all");
   const [form, setForm] = useState({ client_id: "", activity_type: "call", description: "", created_by: "" });
+
+  const { data: currentProfile } = useQuery({
+    queryKey: ["current-profile"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+      const { data } = await supabase.from("profiles").select("full_name").eq("user_id", user.id).maybeSingle();
+      return data;
+    },
+  });
+
+  useEffect(() => {
+    if (currentProfile?.full_name && !form.created_by) {
+      setForm(p => ({ ...p, created_by: currentProfile.full_name! }));
+    }
+  }, [currentProfile?.full_name]);
 
   const { data: activities = [] } = useQuery({
     queryKey: ["activities"],
@@ -56,16 +79,21 @@ export default function CRMActivities() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["activities"] });
       setDialogOpen(false);
-      setForm({ client_id: "", activity_type: "call", description: "", created_by: "" });
+      setForm({ client_id: "", activity_type: "call", description: "", created_by: currentProfile?.full_name || "" });
       toast.success("Atividade registrada!");
     },
     onError: () => toast.error("Erro ao registrar atividade"),
   });
 
+  const userName = currentProfile?.full_name?.toLowerCase() || "";
+
   const filtered = activities.filter((a: any) => {
     const matchSearch = !search || a.description?.toLowerCase().includes(search.toLowerCase()) || (a.clients as any)?.razao_social?.toLowerCase().includes(search.toLowerCase());
     const matchType = typeFilter === "all" || a.activity_type === typeFilter;
-    return matchSearch && matchType;
+    const matchOwner = ownerFilter === "all"
+      || (ownerFilter === "mine" && a.created_by?.toLowerCase() === userName)
+      || (ownerFilter === "team" && a.created_by?.toLowerCase() !== userName);
+    return matchSearch && matchType && matchOwner;
   });
 
   return (
@@ -110,10 +138,25 @@ export default function CRMActivities() {
         </Dialog>
       </div>
 
-      <div className="flex gap-3">
+      <div className="flex gap-3 flex-wrap">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input placeholder="Buscar atividades..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
+        </div>
+        <div className="flex rounded-md border border-border overflow-hidden">
+          {OWNER_FILTERS.map(f => (
+            <button
+              key={f.value}
+              onClick={() => setOwnerFilter(f.value)}
+              className={cn(
+                "px-3 py-1.5 text-xs font-medium transition-colors",
+                ownerFilter === f.value ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:bg-muted"
+              )}
+            >
+              {f.value === "mine" && <User className="h-3 w-3 inline mr-1" />}
+              {f.label}
+            </button>
+          ))}
         </div>
         <Select value={typeFilter} onValueChange={setTypeFilter}>
           <SelectTrigger className="w-[160px]"><Filter className="h-3.5 w-3.5 mr-1" /><SelectValue /></SelectTrigger>

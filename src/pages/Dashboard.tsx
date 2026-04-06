@@ -115,14 +115,24 @@ export default function Dashboard() {
     },
   });
 
+  const { data: currentProfile } = useQuery({
+    queryKey: ["dashboard-current-profile"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+      const { data } = await supabase.from("profiles").select("full_name").eq("user_id", user.id).maybeSingle();
+      return data;
+    },
+  });
+
   const { data: recentActivities = [] } = useQuery({
     queryKey: ["dashboard-activities"],
     queryFn: async () => {
       const { data } = await supabase
         .from("activities")
-        .select("id, activity_type, description, activity_date, created_at, clients(razao_social)")
+        .select("id, activity_type, description, activity_date, created_at, created_by, clients(razao_social)")
         .order("activity_date", { ascending: false })
-        .limit(5);
+        .limit(10);
       return data || [];
     },
   });
@@ -436,18 +446,37 @@ export default function Dashboard() {
                 <span className="text-xs font-medium text-muted-foreground">Atividades</span>
                 <ChevronRight className="h-3.5 w-3.5 text-transparent group-hover:text-muted-foreground transition-colors ml-auto" />
               </div>
-              {recentActivities.length > 0 ? (
-                <div className="space-y-1.5">
-                  {recentActivities.slice(0, 3).map(act => (
-                    <div key={act.id} className="flex items-center gap-2 min-w-0">
-                      <span className="text-[10px] text-muted-foreground shrink-0 w-14 tabular-nums">
-                        {formatDate(act.activity_date)}
-                      </span>
-                      <span className="text-[11px] text-foreground truncate">{act.description}</span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
+              {recentActivities.length > 0 ? (() => {
+                const userName = currentProfile?.full_name?.toLowerCase() || "";
+                const myActs = userName ? recentActivities.filter(a => a.created_by?.toLowerCase() === userName) : [];
+                const othersActs = userName ? recentActivities.filter(a => a.created_by?.toLowerCase() !== userName) : recentActivities;
+                return (
+                  <div className="space-y-2">
+                    {myActs.length > 0 && (
+                      <div className="space-y-1">
+                        <span className="text-[10px] font-medium text-primary flex items-center gap-1"><User className="h-2.5 w-2.5" />Minhas ({myActs.length})</span>
+                        {myActs.slice(0, 2).map(act => (
+                          <div key={act.id} className="flex items-center gap-2 min-w-0 pl-3">
+                            <span className="text-[10px] text-muted-foreground shrink-0 w-14 tabular-nums">{formatDate(act.activity_date)}</span>
+                            <span className="text-[11px] text-foreground truncate">{act.description}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {othersActs.length > 0 && (
+                      <div className="space-y-1">
+                        <span className="text-[10px] font-medium text-muted-foreground flex items-center gap-1"><Handshake className="h-2.5 w-2.5" />Equipe ({othersActs.length})</span>
+                        {othersActs.slice(0, 2).map(act => (
+                          <div key={act.id} className="flex items-center gap-2 min-w-0 pl-3">
+                            <span className="text-[10px] text-muted-foreground shrink-0 w-14 tabular-nums">{formatDate(act.activity_date)}</span>
+                            <span className="text-[11px] text-foreground truncate">{act.description}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })() : (
                 <EmptyState message="Nenhuma atividade recente" small />
               )}
             </CardContent>
