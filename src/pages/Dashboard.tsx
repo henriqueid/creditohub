@@ -245,7 +245,7 @@ export default function Dashboard() {
       <motion.div className="flex items-center justify-between flex-wrap gap-3" {...fade(0)}>
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground">Painel Inicial</h1>
-          <p className="text-sm text-muted-foreground">Visão consolidada da plataforma de inteligência de crédito</p>
+          <p className="text-sm text-muted-foreground">Visão consolidada — Crédito, Monitoramento e CRM</p>
         </div>
         <div className="flex items-center gap-1 bg-muted/60 rounded-lg p-1">
           {([
