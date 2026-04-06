@@ -122,7 +122,7 @@ export interface ExternalConsultaData {
  */
 export async function fetchExternalConsulta(document: string): Promise<ExternalSourceResult[]> {
   const results: ExternalSourceResult[] = [];
-
+  console.log("[fetchExternalConsulta] Starting for document:", document);
   // --- Source 1: Your custom REST API ---
   try {
     const { data, error } = await supabase.functions.invoke("consulta-externa", {
