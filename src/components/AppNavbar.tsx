@@ -19,6 +19,7 @@ import {
   ChevronDown,
   GitBranch,
   BarChart3,
+  History,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -45,6 +46,7 @@ interface NavGroup {
 const directLinks: NavItem[] = [
   { title: "Painel Inicial", url: "/", icon: LayoutDashboard },
   { title: "Consulta CPF/CNPJ", url: "/consulta", icon: SearchCheck },
+  { title: "Audit Log", url: "/audit-log", icon: History },
 ];
 
 const esteiraGroup: NavGroup = {
