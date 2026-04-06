@@ -73,6 +73,7 @@ const App = () => (
               <Route path="/crm/atividades" element={<CRMActivities />} />
               <Route path="/crm/tarefas" element={<CRMTasks />} />
               <Route path="/crm/dashboard" element={<CRMDashboard />} />
+              <Route path="/crm/cliente/:id" element={<CRMClientProfile />} />
             </Route>
           </Route>
 
