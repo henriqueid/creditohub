@@ -1194,6 +1194,62 @@ export type Database = {
         }
         Relationships: []
       }
+      prospects: {
+        Row: {
+          client_id: string | null
+          created_at: string
+          documento: string
+          expires_at: string | null
+          id: string
+          nome: string | null
+          qualification_data: Json | null
+          qualification_score: number | null
+          qualification_status: string
+          risk_level: string | null
+          source: string | null
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string
+          documento: string
+          expires_at?: string | null
+          id?: string
+          nome?: string | null
+          qualification_data?: Json | null
+          qualification_score?: number | null
+          qualification_status?: string
+          risk_level?: string | null
+          source?: string | null
+          tipo?: string
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string
+          documento?: string
+          expires_at?: string | null
+          id?: string
+          nome?: string | null
+          qualification_data?: Json | null
+          qualification_score?: number | null
+          qualification_status?: string
+          risk_level?: string | null
+          source?: string | null
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prospects_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       system_settings: {
         Row: {
           category: string
