@@ -120,11 +120,11 @@ function MegaMenuDropdown({
     >
       <button
         className={cn(
-          "flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-md transition-colors",
-          "hover:bg-navbar-foreground/15 hover:text-navbar-foreground",
+          "flex items-center gap-1.5 px-3 py-2 text-[13px] font-medium rounded-md transition-colors",
+          "hover:bg-navbar-foreground/10 hover:text-navbar-foreground",
           isGroupActive
-            ? "text-navbar-foreground bg-navbar-foreground/15"
-            : "text-navbar-foreground/70"
+            ? "text-navbar-foreground bg-navbar-foreground/10"
+            : "text-navbar-foreground/65"
         )}
       >
         <group.icon className="h-4 w-4" />
@@ -139,7 +139,7 @@ function MegaMenuDropdown({
 
       {isOpen && (
         <div className="absolute top-full left-0 mt-1 z-50 min-w-[420px]">
-          <div className="bg-popover border border-border shadow-xl rounded-lg p-3 grid grid-cols-2 gap-1">
+          <div className="bg-popover border border-border shadow-lg rounded-md p-2 grid grid-cols-2 gap-0.5">
             {group.items.map((item) => {
               const isActive = item.url === "/"
                 ? location.pathname === "/"
@@ -299,7 +299,7 @@ export function AppNavbar() {
   }
 
   return (
-    <header className="h-12 flex items-center px-4 border-b border-navbar/20 bg-navbar text-navbar-foreground shrink-0">
+    <header className="h-12 flex items-center px-5 border-b border-navbar/20 bg-navbar text-navbar-foreground shrink-0">
       {/* Logo */}
       <Link to="/" className="flex items-center gap-2.5 mr-6">
         <div className="h-7 w-7 rounded bg-primary flex items-center justify-center text-primary-foreground font-bold text-xs">AT</div>
