@@ -113,10 +113,10 @@ function MegaMenuDropdown({
       <button
         className={cn(
           "flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-md transition-colors",
-          "hover:bg-white/10 hover:text-white",
+          "hover:bg-navbar-foreground/15 hover:text-navbar-foreground",
           isGroupActive
-            ? "text-white bg-white/15"
-            : "text-white/60"
+            ? "text-navbar-foreground bg-navbar-foreground/15"
+            : "text-navbar-foreground/70"
         )}
       >
         <group.icon className="h-4 w-4" />
@@ -131,7 +131,7 @@ function MegaMenuDropdown({
 
       {isOpen && (
         <div className="absolute top-full left-0 mt-1 z-50 min-w-[420px]">
-          <div className="bg-popover border border-border rounded-lg shadow-xl p-3 grid grid-cols-2 gap-1">
+          <div className="bg-popover border border-border shadow-xl rounded-lg p-3 grid grid-cols-2 gap-1">
             {group.items.map((item) => {
               const isActive = item.url === "/"
                 ? location.pathname === "/"
@@ -143,21 +143,22 @@ function MegaMenuDropdown({
                   to={item.url}
                   className={cn(
                     "flex items-start gap-3 p-3 rounded-md transition-colors group/item",
-                    "hover:bg-accent/50",
-                    isActive && "bg-accent text-accent-foreground"
+                    "hover:bg-accent",
+                    isActive && "bg-accent"
                   )}
                 >
                   <div
                     className={cn(
-                      "mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-border/50",
-                      "bg-background group-hover/item:bg-primary/10 group-hover/item:border-primary/30",
-                      isActive && "bg-primary/10 border-primary/30"
+                      "mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md border",
+                      isActive
+                        ? "bg-primary/15 border-primary/30"
+                        : "bg-muted border-border group-hover/item:bg-primary/10 group-hover/item:border-primary/30"
                     )}
                   >
-                    <item.icon className={cn("h-4 w-4", isActive ? "text-primary" : "text-muted-foreground group-hover/item:text-primary")} />
+                    <item.icon className={cn("h-4 w-4", isActive ? "text-primary" : "text-foreground/70 group-hover/item:text-primary")} />
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-sm font-medium leading-tight text-foreground">{item.title}</span>
+                    <span className={cn("text-sm font-medium leading-tight", isActive ? "text-primary" : "text-foreground")}>{item.title}</span>
                     {item.description && (
                       <span className="text-xs text-muted-foreground mt-0.5 leading-snug">{item.description}</span>
                     )}
@@ -307,8 +308,8 @@ export function AppNavbar() {
               to={item.url}
               className={cn(
                 "flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-md transition-colors",
-                "hover:bg-white/10 hover:text-white",
-                isActive ? "text-white bg-white/15" : "text-white/60"
+                "hover:bg-navbar-foreground/15 hover:text-navbar-foreground",
+                isActive ? "text-navbar-foreground bg-navbar-foreground/15" : "text-navbar-foreground/70"
               )}
             >
               <item.icon className="h-4 w-4" />
@@ -318,7 +319,7 @@ export function AppNavbar() {
         })}
 
         {/* Divider */}
-        <div className="h-5 w-px bg-white/20 mx-1.5" />
+        <div className="h-5 w-px bg-navbar-foreground/20 mx-1.5" />
 
         {/* Groups with mega menu */}
         {groups.map((group) => (
@@ -340,16 +341,16 @@ export function AppNavbar() {
           to="/configuracoes"
           className={cn(
             "flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-md transition-colors",
-            "hover:bg-white/10 hover:text-white",
+            "hover:bg-navbar-foreground/15 hover:text-navbar-foreground",
             location.pathname.startsWith("/configuracoes")
-              ? "text-white bg-white/15"
-              : "text-white/60"
+              ? "text-navbar-foreground bg-navbar-foreground/15"
+              : "text-navbar-foreground/70"
           )}
         >
           <Settings className="h-4 w-4" />
           <span className="hidden xl:inline">Configurações</span>
         </Link>
-        <div className="h-5 w-px bg-white/20 mx-0.5" />
+        <div className="h-5 w-px bg-navbar-foreground/20 mx-0.5" />
         <UserAvatar />
       </div>
     </header>
