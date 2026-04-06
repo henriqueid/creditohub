@@ -372,7 +372,87 @@ export default function ConsultaCPFCNPJ() {
               </CardContent>
             </Card>
 
-            {/* Tabs */}
+            {/* Qualification Result */}
+            {qualification && (
+              <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+                <Card className={`border ${
+                  qualification.status === "qualified" ? "border-emerald-200 bg-emerald-50/30" :
+                  qualification.status === "not_qualified" ? "border-red-200 bg-red-50/30" :
+                  "border-amber-200 bg-amber-50/30"
+                }`}>
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <div className={`p-2 rounded-full ${
+                          qualification.status === "qualified" ? "bg-emerald-100" :
+                          qualification.status === "not_qualified" ? "bg-red-100" : "bg-amber-100"
+                        }`}>
+                          {qualification.status === "qualified" ? (
+                            <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+                          ) : qualification.status === "not_qualified" ? (
+                            <XCircle className="h-5 w-5 text-red-600" />
+                          ) : (
+                            <Clock className="h-5 w-5 text-amber-600" />
+                          )}
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-semibold text-sm">
+                              {qualification.status === "qualified" ? "Prospect Qualificado" :
+                               qualification.status === "not_qualified" ? "Prospect Não Qualificado" :
+                               "Qualificação Pendente"}
+                            </h3>
+                            <Badge variant="outline" className="text-[10px]">
+                              Score: {qualification.score}/100
+                            </Badge>
+                            <Sparkles className="h-3.5 w-3.5 text-muted-foreground" />
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-0.5">{qualification.suggestedAction}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <div className="w-24 h-2 rounded-full bg-muted overflow-hidden">
+                          <div
+                            className="h-full rounded-full transition-all"
+                            style={{
+                              width: `${qualification.score}%`,
+                              backgroundColor: qualification.score >= 60 ? '#10b981' : qualification.score >= 30 ? '#f59e0b' : '#ef4444',
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    {(qualification.positives.length > 0 || qualification.reasons.length > 0) && (
+                      <div className="grid md:grid-cols-2 gap-3 mt-3">
+                        {qualification.positives.length > 0 && (
+                          <div className="space-y-1">
+                            {qualification.positives.map((p, i) => (
+                              <div key={i} className="flex items-center gap-1.5 text-xs text-emerald-700">
+                                <CheckCircle2 className="h-3 w-3 shrink-0" /> {p}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {qualification.reasons.length > 0 && (
+                          <div className="space-y-1">
+                            {qualification.reasons.map((r, i) => (
+                              <div key={i} className="flex items-center gap-1.5 text-xs text-red-700">
+                                <AlertTriangle className="h-3 w-3 shrink-0" /> {r}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
+            {qualifyingInProgress && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground px-1">
+                <Loader2 className="h-4 w-4 animate-spin" /> Qualificando prospect...
+              </div>
+            )}
             <Tabs defaultValue="resumo">
               <TabsList className="w-full justify-start">
                 <TabsTrigger value="resumo">Resumo</TabsTrigger>
