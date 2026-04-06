@@ -338,8 +338,9 @@ export default function Dashboard() {
           return healthItems.map((item) => (
             <div
               key={item.label}
+              onClick={() => navigate(item.href)}
               className={cn(
-                "flex items-center gap-3 rounded-lg border px-4 py-3 transition-colors",
+                "flex items-center gap-3 rounded-lg border px-4 py-3 transition-colors cursor-pointer hover:shadow-md",
                 statusBgs[item.status]
               )}
             >
