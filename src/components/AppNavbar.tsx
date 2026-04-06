@@ -18,6 +18,7 @@ import {
   X,
   ChevronDown,
   GitBranch,
+  BarChart3,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -54,6 +55,7 @@ const esteiraGroup: NavGroup = {
     { title: "Cedentes", url: "/cedentes", icon: Building2, description: "Cadastro de cedentes ativos" },
     { title: "Análises de Crédito", url: "/analises", icon: FileText, description: "Dossiês e pareceres" },
     { title: "Comitê de Crédito", url: "/comite", icon: Users, description: "Votação e deliberação" },
+    { title: "Performance", url: "/performance", icon: BarChart3, description: "Métricas e gargalos da esteira" },
   ],
 };
 

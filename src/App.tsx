@@ -20,6 +20,7 @@ import Prospects from "@/pages/Prospects";
 import InvoiceMonitoring from "@/pages/InvoiceMonitoring";
 import BankruptcyReport from "@/pages/BankruptcyReport";
 import CreditEngineSettings from "@/pages/CreditEngineSettings";
+import PipelineMetrics from "@/pages/PipelineMetrics";
 import Auth from "@/pages/Auth";
 import ResetPassword from "@/pages/ResetPassword";
 import NotFound from "@/pages/NotFound";
@@ -57,6 +58,7 @@ const App = () => (
               <Route path="/blacklist" element={<Blacklist />} />
               <Route path="/configuracoes" element={<Settings />} />
               <Route path="/configuracoes/motor" element={<CreditEngineSettings />} />
+              <Route path="/performance" element={<PipelineMetrics />} />
             </Route>
           </Route>
 
