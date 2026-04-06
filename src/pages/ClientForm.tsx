@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "@/hooks/use-toast";
 import { formatCNPJorCPF, ESTADOS_BR } from "@/lib/formatters";
 import { ArrowLeft, Rocket } from "lucide-react";
+import { ClientTagManager } from "@/components/ClientTagManager";
 
 interface ClientFormData {
   cnpj_cpf: string;
