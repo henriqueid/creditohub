@@ -57,6 +57,8 @@ export default function Clients() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [view, setView] = useState<"kanban" | "table">("kanban");
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const { data: clientTagsMap = {} } = useAllClientTags();
 
   const { data: clients = [], isLoading } = useQuery({
     queryKey: ["clients"],
