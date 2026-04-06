@@ -218,9 +218,20 @@ export function NotificationBell() {
     });
   }
 
+  if (overdueTasks > 0) {
+    notifications.push({
+      id: "overdue-tasks",
+      icon: CheckSquare,
+      label: `${overdueTasks} tarefa${overdueTasks > 1 ? "s" : ""} atrasada${overdueTasks > 1 ? "s" : ""}`,
+      description: "Tarefas do CRM com prazo vencido",
+      href: "/crm/tarefas",
+      type: "warning",
+    });
+  }
+
   // Merge audit alerts
   const allNotifications = [...notifications, ...auditAlerts];
-  const totalCount = pendingCommittee + draftAnalyses + invalidInvoices + activeBankruptcies + auditAlerts.length;
+  const totalCount = pendingCommittee + draftAnalyses + invalidInvoices + activeBankruptcies + overdueTasks + auditAlerts.length;
 
   const typeColors: Record<string, string> = {
     warning: "text-status-warning",
