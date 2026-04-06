@@ -194,6 +194,43 @@ export default function ConsultaCPFCNPJ() {
   const brasilApiData = externalSources.find((s) => s.source === "BrasilAPI (Receita Federal)" && s.status === "success")?.data;
   const externalName = brasilApiData?.razao_social || brasilApiData?.nome_fantasia;
 
+  // Auto-qualify prospect when data is loaded
+  useEffect(() => {
+    if (!hasSearched || isLoading || qualifyingInProgress) return;
+    if (!digits || digits.length < 11) return;
+
+    const runQualification = async () => {
+      setQualifyingInProgress(true);
+      try {
+        const input = {
+          documento: digits,
+          nome: client?.razao_social || externalName || undefined,
+          tipo: (digits.length > 11 ? "cnpj" : "cpf") as "cpf" | "cnpj",
+          clientId: client?.id || undefined,
+          creditScore: latestAnalysis?.credit_score,
+          limiteAprovado: latestAnalysis?.limite_sugerido,
+          analysisStatus: latestAnalysis?.status,
+          hasProtestos: !!latestAnalysis?.protestos && latestAnalysis.protestos !== "Nada consta",
+          hasPendencias: !!latestAnalysis?.pendencias && latestAnalysis.pendencias !== "Nada consta",
+          hasAcoesJudiciais: !!latestAnalysis?.acoes_judiciais && latestAnalysis.acoes_judiciais !== "Nada consta",
+          hasBlacklist: !!blacklistEntry,
+          tempoAtividade: latestAnalysis?.tempo_atividade,
+          faturamentoMedio: latestAnalysis?.faturamento_medio ? Number(latestAnalysis.faturamento_medio) : undefined,
+        };
+        const result = await qualifyProspect(input);
+        setQualification(result);
+        await saveProspectQualification(input, result);
+        queryClient.invalidateQueries({ queryKey: ["prospects"] });
+      } catch (err) {
+        console.error("Qualification error:", err);
+      } finally {
+        setQualifyingInProgress(false);
+      }
+    };
+
+    runQualification();
+  }, [hasSearched, isLoading, digits]);
+
   function handleCadastrarCedente() {
     const prefill: Record<string, string> = { cnpj_cpf: digits };
     if (brasilApiData) {
