@@ -7,7 +7,7 @@ import {
   BarChart3, AlertTriangle, DollarSign, ShieldBan, Scale, FileBarChart,
   Layers, Activity, ArrowRight, Calendar, User, Hash, ArrowUpRight,
   Gauge, CircleDot, ChevronRight, Zap, Filter, Handshake, Target,
-  CheckSquare, MessageSquare, ArrowUp, ArrowDown, Sparkles, Eye,
+  CheckSquare, MessageSquare, ArrowUp, ArrowDown, Eye,
   CreditCard, Receipt
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
