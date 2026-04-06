@@ -46,7 +46,6 @@ interface NavGroup {
 const directLinks: NavItem[] = [
   { title: "Painel Inicial", url: "/", icon: LayoutDashboard },
   { title: "Consulta CPF/CNPJ", url: "/consulta", icon: SearchCheck },
-  { title: "Audit Log", url: "/audit-log", icon: History },
 ];
 
 const esteiraGroup: NavGroup = {
