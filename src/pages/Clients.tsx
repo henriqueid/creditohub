@@ -421,6 +421,7 @@ export default function Clients() {
                 <TableHead>Razão Social</TableHead>
                 <TableHead>CNPJ/CPF</TableHead>
                 <TableHead>Segmento</TableHead>
+                <TableHead>Tags</TableHead>
                 <TableHead>Cidade/UF</TableHead>
                 <TableHead>Etapa</TableHead>
                 <TableHead>Cadastro</TableHead>
