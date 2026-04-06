@@ -277,6 +277,10 @@ export default function Dashboard() {
           const crmHealth = overdueTasks === 0 ? "good" : overdueTasks > 3 ? "danger" : "warning";
           const monitorHealth = invoiceInvalid === 0 && bankruptcyMatched === 0 ? "good" : invoiceInvalid > 5 || bankruptcyMatched > 2 ? "danger" : "warning";
 
+          const sparkCredit = buildWeeklySparkline(fAnalyses);
+          const sparkCrm = buildWeeklySparkline(crmTasks);
+          const sparkMonitor = buildWeeklySparkline(fInvoices);
+
           const healthItems = [
             {
               label: "Esteira de Crédito",
@@ -284,6 +288,8 @@ export default function Dashboard() {
               detail: creditHealth === "good" ? "Fluxo normal" : `${inCommittee} em comitê · ${drafts} rascunhos`,
               icon: FileText,
               color: "bg-primary",
+              sparkline: sparkCredit,
+              sparkColor: creditHealth === "good" ? "hsl(var(--status-approved))" : creditHealth === "danger" ? "hsl(var(--status-rejected))" : "hsl(var(--status-committee))",
             },
             {
               label: "CRM Comercial",
@@ -291,6 +297,8 @@ export default function Dashboard() {
               detail: crmHealth === "good" ? "Sem atrasos" : `${overdueTasks} tarefa(s) vencida(s)`,
               icon: Handshake,
               color: "bg-status-approved",
+              sparkline: sparkCrm,
+              sparkColor: crmHealth === "good" ? "hsl(var(--status-approved))" : crmHealth === "danger" ? "hsl(var(--status-rejected))" : "hsl(var(--status-committee))",
             },
             {
               label: "Monitoramento",
@@ -298,6 +306,8 @@ export default function Dashboard() {
               detail: monitorHealth === "good" ? "Sem alertas" : `${invoiceInvalid} NF inválida(s) · ${bankruptcyMatched} falimentar`,
               icon: Activity,
               color: "bg-status-committee",
+              sparkline: sparkMonitor,
+              sparkColor: monitorHealth === "good" ? "hsl(var(--status-approved))" : monitorHealth === "danger" ? "hsl(var(--status-rejected))" : "hsl(var(--status-committee))",
             },
           ];
 
