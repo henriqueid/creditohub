@@ -42,6 +42,7 @@ import {
   TestTube,
   User,
   Loader2,
+  UserSearch,
 } from "lucide-react";
 
 type SettingRow = {
@@ -546,6 +547,22 @@ export default function Settings() {
                     onChange={(e) => updateSetting("followup_stale_days", e.target.value)}
                     className="max-w-[120px]"
                     placeholder="7"
+                  />
+                </SettingField>
+                <Separator />
+                <SettingField
+                  label="Validade da qualificação de prospects (dias)"
+                  description="Número de dias que a pré-qualificação automática de um prospect permanece válida antes de expirar"
+                  icon={<UserSearch className="h-4 w-4" />}
+                >
+                  <Input
+                    type="number"
+                    min={1}
+                    max={365}
+                    value={getSetting("prospect_qualification_validity_days")}
+                    onChange={(e) => updateSetting("prospect_qualification_validity_days", e.target.value)}
+                    className="max-w-[120px]"
+                    placeholder="30"
                   />
                 </SettingField>
                 <Separator />
