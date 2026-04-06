@@ -30,6 +30,7 @@ import CRMContacts from "@/pages/CRMContacts";
 import CRMActivities from "@/pages/CRMActivities";
 import CRMTasks from "@/pages/CRMTasks";
 import CRMDashboard from "@/pages/CRMDashboard";
+import CRMClientProfile from "@/pages/CRMClientProfile";
 
 const queryClient = new QueryClient();
 
@@ -72,6 +73,7 @@ const App = () => (
               <Route path="/crm/atividades" element={<CRMActivities />} />
               <Route path="/crm/tarefas" element={<CRMTasks />} />
               <Route path="/crm/dashboard" element={<CRMDashboard />} />
+              <Route path="/crm/cliente/:id" element={<CRMClientProfile />} />
             </Route>
           </Route>
 
