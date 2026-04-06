@@ -14,6 +14,7 @@ import { motion } from "framer-motion";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { DragDropContext, Droppable, Draggable, type DropResult } from "@hello-pangea/dnd";
 import { toast } from "sonner";
+import { ClientTagManager, TagFilter, useAllClientTags } from "@/components/ClientTagManager";
 
 type KanbanStage = "cadastrado" | "draft" | "in_committee" | "approved" | "approved_restricted" | "rejected";
 
@@ -56,6 +57,8 @@ export default function Clients() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [view, setView] = useState<"kanban" | "table">("kanban");
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const { data: clientTagsMap = {} } = useAllClientTags();
 
   const { data: clients = [], isLoading } = useQuery({
     queryKey: ["clients"],
@@ -92,15 +95,24 @@ export default function Clients() {
   }, [clients, analyses]);
 
   const filtered = useMemo(() => {
-    if (!search) return enrichedClients;
-    const q = search.toLowerCase();
-    return enrichedClients.filter(
-      (c) =>
-        c.razao_social.toLowerCase().includes(q) ||
-        c.cnpj_cpf.includes(q) ||
-        (c.nome_fantasia && c.nome_fantasia.toLowerCase().includes(q))
-    );
-  }, [enrichedClients, search]);
+    let result = enrichedClients;
+    if (search) {
+      const q = search.toLowerCase();
+      result = result.filter(
+        (c) =>
+          c.razao_social.toLowerCase().includes(q) ||
+          c.cnpj_cpf.includes(q) ||
+          (c.nome_fantasia && c.nome_fantasia.toLowerCase().includes(q))
+      );
+    }
+    if (selectedTags.length > 0) {
+      result = result.filter((c) => {
+        const tags = clientTagsMap[c.id] || [];
+        return selectedTags.some((st) => tags.some((t) => t.id === st));
+      });
+    }
+    return result;
+  }, [enrichedClients, search, selectedTags, clientTagsMap]);
 
   const grouped = useMemo(() => {
     const map: Record<KanbanStage, ClientWithAnalysis[]> = {
@@ -247,9 +259,12 @@ export default function Clients() {
         </div>
       </div>
 
-      <div className="relative max-w-sm">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input placeholder="Buscar por nome ou CNPJ..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+      <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+        <div className="relative max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input placeholder="Buscar por nome ou CNPJ..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+        </div>
+        <TagFilter selectedTags={selectedTags} onChange={setSelectedTags} />
       </div>
 
       {view === "kanban" ? (
@@ -337,11 +352,24 @@ export default function Clients() {
                                         <p className="text-xs text-muted-foreground tabular-nums pl-5">
                                           {formatCNPJorCPF(client.cnpj_cpf)}
                                         </p>
-                                        {client.segmento && (
-                                          <Badge variant="secondary" className="text-[10px] font-normal px-1.5 py-0 ml-5">
-                                            {client.segmento}
-                                          </Badge>
-                                        )}
+                                        <div className="flex flex-wrap items-center gap-1 ml-5">
+                                          {client.segmento && (
+                                            <Badge variant="secondary" className="text-[10px] font-normal px-1.5 py-0">
+                                              {client.segmento}
+                                            </Badge>
+                                          )}
+                                          {(clientTagsMap[client.id] || []).map((tag) => (
+                                            <Badge
+                                              key={tag.id}
+                                              variant="outline"
+                                              className="text-[10px] px-1.5 py-0 border-0"
+                                              style={{ backgroundColor: tag.color + "20", color: tag.color }}
+                                            >
+                                              {tag.name}
+                                            </Badge>
+                                          ))}
+                                          <ClientTagManager clientId={client.id} compact />
+                                        </div>
                                         {client.latestStatus !== "cadastrado" && (
                                           <div className="flex items-center justify-between pt-1 border-t border-border/50 ml-5">
                                             {client.latestScore != null && (
@@ -393,6 +421,7 @@ export default function Clients() {
                 <TableHead>Razão Social</TableHead>
                 <TableHead>CNPJ/CPF</TableHead>
                 <TableHead>Segmento</TableHead>
+                <TableHead>Tags</TableHead>
                 <TableHead>Cidade/UF</TableHead>
                 <TableHead>Etapa</TableHead>
                 <TableHead>Cadastro</TableHead>
@@ -402,11 +431,11 @@ export default function Clients() {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Carregando...</TableCell>
+                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Carregando...</TableCell>
                 </TableRow>
               ) : filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Nenhum cedente encontrado</TableCell>
+                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Nenhum cedente encontrado</TableCell>
                 </TableRow>
               ) : (
                 filtered.map((client) => (
@@ -414,6 +443,9 @@ export default function Clients() {
                     <TableCell className="font-medium">{client.razao_social}</TableCell>
                     <TableCell className="tabular-nums">{formatCNPJorCPF(client.cnpj_cpf)}</TableCell>
                     <TableCell>{client.segmento || "—"}</TableCell>
+                    <TableCell>
+                      <ClientTagManager clientId={client.id} />
+                    </TableCell>
                     <TableCell>{client.cidade && client.estado ? `${client.cidade}/${client.estado}` : "—"}</TableCell>
                     <TableCell>
                       {client.latestStatus === "cadastrado" ? (
