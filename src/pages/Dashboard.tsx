@@ -290,6 +290,7 @@ export default function Dashboard() {
               color: "bg-primary",
               sparkline: sparkCredit,
               sparkColor: creditHealth === "good" ? "hsl(var(--status-approved))" : creditHealth === "danger" ? "hsl(var(--status-rejected))" : "hsl(var(--status-committee))",
+              href: "/analises",
             },
             {
               label: "CRM Comercial",
@@ -299,6 +300,7 @@ export default function Dashboard() {
               color: "bg-status-approved",
               sparkline: sparkCrm,
               sparkColor: crmHealth === "good" ? "hsl(var(--status-approved))" : crmHealth === "danger" ? "hsl(var(--status-rejected))" : "hsl(var(--status-committee))",
+              href: "/crm/dashboard",
             },
             {
               label: "Monitoramento",
@@ -308,6 +310,7 @@ export default function Dashboard() {
               color: "bg-status-committee",
               sparkline: sparkMonitor,
               sparkColor: monitorHealth === "good" ? "hsl(var(--status-approved))" : monitorHealth === "danger" ? "hsl(var(--status-rejected))" : "hsl(var(--status-committee))",
+              href: "/monitoramento-nfs",
             },
           ];
 
