@@ -270,35 +270,7 @@ export default function Dashboard() {
         </div>
       </motion.div>
 
-      {/* Alerts */}
-      {alertItems.length > 0 && (
-        <motion.div {...fade(0.05)}>
-          <div className="rounded-lg border border-status-committee/30 bg-status-committee/5 px-4 py-3">
-            <div className="flex items-center gap-2 mb-2">
-              <AlertTriangle className="h-4 w-4 text-status-committee" />
-              <span className="text-xs font-semibold text-foreground">{alertItems.length} pendência(s) requerem atenção</span>
-            </div>
-            <div className="space-y-1">
-              {alertItems.map((alert, i) => (
-                <button
-                  key={i}
-                  onClick={() => navigate(alert.href)}
-                  className={cn(
-                    "w-full flex items-center gap-2 text-left text-xs py-1 px-2 rounded transition-colors group",
-                    alert.severity === "high" ? "text-destructive hover:bg-destructive/10" :
-                    alert.severity === "medium" ? "text-status-committee hover:bg-status-committee/10" :
-                    "text-muted-foreground hover:bg-muted"
-                  )}
-                >
-                  <alert.icon className="h-3 w-3 shrink-0" />
-                  <span className="flex-1">{alert.text}</span>
-                  <ChevronRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
-                </button>
-              ))}
-            </div>
-          </div>
-        </motion.div>
-      )}
+      {/* Alerts removed — shown only in notification bell */}
 
       {/* ═══ Esteira de Crédito ═══ */}
       <motion.div {...fade(0.1)} className="rounded-xl border border-border/50 bg-card/30 p-5 space-y-4">
