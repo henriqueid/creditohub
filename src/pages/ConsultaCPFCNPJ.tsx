@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -14,12 +14,14 @@ import {
   Search, Building2, User, FileText, AlertTriangle, CheckCircle2,
   XCircle, Clock, TrendingUp, Shield, History, ExternalLink, Loader2,
   Info, Ban, Scale, Banknote, Users, MapPin, Calendar, Phone, Briefcase,
-  Hash, Receipt, Landmark,
+  Hash, Receipt, Landmark, Sparkles,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { formatCNPJorCPF, formatBRL, formatDate, formatPercent, statusLabels, statusColors } from "@/lib/formatters";
 import { motion, AnimatePresence } from "framer-motion";
 import { fetchExternalConsulta, type ExternalSourceResult, type ExternalConsultaData } from "@/lib/external-consulta";
+import { qualifyProspect, saveProspectQualification, type QualificationResult } from "@/lib/prospect-qualification";
+import { toast } from "sonner";
 
 // --- Helpers ---
 function cleanDocument(value: string) {
