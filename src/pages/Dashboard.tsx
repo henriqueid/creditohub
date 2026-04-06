@@ -271,7 +271,6 @@ export default function Dashboard() {
       </motion.div>
 
       {/* Alerts removed — shown only in notification bell */}
-      )}
 
       {/* ═══ Esteira de Crédito ═══ */}
       <motion.div {...fade(0.1)} className="rounded-xl border border-border/50 bg-card/30 p-5 space-y-4">
