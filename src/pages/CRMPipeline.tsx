@@ -1,10 +1,9 @@
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { Plus, GripVertical, Building2, Calendar, DollarSign, User, ChevronRight, TrendingUp, Target, Trophy, XCircle } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Plus, Building2, Calendar, DollarSign, User, ChevronRight, TrendingUp, Target, Trophy, XCircle, FileSearch, ShieldCheck, ShieldAlert, ShieldX, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -12,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface Deal {
   id: string;
@@ -23,6 +23,7 @@ interface Deal {
   expected_close_date: string | null;
   responsible: string | null;
   notes: string | null;
+  credit_analysis_id: string | null;
   created_at: string;
   clients?: { razao_social: string; cnpj_cpf: string };
 }
@@ -35,6 +36,23 @@ interface Stage {
   is_won: boolean;
   is_lost: boolean;
 }
+
+interface CreditAnalysis {
+  id: string;
+  client_id: string;
+  status: string;
+  credit_score: number | null;
+  limite_sugerido: number | null;
+  recommendation: string | null;
+}
+
+const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ElementType }> = {
+  draft: { label: "Em Análise", color: "text-amber-600 bg-amber-50 border-amber-200", icon: FileSearch },
+  in_committee: { label: "Em Comitê", color: "text-blue-600 bg-blue-50 border-blue-200", icon: FileSearch },
+  approved: { label: "Aprovado", color: "text-emerald-600 bg-emerald-50 border-emerald-200", icon: ShieldCheck },
+  approved_restricted: { label: "Restrição", color: "text-orange-600 bg-orange-50 border-orange-200", icon: ShieldAlert },
+  rejected: { label: "Reprovado", color: "text-red-600 bg-red-50 border-red-200", icon: ShieldX },
+};
 
 export default function CRMPipeline() {
   const navigate = useNavigate();
@@ -66,6 +84,30 @@ export default function CRMPipeline() {
     },
   });
 
+  // Fetch credit analyses for all clients that have deals
+  const { data: creditAnalyses = [] } = useQuery({
+    queryKey: ["credit-analyses-for-pipeline"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("credit_analysis")
+        .select("id, client_id, status, credit_score, limite_sugerido, recommendation")
+        .order("created_at", { ascending: false });
+      return (data || []) as CreditAnalysis[];
+    },
+  });
+
+  // Map: client_id -> latest credit analysis
+  const latestAnalysisByClient = creditAnalyses.reduce<Record<string, CreditAnalysis>>((acc, ca) => {
+    if (!acc[ca.client_id]) acc[ca.client_id] = ca;
+    return acc;
+  }, {});
+
+  // Map: deal credit_analysis_id -> analysis
+  const analysisById = creditAnalyses.reduce<Record<string, CreditAnalysis>>((acc, ca) => {
+    acc[ca.id] = ca;
+    return acc;
+  }, {});
+
   const createDeal = useMutation({
     mutationFn: async () => {
       const { error } = await supabase.from("deals").insert({
@@ -96,6 +138,17 @@ export default function CRMPipeline() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["deals"] }),
   });
 
+  const linkAnalysis = useMutation({
+    mutationFn: async ({ dealId, analysisId }: { dealId: string; analysisId: string }) => {
+      const { error } = await supabase.from("deals").update({ credit_analysis_id: analysisId }).eq("id", dealId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["deals"] });
+      toast.success("Análise vinculada à oportunidade!");
+    },
+  });
+
   const activeStages = stages.filter(s => !s.is_won && !s.is_lost);
   const wonStage = stages.find(s => s.is_won);
   const lostStage = stages.find(s => s.is_lost);
@@ -106,6 +159,13 @@ export default function CRMPipeline() {
   }).reduce((sum, d) => sum + (d.value || 0), 0);
 
   const wonTotal = deals.filter(d => d.stage_id === wonStage?.id).reduce((sum, d) => sum + (d.value || 0), 0);
+
+  const getAnalysisForDeal = (deal: Deal): CreditAnalysis | null => {
+    if (deal.credit_analysis_id && analysisById[deal.credit_analysis_id]) {
+      return analysisById[deal.credit_analysis_id];
+    }
+    return latestAnalysisByClient[deal.client_id] || null;
+  };
 
   return (
     <div className="flex flex-col h-full">
@@ -213,7 +273,9 @@ export default function CRMPipeline() {
                       deal={deal}
                       stages={activeStages}
                       currentStage={stage}
+                      analysis={getAnalysisForDeal(deal)}
                       onMove={(stageId) => moveDeal.mutate({ dealId: deal.id, stageId })}
+                      onLinkAnalysis={(analysisId) => linkAnalysis.mutate({ dealId: deal.id, analysisId })}
                     />
                   ))}
                   {stageDeals.length === 0 && (
@@ -224,7 +286,6 @@ export default function CRMPipeline() {
             );
           })}
 
-          {/* Won/Lost columns (collapsed) */}
           {wonStage && (
             <ClosedColumn stage={wonStage} deals={deals.filter(d => d.stage_id === wonStage.id)} icon={Trophy} />
           )}
@@ -237,19 +298,69 @@ export default function CRMPipeline() {
   );
 }
 
-function DealCard({ deal, stages, currentStage, onMove }: { deal: Deal; stages: Stage[]; currentStage: Stage; onMove: (stageId: string) => void }) {
+function DealCard({ deal, stages, currentStage, analysis, onMove, onLinkAnalysis }: {
+  deal: Deal;
+  stages: Stage[];
+  currentStage: Stage;
+  analysis: CreditAnalysis | null;
+  onMove: (stageId: string) => void;
+  onLinkAnalysis: (analysisId: string) => void;
+}) {
   const navigate = useNavigate();
   const nextStage = stages.find(s => s.order === currentStage.order + 1);
+  const statusCfg = analysis ? STATUS_CONFIG[analysis.status] : null;
+  const StatusIcon = statusCfg?.icon || FileSearch;
 
   return (
     <div className="bg-background border border-border/50 rounded-lg p-3 hover:shadow-md transition-shadow cursor-pointer group" onClick={() => navigate(`/crm/cliente/${deal.client_id}`)}>
-      <p className="text-sm font-medium text-foreground leading-tight">{deal.title}</p>
+      <div className="flex items-start justify-between gap-1">
+        <p className="text-sm font-medium text-foreground leading-tight flex-1">{deal.title}</p>
+        {analysis && statusCfg && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={(e) => { e.stopPropagation(); navigate(`/analises/${analysis.id}`); }}
+                className={`shrink-0 flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-semibold border ${statusCfg.color} hover:opacity-80 transition-opacity`}
+              >
+                <StatusIcon className="h-3 w-3" />
+                {statusCfg.label}
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="left" className="text-xs">
+              <p className="font-semibold">Análise de Crédito</p>
+              {analysis.credit_score != null && <p>Score: {analysis.credit_score}</p>}
+              {analysis.limite_sugerido != null && (
+                <p>Limite: {analysis.limite_sugerido.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</p>
+              )}
+              <p className="text-muted-foreground mt-1">Clique para abrir</p>
+            </TooltipContent>
+          </Tooltip>
+        )}
+      </div>
+
       {deal.clients && (
         <div className="flex items-center gap-1 mt-1.5">
           <Building2 className="h-3 w-3 text-muted-foreground" />
           <span className="text-xs text-muted-foreground truncate">{deal.clients.razao_social}</span>
         </div>
       )}
+
+      {/* Credit score bar */}
+      {analysis?.credit_score != null && (
+        <div className="mt-2 flex items-center gap-2">
+          <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
+            <div
+              className="h-full rounded-full transition-all"
+              style={{
+                width: `${Math.min(analysis.credit_score, 100)}%`,
+                backgroundColor: analysis.credit_score >= 70 ? '#10b981' : analysis.credit_score >= 40 ? '#f59e0b' : '#ef4444',
+              }}
+            />
+          </div>
+          <span className="text-[10px] font-semibold text-muted-foreground">{analysis.credit_score}</span>
+        </div>
+      )}
+
       <div className="flex items-center justify-between mt-2">
         {deal.value && (
           <span className="text-xs font-semibold text-primary">
@@ -263,19 +374,40 @@ function DealCard({ deal, stages, currentStage, onMove }: { deal: Deal; stages: 
           </span>
         )}
       </div>
+
       {deal.responsible && (
         <div className="flex items-center gap-1 mt-1.5">
           <User className="h-3 w-3 text-muted-foreground" />
           <span className="text-[10px] text-muted-foreground">{deal.responsible}</span>
         </div>
       )}
-      {nextStage && (
-        <button
-          onClick={(e) => { e.stopPropagation(); onMove(nextStage.id); }}
-          className="mt-2 w-full flex items-center justify-center gap-1 text-[10px] text-primary font-medium py-1 rounded border border-primary/20 hover:bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity"
-        >
-          Mover para {nextStage.name} <ChevronRight className="h-3 w-3" />
-        </button>
+
+      {/* Actions */}
+      <div className="mt-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        {!analysis && (
+          <button
+            onClick={(e) => { e.stopPropagation(); navigate(`/analises/nova?client_id=${deal.client_id}`); }}
+            className="flex-1 flex items-center justify-center gap-1 text-[10px] text-amber-600 font-medium py-1 rounded border border-amber-200 hover:bg-amber-50 transition-colors"
+          >
+            <FileSearch className="h-3 w-3" /> Iniciar Análise
+          </button>
+        )}
+        {nextStage && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onMove(nextStage.id); }}
+            className="flex-1 flex items-center justify-center gap-1 text-[10px] text-primary font-medium py-1 rounded border border-primary/20 hover:bg-primary/5 transition-colors"
+          >
+            {nextStage.name} <ChevronRight className="h-3 w-3" />
+          </button>
+        )}
+      </div>
+
+      {/* Warning if no analysis and deal has high value */}
+      {!analysis && deal.value && deal.value > 50000 && (
+        <div className="mt-1.5 flex items-center gap-1 text-[9px] text-amber-600">
+          <AlertTriangle className="h-3 w-3" />
+          <span>Sem análise de crédito vinculada</span>
+        </div>
       )}
     </div>
   );
