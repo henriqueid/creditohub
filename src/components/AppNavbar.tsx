@@ -311,18 +311,24 @@ export function AppNavbar() {
         {directLinks.map((item) => {
           const isActive = item.url === "/" ? location.pathname === "/" : location.pathname.startsWith(item.url);
           return (
-            <Link
-              key={item.url}
-              to={item.url}
-              className={cn(
-                "flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-md transition-colors",
-                "hover:bg-navbar-foreground/15 hover:text-navbar-foreground",
-                isActive ? "text-navbar-foreground bg-navbar-foreground/15" : "text-navbar-foreground/70"
-              )}
-            >
-              <item.icon className="h-4 w-4" />
-              <span className="hidden xl:inline">{item.title}</span>
-            </Link>
+            <Tooltip key={item.url}>
+              <TooltipTrigger asChild>
+                <Link
+                  to={item.url}
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-md transition-colors",
+                    "hover:bg-navbar-foreground/15 hover:text-navbar-foreground",
+                    isActive ? "text-navbar-foreground bg-navbar-foreground/15" : "text-navbar-foreground/70"
+                  )}
+                >
+                  <item.icon className="h-4 w-4" />
+                  <span className="hidden xl:inline">{item.title}</span>
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="xl:hidden">
+                {item.title}
+              </TooltipContent>
+            </Tooltip>
           );
         })}
 
@@ -345,19 +351,26 @@ export function AppNavbar() {
       <div className="ml-auto flex items-center gap-2">
         <GlobalSearch />
         <NotificationBell />
-        <Link
-          to="/configuracoes"
-          className={cn(
-            "flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-md transition-colors",
-            "hover:bg-navbar-foreground/15 hover:text-navbar-foreground",
-            location.pathname.startsWith("/configuracoes")
-              ? "text-navbar-foreground bg-navbar-foreground/15"
-              : "text-navbar-foreground/70"
-          )}
-        >
-          <Settings className="h-4 w-4" />
-          <span className="hidden xl:inline">Configurações</span>
-        </Link>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Link
+              to="/configuracoes"
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-md transition-colors",
+                "hover:bg-navbar-foreground/15 hover:text-navbar-foreground",
+                location.pathname.startsWith("/configuracoes")
+                  ? "text-navbar-foreground bg-navbar-foreground/15"
+                  : "text-navbar-foreground/70"
+              )}
+            >
+              <Settings className="h-4 w-4" />
+              <span className="hidden xl:inline">Configurações</span>
+            </Link>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" className="xl:hidden">
+            Configurações
+          </TooltipContent>
+        </Tooltip>
         <div className="h-5 w-px bg-navbar-foreground/20 mx-0.5" />
         <UserAvatar />
       </div>
