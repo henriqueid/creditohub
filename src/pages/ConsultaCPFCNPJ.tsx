@@ -80,8 +80,11 @@ function StatCard({ icon: Icon, label, value, sub }: { icon: React.ElementType; 
 
 export default function ConsultaCPFCNPJ() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [inputValue, setInputValue] = useState("");
   const [searchDoc, setSearchDoc] = useState<string | null>(null);
+  const [qualification, setQualification] = useState<QualificationResult | null>(null);
+  const [qualifyingInProgress, setQualifyingInProgress] = useState(false);
 
   const digits = searchDoc ? cleanDocument(searchDoc) : "";
   const isPJ = digits.length > 11;
