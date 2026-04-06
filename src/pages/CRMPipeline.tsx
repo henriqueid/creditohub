@@ -238,10 +238,11 @@ export default function CRMPipeline() {
 }
 
 function DealCard({ deal, stages, currentStage, onMove }: { deal: Deal; stages: Stage[]; currentStage: Stage; onMove: (stageId: string) => void }) {
+  const navigate = useNavigate();
   const nextStage = stages.find(s => s.order === currentStage.order + 1);
 
   return (
-    <div className="bg-background border border-border/50 rounded-lg p-3 hover:shadow-md transition-shadow cursor-pointer group">
+    <div className="bg-background border border-border/50 rounded-lg p-3 hover:shadow-md transition-shadow cursor-pointer group" onClick={() => navigate(`/crm/cliente/${deal.client_id}`)}>
       <p className="text-sm font-medium text-foreground leading-tight">{deal.title}</p>
       {deal.clients && (
         <div className="flex items-center gap-1 mt-1.5">
