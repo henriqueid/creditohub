@@ -110,18 +110,7 @@ export function NotificationBell() {
           const label = `${tableName} ${actionLabel}`;
           const description = recordName ? `"${recordName}"` : `Registro ${row.record_id?.slice(0, 8)}`;
 
-          // Show toast for critical changes
-          if (isCritical) {
-            const actionIcons: Record<string, string> = { insert: "➕", update: "✏️", delete: "🗑️" };
-            toast(label, {
-              description,
-              icon: actionIcons[row.action] || "📋",
-              action: {
-                label: "Ver log",
-                onClick: () => navigate("/audit-log"),
-              },
-            });
-          }
+          // Critical changes only show in the bell dropdown, no toast
 
           // Add to audit alerts (keep last 10)
           const actionIconMap: Record<string, React.ElementType> = {
