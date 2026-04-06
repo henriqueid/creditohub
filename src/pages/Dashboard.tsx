@@ -340,7 +340,7 @@ export default function Dashboard() {
                 statusBgs[item.status]
               )}
             >
-              <div className={cn("flex items-center justify-center h-9 w-9 rounded-lg", item.color + "/15")}>
+              <div className={cn("flex items-center justify-center h-9 w-9 rounded-lg shrink-0", item.color + "/15")}>
                 <item.icon className={cn("h-4.5 w-4.5", statusColors[item.status])} />
               </div>
               <div className="min-w-0 flex-1">
@@ -352,6 +352,9 @@ export default function Dashboard() {
                   </span>
                 </div>
                 <p className="text-[11px] text-muted-foreground truncate">{item.detail}</p>
+              </div>
+              <div className="shrink-0 opacity-70">
+                <Sparkline data={item.sparkline} color={item.sparkColor} />
               </div>
             </div>
           ));
