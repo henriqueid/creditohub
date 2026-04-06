@@ -70,10 +70,10 @@ export function UserAvatar() {
           )}
         </div>
         <div className="hidden md:flex flex-col items-start text-left max-w-[120px]">
-          <span className="text-xs font-semibold text-foreground truncate w-full">{displayName}</span>
-          <span className="text-[10px] text-muted-foreground truncate w-full">{displayCargo}</span>
+          <span className="text-xs font-semibold text-navbar-foreground truncate w-full">{displayName}</span>
+          <span className="text-[10px] text-navbar-foreground/60 truncate w-full">{displayCargo}</span>
         </div>
-        <ChevronDown className={`hidden md:block h-3.5 w-3.5 text-muted-foreground transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
+        <ChevronDown className={`hidden md:block h-3.5 w-3.5 text-navbar-foreground/60 transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
       </button>
 
       {open && (
