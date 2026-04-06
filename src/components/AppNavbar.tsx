@@ -319,7 +319,7 @@ export function AppNavbar() {
         })}
 
         {/* Divider */}
-        <div className="h-5 w-px bg-white/20 mx-1.5" />
+        <div className="h-5 w-px bg-navbar-foreground/20 mx-1.5" />
 
         {/* Groups with mega menu */}
         {groups.map((group) => (
@@ -341,16 +341,16 @@ export function AppNavbar() {
           to="/configuracoes"
           className={cn(
             "flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-md transition-colors",
-            "hover:bg-white/10 hover:text-white",
+            "hover:bg-navbar-foreground/15 hover:text-navbar-foreground",
             location.pathname.startsWith("/configuracoes")
-              ? "text-white bg-white/15"
-              : "text-white/60"
+              ? "text-navbar-foreground bg-navbar-foreground/15"
+              : "text-navbar-foreground/70"
           )}
         >
           <Settings className="h-4 w-4" />
           <span className="hidden xl:inline">Configurações</span>
         </Link>
-        <div className="h-5 w-px bg-white/20 mx-0.5" />
+        <div className="h-5 w-px bg-navbar-foreground/20 mx-0.5" />
         <UserAvatar />
       </div>
     </header>
