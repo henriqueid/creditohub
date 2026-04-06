@@ -386,6 +386,113 @@ export default function Dashboard() {
         </Card>
       </motion.div>
 
+      {/* CRM section */}
+      <motion.div {...fade(0.25)}>
+        <SectionHeader title="CRM Comercial" icon={Handshake} />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Pipeline */}
+          <Card
+            className="glass-card cursor-pointer hover:border-primary/30 transition-all"
+            onClick={() => navigate("/crm/pipeline")}
+          >
+            <CardContent className="p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Target className="h-4 w-4 text-primary" />
+                  </div>
+                  <span className="text-xs font-medium text-muted-foreground">Pipeline</span>
+                </div>
+                <ChevronRight className="h-4 w-4 text-muted-foreground/30" />
+              </div>
+              <div>
+                <p className="text-xl font-bold tabular-nums text-foreground">{formatBRL(pipelineValue)}</p>
+                <p className="text-[11px] text-muted-foreground">{activeDeals.length} oportunidade(s) ativa(s)</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Won */}
+          <Card
+            className="glass-card cursor-pointer hover:border-primary/30 transition-all"
+            onClick={() => navigate("/crm/dashboard")}
+          >
+            <CardContent className="p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="h-8 w-8 rounded-lg bg-status-approved/10 flex items-center justify-center">
+                    <CheckCircle className="h-4 w-4 text-status-approved" />
+                  </div>
+                  <span className="text-xs font-medium text-muted-foreground">Ganhos</span>
+                </div>
+              </div>
+              <div>
+                <p className="text-xl font-bold tabular-nums text-status-approved">{formatBRL(wonValue)}</p>
+                <p className="text-[11px] text-muted-foreground">{wonDeals.length} deal(s) fechado(s)</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Tasks */}
+          <Card
+            className="glass-card cursor-pointer hover:border-primary/30 transition-all"
+            onClick={() => navigate("/crm/tarefas")}
+          >
+            <CardContent className="p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className={cn("h-8 w-8 rounded-lg flex items-center justify-center",
+                    overdueTasks > 0 ? "bg-status-rejected/10" : "bg-status-committee/10"
+                  )}>
+                    <CheckSquare className={cn("h-4 w-4",
+                      overdueTasks > 0 ? "text-status-rejected" : "text-status-committee"
+                    )} />
+                  </div>
+                  <span className="text-xs font-medium text-muted-foreground">Tarefas</span>
+                </div>
+              </div>
+              <div>
+                <p className={cn("text-xl font-bold tabular-nums", overdueTasks > 0 ? "text-status-rejected" : "text-foreground")}>{pendingTasks}</p>
+                <p className="text-[11px] text-muted-foreground">
+                  {overdueTasks > 0 ? `${overdueTasks} vencida(s)` : "pendente(s)"}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Recent Activities */}
+          <Card
+            className="glass-card cursor-pointer hover:border-primary/30 transition-all"
+            onClick={() => navigate("/crm/atividades")}
+          >
+            <CardContent className="p-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="h-8 w-8 rounded-lg bg-accent flex items-center justify-center">
+                    <MessageSquare className="h-4 w-4 text-foreground/70" />
+                  </div>
+                  <span className="text-xs font-medium text-muted-foreground">Atividades</span>
+                </div>
+              </div>
+              {recentActivities.length > 0 ? (
+                <div className="space-y-1.5">
+                  {recentActivities.slice(0, 3).map(act => (
+                    <div key={act.id} className="flex items-center gap-2 min-w-0">
+                      <span className="text-[10px] text-muted-foreground shrink-0 w-14 tabular-nums">
+                        {formatDate(act.activity_date)}
+                      </span>
+                      <span className="text-[11px] text-foreground truncate">{act.description}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-[11px] text-muted-foreground">Nenhuma atividade recente</p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </motion.div>
+
       {/* Monitoring section */}
       <motion.div {...fade(0.3)}>
         <SectionHeader title="Monitoramento & Restrições" icon={Activity} />
