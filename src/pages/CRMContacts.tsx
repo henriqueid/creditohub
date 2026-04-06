@@ -19,6 +19,7 @@ const emptyContact = { name: "", email: "", phone: "", role: "", department: "",
 
 export default function CRMContacts() {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<string | null>(null);
