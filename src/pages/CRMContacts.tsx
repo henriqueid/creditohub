@@ -169,6 +169,7 @@ export default function CRMContacts() {
                 </TableCell>
                 <TableCell>
                   <div className="flex gap-1">
+                    <button onClick={() => navigate(`/crm/cliente/${c.client_id}`)} className="p-1.5 rounded hover:bg-muted" title="Ver ficha"><ExternalLink className="h-3.5 w-3.5 text-muted-foreground" /></button>
                     <button onClick={() => openEdit(c)} className="p-1.5 rounded hover:bg-muted"><Pencil className="h-3.5 w-3.5 text-muted-foreground" /></button>
                     <button onClick={() => deleteMutation.mutate(c.id)} className="p-1.5 rounded hover:bg-destructive/10"><Trash2 className="h-3.5 w-3.5 text-destructive" /></button>
                   </div>
