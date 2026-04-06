@@ -1,11 +1,10 @@
-import { useState, useRef, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Bell, FileText, Users, AlertTriangle, Scale } from "lucide-react";
+import { Bell, FileText, Users, AlertTriangle, Scale, History, Plus, Pencil, Trash2, ShieldBan } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
-import { formatDistanceToNow } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { toast } from "sonner";
 
 interface NotificationItem {
   id: string;
@@ -14,13 +13,32 @@ interface NotificationItem {
   description: string;
   time?: string;
   href: string;
-  type: "warning" | "info" | "action";
+  type: "warning" | "info" | "action" | "audit";
 }
+
+const TABLE_LABELS: Record<string, string> = {
+  credit_analysis: "Análise de Crédito",
+  blacklist: "Blacklist",
+  credit_engine_rules: "Motor de Crédito",
+  system_settings: "Configurações",
+  committee_result: "Resultado Comitê",
+  monitoring_groups: "Grupo Monitoramento",
+};
+
+const ACTION_LABELS: Record<string, string> = {
+  insert: "criado",
+  update: "alterado",
+  delete: "excluído",
+};
+
+const CRITICAL_TABLES = ["credit_analysis", "blacklist", "committee_result", "credit_engine_rules"];
 
 export function NotificationBell() {
   const [open, setOpen] = useState(false);
+  const [auditAlerts, setAuditAlerts] = useState<NotificationItem[]>([]);
   const ref = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+  const qc = useQueryClient();
 
   const { data: pendingCommittee = 0 } = useQuery({
     queryKey: ["notif-committee"],
@@ -69,6 +87,78 @@ export function NotificationBell() {
     },
     refetchInterval: 60000,
   });
+
+  // Realtime subscription for audit_log
+  useEffect(() => {
+    const channel = supabase
+      .channel("audit-notifications")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "audit_log" },
+        (payload) => {
+          const row = payload.new as any;
+          if (!row) return;
+
+          const tableName = TABLE_LABELS[row.table_name] || row.table_name;
+          const actionLabel = ACTION_LABELS[row.action] || row.action;
+          const isCritical = CRITICAL_TABLES.includes(row.table_name);
+
+          // Get a meaningful record name
+          const data = row.new_data || row.old_data;
+          const recordName = data?.razao_social || data?.rule_name || data?.name || data?.documento || data?.key || data?.decisao_final || "";
+
+          const label = `${tableName} ${actionLabel}`;
+          const description = recordName ? `"${recordName}"` : `Registro ${row.record_id?.slice(0, 8)}`;
+
+          // Show toast for critical changes
+          if (isCritical) {
+            const actionIcons: Record<string, string> = { insert: "➕", update: "✏️", delete: "🗑️" };
+            toast(label, {
+              description,
+              icon: actionIcons[row.action] || "📋",
+              action: {
+                label: "Ver log",
+                onClick: () => navigate("/audit-log"),
+              },
+            });
+          }
+
+          // Add to audit alerts (keep last 10)
+          const actionIconMap: Record<string, React.ElementType> = {
+            insert: Plus,
+            update: Pencil,
+            delete: Trash2,
+          };
+
+          const newAlert: NotificationItem = {
+            id: `audit-${row.id}`,
+            icon: row.table_name === "blacklist" ? ShieldBan : (actionIconMap[row.action] || History),
+            label,
+            description,
+            time: new Date().toISOString(),
+            href: "/audit-log",
+            type: "audit",
+          };
+
+          setAuditAlerts(prev => [newAlert, ...prev].slice(0, 10));
+
+          // Invalidate relevant queries
+          qc.invalidateQueries({ queryKey: ["audit-log"] });
+          if (row.table_name === "credit_analysis") {
+            qc.invalidateQueries({ queryKey: ["notif-committee"] });
+            qc.invalidateQueries({ queryKey: ["notif-drafts"] });
+          }
+          if (row.table_name === "blacklist") {
+            qc.invalidateQueries({ queryKey: ["blacklist"] });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [navigate, qc]);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -126,13 +216,20 @@ export function NotificationBell() {
     });
   }
 
-  const totalCount = pendingCommittee + draftAnalyses + invalidInvoices + activeBankruptcies;
+  // Merge audit alerts
+  const allNotifications = [...notifications, ...auditAlerts];
+  const totalCount = pendingCommittee + draftAnalyses + invalidInvoices + activeBankruptcies + auditAlerts.length;
 
   const typeColors: Record<string, string> = {
     warning: "text-status-warning",
     action: "text-primary",
     info: "text-muted-foreground",
+    audit: "text-status-committee",
   };
+
+  const dismissAudit = useCallback(() => {
+    setAuditAlerts([]);
+  }, []);
 
   return (
     <div ref={ref} className="relative">
@@ -146,59 +243,103 @@ export function NotificationBell() {
       >
         <Bell className="h-4 w-4" />
         {totalCount > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground">
+          <span className={cn(
+            "absolute -top-0.5 -right-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-[10px] font-bold",
+            auditAlerts.length > 0
+              ? "bg-status-committee text-white animate-pulse"
+              : "bg-destructive text-destructive-foreground"
+          )}>
             {totalCount > 99 ? "99+" : totalCount}
           </span>
         )}
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-1 z-50 w-[360px]">
+        <div className="absolute right-0 top-full mt-1 z-50 w-[380px]">
           <div className="bg-popover border border-border rounded-lg shadow-xl overflow-hidden">
-            <div className="px-4 py-3 border-b border-border/50">
-              <h3 className="text-sm font-semibold">Notificações</h3>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {totalCount > 0
-                  ? `${totalCount} item${totalCount > 1 ? "ns" : ""} requer${totalCount > 1 ? "em" : ""} atenção`
-                  : "Nenhuma pendência no momento"}
-              </p>
+            <div className="px-4 py-3 border-b border-border/50 flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-semibold text-foreground">Notificações</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {totalCount > 0
+                    ? `${totalCount} item${totalCount > 1 ? "ns" : ""} requer${totalCount > 1 ? "em" : ""} atenção`
+                    : "Nenhuma pendência no momento"}
+                </p>
+              </div>
+              {auditAlerts.length > 0 && (
+                <button
+                  onClick={dismissAudit}
+                  className="text-[10px] text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded hover:bg-muted/50"
+                >
+                  Limpar recentes
+                </button>
+              )}
             </div>
 
-            {notifications.length === 0 ? (
+            {allNotifications.length === 0 ? (
               <div className="px-4 py-8 text-center">
                 <Bell className="h-8 w-8 mx-auto text-muted-foreground/40 mb-2" />
                 <p className="text-sm text-muted-foreground">Tudo em dia!</p>
               </div>
             ) : (
-              <div className="max-h-[320px] overflow-y-auto">
-                {notifications.map((n) => (
-                  <button
-                    key={n.id}
-                    onClick={() => {
-                      setOpen(false);
-                      navigate(n.href);
-                    }}
-                    className="w-full flex items-start gap-3 px-4 py-3 text-left hover:bg-accent/50 transition-colors border-b border-border/30 last:border-0"
-                  >
-                    <div
-                      className={cn(
-                        "mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-border/50 bg-background",
-                        typeColors[n.type]
-                      )}
-                    >
-                      <n.icon className="h-4 w-4" />
+              <div className="max-h-[400px] overflow-y-auto">
+                {/* Pending items */}
+                {notifications.length > 0 && (
+                  <>
+                    <div className="px-4 py-1.5 bg-muted/30">
+                      <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Pendências</span>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium leading-tight">{n.label}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{n.description}</p>
+                    {notifications.map((n) => (
+                      <NotificationRow key={n.id} item={n} typeColors={typeColors} onNavigate={(href) => { setOpen(false); navigate(href); }} />
+                    ))}
+                  </>
+                )}
+
+                {/* Realtime audit alerts */}
+                {auditAlerts.length > 0 && (
+                  <>
+                    <div className="px-4 py-1.5 bg-muted/30">
+                      <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+                        <span className="h-1.5 w-1.5 rounded-full bg-status-committee animate-pulse" />
+                        Alterações Recentes
+                      </span>
                     </div>
-                  </button>
-                ))}
+                    {auditAlerts.map((n) => (
+                      <NotificationRow key={n.id} item={n} typeColors={typeColors} onNavigate={(href) => { setOpen(false); navigate(href); }} />
+                    ))}
+                  </>
+                )}
               </div>
             )}
           </div>
         </div>
       )}
     </div>
+  );
+}
+
+function NotificationRow({ item, typeColors, onNavigate }: {
+  item: NotificationItem;
+  typeColors: Record<string, string>;
+  onNavigate: (href: string) => void;
+}) {
+  return (
+    <button
+      onClick={() => onNavigate(item.href)}
+      className="w-full flex items-start gap-3 px-4 py-3 text-left hover:bg-accent/50 transition-colors border-b border-border/30 last:border-0"
+    >
+      <div
+        className={cn(
+          "mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-border/50 bg-background",
+          typeColors[item.type]
+        )}
+      >
+        <item.icon className="h-4 w-4" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium leading-tight text-foreground">{item.label}</p>
+        <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{item.description}</p>
+      </div>
+    </button>
   );
 }
