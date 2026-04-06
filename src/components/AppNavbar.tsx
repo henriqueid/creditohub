@@ -17,15 +17,23 @@ import {
   Menu,
   X,
   ChevronDown,
-  GitBranch,
-  BarChart3,
-  History,
+  CreditCard,
+  TrendingUp,
   Handshake,
   Contact,
   MessageSquare,
   CheckSquare,
+  Receipt,
+  Gauge,
+  Filter,
+  Eye,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
   Sheet,
@@ -55,8 +63,8 @@ const crmGroup: NavGroup = {
   title: "Comercial",
   icon: Handshake,
   items: [
-    { title: "Dashboard CRM", url: "/crm/dashboard", icon: BarChart3, description: "Métricas e forecast de vendas" },
-    { title: "Pipeline", url: "/crm/pipeline", icon: Handshake, description: "Funil de oportunidades" },
+    { title: "Dashboard CRM", url: "/crm/dashboard", icon: TrendingUp, description: "Métricas e forecast de vendas" },
+    { title: "Pipeline", url: "/crm/pipeline", icon: Filter, description: "Funil de oportunidades" },
     { title: "Prospects", url: "/prospects", icon: UserSearch, description: "Captação e qualificação de leads" },
     { title: "Contatos", url: "/crm/contatos", icon: Contact, description: "Gestão de contatos" },
     { title: "Atividades", url: "/crm/atividades", icon: MessageSquare, description: "Histórico de interações" },
@@ -66,21 +74,21 @@ const crmGroup: NavGroup = {
 
 const esteiraGroup: NavGroup = {
   title: "Crédito",
-  icon: GitBranch,
+  icon: CreditCard,
   items: [
     { title: "Cedentes", url: "/cedentes", icon: Building2, description: "Cadastro e esteira dos cedentes" },
     { title: "Consulta CPF/CNPJ", url: "/consulta", icon: SearchCheck, description: "Consultas na Receita Federal" },
     { title: "Análises de Crédito", url: "/analises", icon: FileText, description: "Dossiês e pareceres" },
     { title: "Comitê de Crédito", url: "/comite", icon: Users, description: "Votação e deliberação" },
-    { title: "Performance", url: "/performance", icon: BarChart3, description: "Métricas e gargalos da esteira" },
+    { title: "Performance", url: "/performance", icon: Gauge, description: "Métricas e gargalos da esteira" },
   ],
 };
 
 const monitorGroup: NavGroup = {
   title: "Monitoramento",
-  icon: FileBarChart,
+  icon: Eye,
   items: [
-    { title: "Notas Fiscais", url: "/monitoramento-nfs", icon: FileBarChart, description: "Acompanhamento e validação de NFs" },
+    { title: "Notas Fiscais", url: "/monitoramento-nfs", icon: Receipt, description: "Acompanhamento e validação de NFs" },
     { title: "Informe Falimentar", url: "/falimentar", icon: Scale, description: "Recuperações judiciais e falências" },
     { title: "Blacklist", url: "/blacklist", icon: ShieldBan, description: "Restrições e bloqueios" },
   ],
@@ -303,18 +311,24 @@ export function AppNavbar() {
         {directLinks.map((item) => {
           const isActive = item.url === "/" ? location.pathname === "/" : location.pathname.startsWith(item.url);
           return (
-            <Link
-              key={item.url}
-              to={item.url}
-              className={cn(
-                "flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-md transition-colors",
-                "hover:bg-navbar-foreground/15 hover:text-navbar-foreground",
-                isActive ? "text-navbar-foreground bg-navbar-foreground/15" : "text-navbar-foreground/70"
-              )}
-            >
-              <item.icon className="h-4 w-4" />
-              <span className="hidden xl:inline">{item.title}</span>
-            </Link>
+            <Tooltip key={item.url}>
+              <TooltipTrigger asChild>
+                <Link
+                  to={item.url}
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-md transition-colors",
+                    "hover:bg-navbar-foreground/15 hover:text-navbar-foreground",
+                    isActive ? "text-navbar-foreground bg-navbar-foreground/15" : "text-navbar-foreground/70"
+                  )}
+                >
+                  <item.icon className="h-4 w-4" />
+                  <span className="hidden xl:inline">{item.title}</span>
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="xl:hidden">
+                {item.title}
+              </TooltipContent>
+            </Tooltip>
           );
         })}
 
@@ -337,19 +351,26 @@ export function AppNavbar() {
       <div className="ml-auto flex items-center gap-2">
         <GlobalSearch />
         <NotificationBell />
-        <Link
-          to="/configuracoes"
-          className={cn(
-            "flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-md transition-colors",
-            "hover:bg-navbar-foreground/15 hover:text-navbar-foreground",
-            location.pathname.startsWith("/configuracoes")
-              ? "text-navbar-foreground bg-navbar-foreground/15"
-              : "text-navbar-foreground/70"
-          )}
-        >
-          <Settings className="h-4 w-4" />
-          <span className="hidden xl:inline">Configurações</span>
-        </Link>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Link
+              to="/configuracoes"
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-md transition-colors",
+                "hover:bg-navbar-foreground/15 hover:text-navbar-foreground",
+                location.pathname.startsWith("/configuracoes")
+                  ? "text-navbar-foreground bg-navbar-foreground/15"
+                  : "text-navbar-foreground/70"
+              )}
+            >
+              <Settings className="h-4 w-4" />
+              <span className="hidden xl:inline">Configurações</span>
+            </Link>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" className="xl:hidden">
+            Configurações
+          </TooltipContent>
+        </Tooltip>
         <div className="h-5 w-px bg-navbar-foreground/20 mx-0.5" />
         <UserAvatar />
       </div>
