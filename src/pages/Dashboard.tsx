@@ -349,6 +349,8 @@ export default function Dashboard() {
             mainValue={fInvoices.length}
             mainSuffix={formatBRL(invoiceTotalValue)}
             onClick={() => navigate("/monitoramento-nfs")}
+            sparkline={sparkInvoices}
+            sparkColor="hsl(var(--status-approved))"
           >
             <div className="flex gap-3 flex-wrap">
               <StatusDot color="bg-status-approved" label={`${invoiceValid} válidas`} />
@@ -427,6 +429,8 @@ export default function Dashboard() {
             mainSuffix="bloqueado(s)"
             onClick={() => navigate("/blacklist")}
             alert={newBlacklistCount > 0 ? `${newBlacklistCount} novo(s) em 7 dias` : undefined}
+            sparkline={sparkBlacklist}
+            sparkColor="hsl(var(--status-rejected))"
           >
             {fBlacklist.length > 0 ? (
               <div className="space-y-1.5">
