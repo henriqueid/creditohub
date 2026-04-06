@@ -227,7 +227,16 @@ export default function ClientForm() {
                     ))}
                   </SelectContent>
                 </Select>
+            </div>
+
+            {isEditing && (
+              <div className="space-y-2">
+                <Label>Tags</Label>
+                <div className="p-3 rounded-lg border bg-muted/30">
+                  <ClientTagManager clientId={id!} />
+                </div>
               </div>
+            )}
             </div>
 
             {!isEditing && (
