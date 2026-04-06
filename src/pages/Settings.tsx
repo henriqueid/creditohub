@@ -550,6 +550,22 @@ export default function Settings() {
                 </SettingField>
                 <Separator />
                 <SettingField
+                  label="Validade da qualificação de prospects (dias)"
+                  description="Número de dias que a pré-qualificação automática de um prospect permanece válida antes de expirar"
+                  icon={<UserSearch className="h-4 w-4" />}
+                >
+                  <Input
+                    type="number"
+                    min={1}
+                    max={365}
+                    value={getSetting("prospect_qualification_validity_days")}
+                    onChange={(e) => updateSetting("prospect_qualification_validity_days", e.target.value)}
+                    className="max-w-[120px]"
+                    placeholder="30"
+                  />
+                </SettingField>
+                <Separator />
+                <SettingField
                   label="Dias para expirar análise sem movimentação"
                   description={getDescription("days_to_expire_analysis")}
                   icon={<CalendarClock className="h-4 w-4" />}
