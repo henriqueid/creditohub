@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { User, LogOut, Settings } from "lucide-react";
+import { User, LogOut, Settings, History } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { User as SupaUser } from "@supabase/supabase-js";
 
@@ -58,7 +58,7 @@ export function UserAvatar() {
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="h-7 w-7 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-[10px] font-bold text-white transition-colors overflow-hidden"
+        className="h-8 w-8 rounded-full bg-primary/80 hover:bg-primary flex items-center justify-center text-[11px] font-bold text-primary-foreground transition-colors overflow-hidden ring-2 ring-primary/30"
       >
         {profile?.avatar_url ? (
           <img src={profile.avatar_url} alt="" className="h-full w-full object-cover" />
@@ -79,10 +79,17 @@ export function UserAvatar() {
           <div className="py-1">
             <button
               onClick={() => { setOpen(false); navigate("/configuracoes"); }}
-              className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-accent transition-colors text-left"
+              className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-accent transition-colors text-left text-foreground"
             >
               <Settings className="h-3.5 w-3.5 text-muted-foreground" />
               Configurações
+            </button>
+            <button
+              onClick={() => { setOpen(false); navigate("/audit-log"); }}
+              className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-accent transition-colors text-left text-foreground"
+            >
+              <History className="h-3.5 w-3.5 text-muted-foreground" />
+              Histórico de Alterações
             </button>
             <button
               onClick={handleLogout}
