@@ -169,6 +169,7 @@ export async function fetchExternalConsulta(document: string): Promise<ExternalS
   const cleanDoc = document.replace(/\D/g, "");
   if (cleanDoc.length === 14) {
     try {
+      console.log("[fetchExternalConsulta] Calling BrasilAPI for CNPJ:", cleanDoc);
       const response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cleanDoc}`);
       if (response.ok) {
         const raw = await response.json();
