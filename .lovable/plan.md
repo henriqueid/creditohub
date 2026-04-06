@@ -1,59 +1,71 @@
 
+# CRM Integrado à Plataforma de Crédito
 
-## Mega Menu Horizontal
+## Objetivo
+Transformar a plataforma em um hub completo que une **Análise de Crédito + Monitoramento de Risco + CRM Comercial**, permitindo gestão do ciclo de vida completo do cliente — da prospecção ao monitoramento contínuo.
 
-Substituir o sidebar por uma barra de navegacao horizontal no topo com mega menu dropdown ao passar o mouse nos grupos.
+---
 
-### Layout
+## Fase 1 — Infraestrutura de Dados (Banco)
 
-```text
-+--[ AT Logo ]--[ Painel Inicial ]--[ Consulta ]--[ Esteira de Credito v ]--[ Monitoramento v ]--[ ⚙ ]--------+
-|                                                                                                               |
-|  (ao hover em "Esteira de Credito", abre painel dropdown:)                                                   |
-|  +-------------------------------------------+                                                                |
-|  | 👤 Prospects    | 🏢 Cedentes             |                                                                |
-|  | 📄 Analises     | 👥 Comite de Credito     |                                                                |
-|  +-------------------------------------------+                                                                |
-|                                                                                                               |
-|                            CONTEUDO DA PAGINA (100% largura)                                                  |
-|                                                                                                               |
-+---------------------------------------------------------------------------------------------------------------+
-```
+### Novas tabelas:
+- **contacts** — Contatos vinculados a clientes (nome, email, telefone, cargo, departamento, é decisor?)
+- **deals** — Oportunidades/negócios no funil (cliente, valor estimado, stage, probabilidade, responsável, data prevista de fechamento)
+- **deal_stages** — Etapas configuráveis do funil comercial (nome, ordem, cor)
+- **activities** — Registro de interações (tipo: ligação/email/reunião/visita, descrição, data, contato vinculado, deal vinculado)
+- **tasks** — Tarefas e follow-ups (título, descrição, responsável, data limite, prioridade, status, vinculado a cliente/deal)
+- **tags** — Sistema de tags para segmentação
+- **client_tags** — Relação N:N entre clientes e tags
 
-### Vantagens
+---
 
-- Conteudo ocupa 100% da largura (sem sidebar roubando espaco)
-- Visual de portal financeiro profissional (Bloomberg, Reuters)
-- Dropdowns com icone + titulo + descricao curta de cada pagina
-- Navegacao mais rapida -- tudo visivel sem precisar expandir/colapsar
+## Fase 2 — Módulos do CRM
 
-### Implementacao
+### 2.1 Gestão de Contatos
+- Lista de contatos por cliente com filtros
+- Ficha do contato com histórico de interações
+- Marcar contato como decisor/influenciador
 
-1. **Criar `src/components/AppNavbar.tsx`** -- componente novo
-   - Barra fixa no topo com fundo escuro (sidebar colors)
-   - Logo "AT" + nome "Ambiente Teste" a esquerda
-   - Links diretos: Painel Inicial, Consulta
-   - Mega menu triggers: "Esteira de Credito", "Monitoramento" (abrem dropdown ao hover)
-   - Icone de engrenagem para Configuracoes a direita
-   - Cada dropdown mostra grid 2x2 com icone, titulo e descricao curta
-   - Item ativo destacado visualmente
+### 2.2 Pipeline Comercial (Funil de Vendas)
+- Kanban de oportunidades com drag-and-drop
+- Stages configuráveis (Prospecção → Qualificação → Proposta → Negociação → Fechado/Ganho → Fechado/Perdido)
+- Métricas: valor total por stage, taxa de conversão, forecast
 
-2. **Reescrever `src/components/AppLayout.tsx`**
-   - Remover SidebarProvider e AppSidebar
-   - Layout vertical: navbar no topo + conteudo abaixo (flex-col)
-   - Sem header separado (navbar ja serve como header)
+### 2.3 Atividades e Interações
+- Timeline unificada por cliente (ligações, emails, reuniões, visitas)
+- Registro rápido de atividade
+- Vinculação com contatos e oportunidades
 
-3. **Responsivo (mobile)**
-   - Em telas < 768px, navbar colapsa em hamburger menu
-   - Abre Sheet lateral com todos os itens agrupados
+### 2.4 Tarefas e Follow-ups
+- Lista de tarefas com filtros por prioridade/status/responsável
+- Notificações de tarefas vencidas no sino
+- Vinculação com clientes e deals
 
-4. **`AppSidebar.tsx`** -- manter arquivo mas sem uso (pode remover depois)
+### 2.5 Tags e Segmentação
+- Tags customizáveis com cores
+- Filtro por tags na lista de clientes
+- Segmentação para ações em lote
 
-### Arquivos
+---
 
-| Arquivo | Acao |
-|---|---|
-| `src/components/AppNavbar.tsx` | Criar |
-| `src/components/AppLayout.tsx` | Reescrever |
-| `src/components/AppSidebar.tsx` | Deixar de importar |
+## Fase 3 — Integração Crédito ↔ CRM
 
+- Ao aprovar crédito, criar automaticamente um deal no funil
+- Exibir score de crédito e status na ficha CRM do cliente
+- Alertas de monitoramento (blacklist, falimentar) visíveis na timeline do cliente
+- Dashboard unificado com métricas de CRM + Crédito
+
+---
+
+## Fase 4 — Dashboard CRM
+
+- KPIs: deals abertos, valor do pipeline, tarefas pendentes, atividades da semana
+- Funil visual com valores por stage
+- Ranking de responsáveis comerciais
+- Forecast de receita
+
+---
+
+## Navegação
+- Novo grupo no menu: **"CRM"** com subitens: Pipeline, Contatos, Atividades, Tarefas
+- Integração com busca global existente

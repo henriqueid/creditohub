@@ -25,6 +25,10 @@ import AuditLog from "@/pages/AuditLog";
 import Auth from "@/pages/Auth";
 import ResetPassword from "@/pages/ResetPassword";
 import NotFound from "@/pages/NotFound";
+import CRMPipeline from "@/pages/CRMPipeline";
+import CRMContacts from "@/pages/CRMContacts";
+import CRMActivities from "@/pages/CRMActivities";
+import CRMTasks from "@/pages/CRMTasks";
 
 const queryClient = new QueryClient();
 
@@ -61,6 +65,11 @@ const App = () => (
               <Route path="/configuracoes/motor" element={<CreditEngineSettings />} />
               <Route path="/performance" element={<PipelineMetrics />} />
               <Route path="/audit-log" element={<AuditLog />} />
+              {/* CRM */}
+              <Route path="/crm/pipeline" element={<CRMPipeline />} />
+              <Route path="/crm/contatos" element={<CRMContacts />} />
+              <Route path="/crm/atividades" element={<CRMActivities />} />
+              <Route path="/crm/tarefas" element={<CRMTasks />} />
             </Route>
           </Route>
 

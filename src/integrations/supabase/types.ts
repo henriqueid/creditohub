@@ -14,6 +14,64 @@ export type Database = {
   }
   public: {
     Tables: {
+      activities: {
+        Row: {
+          activity_date: string
+          activity_type: string
+          client_id: string
+          contact_id: string | null
+          created_at: string
+          created_by: string | null
+          deal_id: string | null
+          description: string
+          id: string
+        }
+        Insert: {
+          activity_date?: string
+          activity_type?: string
+          client_id: string
+          contact_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deal_id?: string | null
+          description: string
+          id?: string
+        }
+        Update: {
+          activity_date?: string
+          activity_type?: string
+          client_id?: string
+          contact_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deal_id?: string | null
+          description?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activities_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activities_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activities_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_log: {
         Row: {
           action: string
@@ -136,6 +194,42 @@ export type Database = {
         }
         Relationships: []
       }
+      client_tags: {
+        Row: {
+          client_id: string
+          created_at: string
+          id: string
+          tag_id: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          id?: string
+          tag_id: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          id?: string
+          tag_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_tags_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           cidade: string | null
@@ -209,6 +303,56 @@ export type Database = {
             columns: ["credit_analysis_id"]
             isOneToOne: true
             referencedRelation: "credit_analysis"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contacts: {
+        Row: {
+          client_id: string
+          created_at: string
+          department: string | null
+          email: string | null
+          id: string
+          is_decision_maker: boolean
+          name: string
+          notes: string | null
+          phone: string | null
+          role: string | null
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          department?: string | null
+          email?: string | null
+          id?: string
+          is_decision_maker?: boolean
+          name: string
+          notes?: string | null
+          phone?: string | null
+          role?: string | null
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          department?: string | null
+          email?: string | null
+          id?: string
+          is_decision_maker?: boolean
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          role?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contacts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
             referencedColumns: ["id"]
           },
         ]
@@ -600,6 +744,179 @@ export type Database = {
         }
         Relationships: []
       }
+      crm_tasks: {
+        Row: {
+          assigned_to: string | null
+          client_id: string | null
+          completed_at: string | null
+          created_at: string
+          deal_id: string | null
+          description: string | null
+          due_date: string | null
+          id: string
+          priority: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          client_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          deal_id?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          priority?: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          client_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          deal_id?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          priority?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_tasks_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_tasks_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      deal_stages: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          is_active: boolean
+          is_lost: boolean
+          is_won: boolean
+          name: string
+          order: number
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_lost?: boolean
+          is_won?: boolean
+          name: string
+          order?: number
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_lost?: boolean
+          is_won?: boolean
+          name?: string
+          order?: number
+        }
+        Relationships: []
+      }
+      deals: {
+        Row: {
+          client_id: string
+          contact_id: string | null
+          created_at: string
+          credit_analysis_id: string | null
+          expected_close_date: string | null
+          id: string
+          loss_reason: string | null
+          notes: string | null
+          probability: number | null
+          responsible: string | null
+          stage_id: string
+          title: string
+          updated_at: string
+          value: number | null
+        }
+        Insert: {
+          client_id: string
+          contact_id?: string | null
+          created_at?: string
+          credit_analysis_id?: string | null
+          expected_close_date?: string | null
+          id?: string
+          loss_reason?: string | null
+          notes?: string | null
+          probability?: number | null
+          responsible?: string | null
+          stage_id: string
+          title: string
+          updated_at?: string
+          value?: number | null
+        }
+        Update: {
+          client_id?: string
+          contact_id?: string | null
+          created_at?: string
+          credit_analysis_id?: string | null
+          expected_close_date?: string | null
+          id?: string
+          loss_reason?: string | null
+          notes?: string | null
+          probability?: number | null
+          responsible?: string | null
+          stage_id?: string
+          title?: string
+          updated_at?: string
+          value?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deals_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deals_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deals_credit_analysis_id_fkey"
+            columns: ["credit_analysis_id"]
+            isOneToOne: false
+            referencedRelation: "credit_analysis"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deals_stage_id_fkey"
+            columns: ["stage_id"]
+            isOneToOne: false
+            referencedRelation: "deal_stages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       integration_configs: {
         Row: {
           api_url: string | null
@@ -901,6 +1218,27 @@ export type Database = {
           key?: string
           updated_at?: string
           value?: Json
+        }
+        Relationships: []
+      }
+      tags: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          name?: string
         }
         Relationships: []
       }
