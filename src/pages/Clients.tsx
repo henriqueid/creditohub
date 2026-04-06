@@ -95,15 +95,24 @@ export default function Clients() {
   }, [clients, analyses]);
 
   const filtered = useMemo(() => {
-    if (!search) return enrichedClients;
-    const q = search.toLowerCase();
-    return enrichedClients.filter(
-      (c) =>
-        c.razao_social.toLowerCase().includes(q) ||
-        c.cnpj_cpf.includes(q) ||
-        (c.nome_fantasia && c.nome_fantasia.toLowerCase().includes(q))
-    );
-  }, [enrichedClients, search]);
+    let result = enrichedClients;
+    if (search) {
+      const q = search.toLowerCase();
+      result = result.filter(
+        (c) =>
+          c.razao_social.toLowerCase().includes(q) ||
+          c.cnpj_cpf.includes(q) ||
+          (c.nome_fantasia && c.nome_fantasia.toLowerCase().includes(q))
+      );
+    }
+    if (selectedTags.length > 0) {
+      result = result.filter((c) => {
+        const tags = clientTagsMap[c.id] || [];
+        return selectedTags.some((st) => tags.some((t) => t.id === st));
+      });
+    }
+    return result;
+  }, [enrichedClients, search, selectedTags, clientTagsMap]);
 
   const grouped = useMemo(() => {
     const map: Record<KanbanStage, ClientWithAnalysis[]> = {
