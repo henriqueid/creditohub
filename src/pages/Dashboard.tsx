@@ -316,21 +316,34 @@ export default function Dashboard() {
       </motion.div>
 
       <motion.div {...fade(0.05)} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {healthItems.map((item) => (
-          <div
+        {healthItems.map((item, idx) => (
+          <motion.div
             key={item.label}
             onClick={() => navigate(item.href)}
+            initial={{ opacity: 0, y: 20, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.4, delay: 0.08 + idx * 0.07 }}
+            whileHover={{ scale: 1.03, y: -4, transition: { duration: 0.25, type: "spring", stiffness: 300, damping: 20 } }}
+            whileTap={{ scale: 0.98 }}
             className={cn(
-              "group relative rounded-xl border bg-gradient-to-br p-4 transition-all cursor-pointer",
-              "hover:shadow-lg hover:-translate-y-0.5",
+              "group relative rounded-xl border bg-gradient-to-br p-4 cursor-pointer overflow-hidden",
+              "shadow-sm hover:shadow-xl",
               item.gradient, item.borderAccent
             )}
           >
-            <div className="flex items-start justify-between gap-3">
+            {/* Subtle glow on hover */}
+            <div className={cn(
+              "absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-xl pointer-events-none",
+              "bg-gradient-to-br from-transparent via-transparent to-primary/5"
+            )} />
+            <div className="relative flex items-start justify-between gap-3">
               <div className="flex items-start gap-3 min-w-0 flex-1">
-                <div className={cn("flex items-center justify-center h-10 w-10 rounded-xl shrink-0", item.iconBg)}>
+                <motion.div
+                  className={cn("flex items-center justify-center h-10 w-10 rounded-xl shrink-0 transition-shadow duration-300", item.iconBg, "group-hover:shadow-md")}
+                  whileHover={{ rotate: [0, -8, 8, 0], transition: { duration: 0.5 } }}
+                >
                   <item.icon className={cn("h-5 w-5", item.iconColor)} />
-                </div>
+                </motion.div>
                 <div className="min-w-0">
                   <p className="text-sm font-bold text-foreground">{item.label}</p>
                   <div className="flex items-center gap-1.5 mt-0.5">
@@ -342,12 +355,12 @@ export default function Dashboard() {
                   <p className="text-[11px] text-muted-foreground mt-1 truncate">{item.detail}</p>
                 </div>
               </div>
-              <div className="shrink-0 opacity-60 group-hover:opacity-100 transition-opacity">
+              <div className="shrink-0 opacity-60 group-hover:opacity-100 transition-opacity duration-300">
                 <Sparkline data={item.sparkline} color={item.sparkColor} />
               </div>
             </div>
-            <ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/0 group-hover:text-muted-foreground/60 transition-all group-hover:translate-x-0.5" />
-          </div>
+            <ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/0 group-hover:text-muted-foreground/60 transition-all duration-300 group-hover:translate-x-1" />
+          </motion.div>
         ))}
       </motion.div>
 
