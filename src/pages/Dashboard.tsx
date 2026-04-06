@@ -7,7 +7,7 @@ import {
   BarChart3, AlertTriangle, DollarSign, ShieldBan, Scale, FileBarChart,
   Layers, Activity, ArrowRight, Calendar, User, Hash, ArrowUpRight,
   Gauge, CircleDot, ChevronRight, Zap, Filter, Handshake, Target,
-  CheckSquare, MessageSquare, ArrowUp, ArrowDown, Sparkles, Eye,
+  CheckSquare, MessageSquare, ArrowUp, ArrowDown, Eye,
   CreditCard, Receipt
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -240,12 +240,8 @@ export default function Dashboard() {
       status: creditHealth,
       detail: creditHealth === "good" ? "Fluxo normal" : `${inCommittee} em comitê · ${drafts} rascunhos`,
       icon: CreditCard,
-      gradient: "from-primary/20 to-primary/5",
-      borderAccent: "border-primary/20 hover:border-primary/40",
-      iconBg: "bg-primary/15",
-      iconColor: "text-primary",
       sparkline: sparkCredit,
-      sparkColor: creditHealth === "good" ? "hsl(var(--status-approved))" : creditHealth === "danger" ? "hsl(var(--status-rejected))" : "hsl(var(--status-committee))",
+      sparkColor: "hsl(var(--muted-foreground))",
       href: "/analises",
     },
     {
@@ -253,12 +249,8 @@ export default function Dashboard() {
       status: crmHealth,
       detail: crmHealth === "good" ? "Sem atrasos" : `${overdueTasks} tarefa(s) vencida(s)`,
       icon: Handshake,
-      gradient: "from-status-approved/20 to-status-approved/5",
-      borderAccent: "border-status-approved/20 hover:border-status-approved/40",
-      iconBg: "bg-status-approved/15",
-      iconColor: "text-status-approved",
       sparkline: sparkCrm,
-      sparkColor: crmHealth === "good" ? "hsl(var(--status-approved))" : crmHealth === "danger" ? "hsl(var(--status-rejected))" : "hsl(var(--status-committee))",
+      sparkColor: "hsl(var(--muted-foreground))",
       href: "/crm/dashboard",
     },
     {
@@ -266,12 +258,8 @@ export default function Dashboard() {
       status: monitorHealth,
       detail: monitorHealth === "good" ? "Sem alertas" : `${invoiceInvalid} NF inválida(s) · ${bankruptcyMatched} falimentar`,
       icon: Eye,
-      gradient: "from-status-committee/20 to-status-committee/5",
-      borderAccent: "border-status-committee/20 hover:border-status-committee/40",
-      iconBg: "bg-status-committee/15",
-      iconColor: "text-status-committee",
       sparkline: sparkMonitor,
-      sparkColor: monitorHealth === "good" ? "hsl(var(--status-approved))" : monitorHealth === "danger" ? "hsl(var(--status-rejected))" : "hsl(var(--status-committee))",
+      sparkColor: "hsl(var(--muted-foreground))",
       href: "/monitoramento-nfs",
     },
   ];
@@ -281,18 +269,13 @@ export default function Dashboard() {
   const statusLabels: Record<string, string> = { good: "Saudável", warning: "Atenção", danger: "Crítico" };
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 space-y-6 overflow-auto max-w-[1600px] mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-5 overflow-auto max-w-[1600px] mx-auto">
       <motion.div className="flex items-end justify-between flex-wrap gap-4" {...fade(0)}>
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center">
-              <Sparkles className="h-4 w-4 text-primary-foreground" />
-            </div>
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">Painel Inicial</h1>
-          </div>
-          <p className="text-sm text-muted-foreground ml-10">Visão consolidada — Crédito, Monitoramento e CRM</p>
+        <div className="space-y-0.5">
+          <h1 className="text-lg sm:text-xl font-semibold tracking-tight text-foreground">Painel Inicial</h1>
+          <p className="text-xs text-muted-foreground">Visão consolidada — Crédito, Monitoramento e CRM</p>
         </div>
-        <div className="flex items-center gap-1 bg-muted/70 rounded-lg p-1 border border-border/50">
+        <div className="flex items-center gap-0.5 bg-muted/50 rounded-lg p-0.5 border border-border/40">
           {([
             { label: "7d", days: 7 },
             { label: "30d", days: 30 },
@@ -303,9 +286,9 @@ export default function Dashboard() {
               key={opt.label}
               onClick={() => setPeriodDays(opt.days)}
               className={cn(
-                "px-3 py-1.5 text-xs font-semibold rounded-md transition-all",
+                "px-2.5 py-1 text-[11px] font-medium rounded-md transition-all",
                 periodDays === opt.days
-                  ? "bg-background text-foreground shadow-sm border border-border/60"
+                  ? "bg-background text-foreground shadow-sm border border-border/50"
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
@@ -315,51 +298,36 @@ export default function Dashboard() {
         </div>
       </motion.div>
 
-      <motion.div {...fade(0.05)} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <motion.div {...fade(0.05)} className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {healthItems.map((item, idx) => (
           <motion.div
             key={item.label}
             onClick={() => navigate(item.href)}
-            initial={{ opacity: 0, y: 20, scale: 0.97 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 0.4, delay: 0.08 + idx * 0.07 }}
-            whileHover={{ scale: 1.03, y: -4, transition: { duration: 0.25, type: "spring", stiffness: 300, damping: 20 } }}
-            whileTap={{ scale: 0.98 }}
-            className={cn(
-              "group relative rounded-xl border bg-gradient-to-br p-4 cursor-pointer overflow-hidden",
-              "shadow-sm hover:shadow-xl",
-              item.gradient, item.borderAccent
-            )}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35, delay: 0.06 + idx * 0.05 }}
+            whileHover={{ y: -2, transition: { duration: 0.2 } }}
+            className="group relative rounded-lg border border-border/60 bg-card/60 backdrop-blur-sm px-4 py-3 cursor-pointer hover:border-border hover:shadow-sm transition-all"
           >
-            {/* Subtle glow on hover */}
-            <div className={cn(
-              "absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-xl pointer-events-none",
-              "bg-gradient-to-br from-transparent via-transparent to-primary/5"
-            )} />
-            <div className="relative flex items-start justify-between gap-3">
-              <div className="flex items-start gap-3 min-w-0 flex-1">
-                <motion.div
-                  className={cn("flex items-center justify-center h-10 w-10 rounded-xl shrink-0 transition-shadow duration-300", item.iconBg, "group-hover:shadow-md")}
-                  whileHover={{ rotate: [0, -8, 8, 0], transition: { duration: 0.5 } }}
-                >
-                  <item.icon className={cn("h-5 w-5", item.iconColor)} />
-                </motion.div>
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-muted/60 shrink-0">
+                  <item.icon className="h-4 w-4 text-muted-foreground" />
+                </div>
                 <div className="min-w-0">
-                  <p className="text-sm font-bold text-foreground">{item.label}</p>
+                  <p className="text-[13px] font-semibold text-foreground">{item.label}</p>
                   <div className="flex items-center gap-1.5 mt-0.5">
-                    <span className={cn("h-2 w-2 rounded-full animate-pulse", statusDots[item.status])} />
-                    <span className={cn("text-xs font-semibold uppercase tracking-wide", statusColors[item.status])}>
-                      {statusLabels[item.status]}
-                    </span>
+                    <span className={cn("h-1.5 w-1.5 rounded-full", statusDots[item.status])} />
+                    <span className="text-[11px] text-muted-foreground">{statusLabels[item.status]}</span>
+                    <span className="text-[10px] text-muted-foreground/70">· {item.detail}</span>
                   </div>
-                  <p className="text-[11px] text-muted-foreground mt-1 truncate">{item.detail}</p>
                 </div>
               </div>
-              <div className="shrink-0 opacity-60 group-hover:opacity-100 transition-opacity duration-300">
+              <div className="shrink-0 flex items-center gap-2">
                 <Sparkline data={item.sparkline} color={item.sparkColor} />
+                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/30 group-hover:text-muted-foreground/60 transition-colors" />
               </div>
             </div>
-            <ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/0 group-hover:text-muted-foreground/60 transition-all duration-300 group-hover:translate-x-1" />
           </motion.div>
         ))}
       </motion.div>
@@ -703,18 +671,18 @@ function SectionWrapper({
   linkLabel?: string; onLink?: () => void; children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-xl border border-border/50 bg-card/40 backdrop-blur-sm p-5 space-y-4">
+    <div className="rounded-lg border border-border/40 bg-card/30 backdrop-blur-sm p-4 space-y-3">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className={cn("h-9 w-1.5 rounded-full", accentColor)} />
+        <div className="flex items-center gap-2.5">
+          <div className={cn("h-7 w-1 rounded-full opacity-60", accentColor)} />
           <div>
-            <h2 className="text-sm font-bold text-foreground tracking-tight">{title}</h2>
-            <p className="text-[11px] text-muted-foreground">{subtitle}</p>
+            <h2 className="text-[13px] font-semibold text-foreground">{title}</h2>
+            <p className="text-[10px] text-muted-foreground">{subtitle}</p>
           </div>
         </div>
         {linkLabel && onLink && (
-          <button onClick={onLink} className="text-[11px] text-primary hover:underline flex items-center gap-0.5 font-medium">
-            {linkLabel} <ArrowUpRight className="h-3 w-3" />
+          <button onClick={onLink} className="text-[10px] text-primary hover:underline flex items-center gap-0.5 font-medium">
+            {linkLabel} <ArrowUpRight className="h-2.5 w-2.5" />
           </button>
         )}
       </div>
