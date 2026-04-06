@@ -29,6 +29,7 @@ import CRMPipeline from "@/pages/CRMPipeline";
 import CRMContacts from "@/pages/CRMContacts";
 import CRMActivities from "@/pages/CRMActivities";
 import CRMTasks from "@/pages/CRMTasks";
+import CRMDashboard from "@/pages/CRMDashboard";
 
 const queryClient = new QueryClient();
 
