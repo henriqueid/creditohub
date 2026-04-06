@@ -6,7 +6,8 @@ import {
   Building2, FileText, CheckCircle, XCircle, Clock, TrendingUp,
   BarChart3, AlertTriangle, DollarSign, ShieldBan, Scale, FileBarChart,
   Layers, Activity, ArrowRight, Calendar, User, Hash, ArrowUpRight,
-  Gauge, CircleDot, ChevronRight, Zap, Filter
+  Gauge, CircleDot, ChevronRight, Zap, Filter, Handshake, Target,
+  CheckSquare, MessageSquare, ArrowUp, ArrowDown
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { formatBRL, formatDate } from "@/lib/formatters";
