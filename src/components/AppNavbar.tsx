@@ -131,7 +131,7 @@ function MegaMenuDropdown({
 
       {isOpen && (
         <div className="absolute top-full left-0 mt-1 z-50 min-w-[420px]">
-          <div className="bg-popover border border-border rounded-lg shadow-xl p-3 grid grid-cols-2 gap-1">
+          <div className="bg-popover border border-border shadow-xl rounded-lg p-3 grid grid-cols-2 gap-1">
             {group.items.map((item) => {
               const isActive = item.url === "/"
                 ? location.pathname === "/"
@@ -143,21 +143,22 @@ function MegaMenuDropdown({
                   to={item.url}
                   className={cn(
                     "flex items-start gap-3 p-3 rounded-md transition-colors group/item",
-                    "hover:bg-accent/50",
-                    isActive && "bg-accent text-accent-foreground"
+                    "hover:bg-accent",
+                    isActive && "bg-accent"
                   )}
                 >
                   <div
                     className={cn(
-                      "mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-border/50",
-                      "bg-background group-hover/item:bg-primary/10 group-hover/item:border-primary/30",
-                      isActive && "bg-primary/10 border-primary/30"
+                      "mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md border",
+                      isActive
+                        ? "bg-primary/15 border-primary/30"
+                        : "bg-muted border-border group-hover/item:bg-primary/10 group-hover/item:border-primary/30"
                     )}
                   >
-                    <item.icon className={cn("h-4 w-4", isActive ? "text-primary" : "text-muted-foreground group-hover/item:text-primary")} />
+                    <item.icon className={cn("h-4 w-4", isActive ? "text-primary" : "text-foreground/70 group-hover/item:text-primary")} />
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-sm font-medium leading-tight text-foreground">{item.title}</span>
+                    <span className={cn("text-sm font-medium leading-tight", isActive ? "text-primary" : "text-foreground")}>{item.title}</span>
                     {item.description && (
                       <span className="text-xs text-muted-foreground mt-0.5 leading-snug">{item.description}</span>
                     )}
