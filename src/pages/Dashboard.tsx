@@ -515,9 +515,17 @@ export default function Dashboard() {
         </div>
       </motion.div>
 
-      {/* Monitoring section */}
-      <motion.div {...fade(0.3)}>
-        <SectionHeader title="Monitoramento & Restrições" icon={Activity} />
+      {/* ═══ Monitoramento ═══ */}
+      <motion.div {...fade(0.3)} className="rounded-xl border border-border/50 bg-card/30 p-5 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="h-8 w-1.5 rounded-full bg-status-committee" />
+            <div>
+              <h2 className="text-sm font-bold text-foreground tracking-tight">Monitoramento & Restrições</h2>
+              <p className="text-[11px] text-muted-foreground">NFs, falimentar, blacklist e grupos</p>
+            </div>
+          </div>
+        </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* NFs */}
           <MonitorCard
