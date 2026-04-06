@@ -88,6 +88,19 @@ export function NotificationBell() {
     refetchInterval: 60000,
   });
 
+  const { data: overdueTasks = 0 } = useQuery({
+    queryKey: ["notif-overdue-tasks"],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("crm_tasks")
+        .select("*", { count: "exact", head: true })
+        .in("status", ["pending", "in_progress"])
+        .lt("due_date", new Date().toISOString());
+      return count || 0;
+    },
+    refetchInterval: 60000,
+  });
+
   // Realtime subscription for audit_log
   useEffect(() => {
     const channel = supabase
