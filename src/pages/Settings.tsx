@@ -42,6 +42,7 @@ import {
   TestTube,
   User,
   Loader2,
+  UserSearch,
 } from "lucide-react";
 
 type SettingRow = {
