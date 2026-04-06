@@ -14,6 +14,7 @@ import { motion } from "framer-motion";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { DragDropContext, Droppable, Draggable, type DropResult } from "@hello-pangea/dnd";
 import { toast } from "sonner";
+import { ClientTagManager, TagFilter, useAllClientTags } from "@/components/ClientTagManager";
 
 type KanbanStage = "cadastrado" | "draft" | "in_committee" | "approved" | "approved_restricted" | "rejected";
 
