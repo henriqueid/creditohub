@@ -49,15 +49,27 @@ interface NavGroup {
 
 const directLinks: NavItem[] = [
   { title: "Painel Inicial", url: "/", icon: LayoutDashboard },
-  { title: "Consulta CPF/CNPJ", url: "/consulta", icon: SearchCheck },
 ];
 
+const crmGroup: NavGroup = {
+  title: "Comercial",
+  icon: Handshake,
+  items: [
+    { title: "Dashboard CRM", url: "/crm/dashboard", icon: BarChart3, description: "Métricas e forecast de vendas" },
+    { title: "Pipeline", url: "/crm/pipeline", icon: Handshake, description: "Funil de oportunidades" },
+    { title: "Prospects", url: "/prospects", icon: UserSearch, description: "Captação e qualificação de leads" },
+    { title: "Contatos", url: "/crm/contatos", icon: Contact, description: "Gestão de contatos" },
+    { title: "Atividades", url: "/crm/atividades", icon: MessageSquare, description: "Histórico de interações" },
+    { title: "Tarefas", url: "/crm/tarefas", icon: CheckSquare, description: "Follow-ups e pendências" },
+  ],
+};
+
 const esteiraGroup: NavGroup = {
-  title: "Esteira de Crédito",
+  title: "Crédito",
   icon: GitBranch,
   items: [
-    { title: "Prospects", url: "/prospects", icon: UserSearch, description: "Gestão de prospects e leads" },
-    { title: "Cedentes", url: "/cedentes", icon: Building2, description: "Cadastro de cedentes ativos" },
+    { title: "Cedentes", url: "/cedentes", icon: Building2, description: "Cadastro e esteira dos cedentes" },
+    { title: "Consulta CPF/CNPJ", url: "/consulta", icon: SearchCheck, description: "Consultas na Receita Federal" },
     { title: "Análises de Crédito", url: "/analises", icon: FileText, description: "Dossiês e pareceres" },
     { title: "Comitê de Crédito", url: "/comite", icon: Users, description: "Votação e deliberação" },
     { title: "Performance", url: "/performance", icon: BarChart3, description: "Métricas e gargalos da esteira" },
@@ -68,25 +80,13 @@ const monitorGroup: NavGroup = {
   title: "Monitoramento",
   icon: FileBarChart,
   items: [
-    { title: "Monitoramento NFs", url: "/monitoramento-nfs", icon: FileBarChart, description: "Acompanhamento de notas fiscais" },
-    { title: "Informe Falimentar", url: "/falimentar", icon: Scale, description: "Recuperações e falências" },
+    { title: "Notas Fiscais", url: "/monitoramento-nfs", icon: FileBarChart, description: "Acompanhamento e validação de NFs" },
+    { title: "Informe Falimentar", url: "/falimentar", icon: Scale, description: "Recuperações judiciais e falências" },
     { title: "Blacklist", url: "/blacklist", icon: ShieldBan, description: "Restrições e bloqueios" },
   ],
 };
 
-const crmGroup: NavGroup = {
-  title: "CRM",
-  icon: Handshake,
-  items: [
-    { title: "Dashboard", url: "/crm/dashboard", icon: BarChart3, description: "Métricas e forecast" },
-    { title: "Pipeline", url: "/crm/pipeline", icon: Handshake, description: "Funil de oportunidades" },
-    { title: "Contatos", url: "/crm/contatos", icon: Contact, description: "Gestão de contatos" },
-    { title: "Atividades", url: "/crm/atividades", icon: MessageSquare, description: "Histórico de interações" },
-    { title: "Tarefas", url: "/crm/tarefas", icon: CheckSquare, description: "Follow-ups e pendências" },
-  ],
-};
-
-const groups: NavGroup[] = [esteiraGroup, monitorGroup, crmGroup];
+const groups: NavGroup[] = [crmGroup, esteiraGroup, monitorGroup];
 
 function MegaMenuDropdown({
   group,
