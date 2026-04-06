@@ -20,6 +20,10 @@ import {
   GitBranch,
   BarChart3,
   History,
+  Handshake,
+  Contact,
+  MessageSquare,
+  CheckSquare,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -70,7 +74,18 @@ const monitorGroup: NavGroup = {
   ],
 };
 
-const groups: NavGroup[] = [esteiraGroup, monitorGroup];
+const crmGroup: NavGroup = {
+  title: "CRM",
+  icon: Handshake,
+  items: [
+    { title: "Pipeline", url: "/crm/pipeline", icon: Handshake, description: "Funil de oportunidades" },
+    { title: "Contatos", url: "/crm/contatos", icon: Contact, description: "Gestão de contatos" },
+    { title: "Atividades", url: "/crm/atividades", icon: MessageSquare, description: "Histórico de interações" },
+    { title: "Tarefas", url: "/crm/tarefas", icon: CheckSquare, description: "Follow-ups e pendências" },
+  ],
+};
+
+const groups: NavGroup[] = [esteiraGroup, monitorGroup, crmGroup];
 
 function MegaMenuDropdown({
   group,
