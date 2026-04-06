@@ -443,6 +443,9 @@ export default function Clients() {
                     <TableCell className="font-medium">{client.razao_social}</TableCell>
                     <TableCell className="tabular-nums">{formatCNPJorCPF(client.cnpj_cpf)}</TableCell>
                     <TableCell>{client.segmento || "—"}</TableCell>
+                    <TableCell>
+                      <ClientTagManager clientId={client.id} />
+                    </TableCell>
                     <TableCell>{client.cidade && client.estado ? `${client.cidade}/${client.estado}` : "—"}</TableCell>
                     <TableCell>
                       {client.latestStatus === "cadastrado" ? (
