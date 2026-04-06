@@ -30,6 +30,7 @@ import CRMContacts from "@/pages/CRMContacts";
 import CRMActivities from "@/pages/CRMActivities";
 import CRMTasks from "@/pages/CRMTasks";
 import CRMDashboard from "@/pages/CRMDashboard";
+import CRMClientProfile from "@/pages/CRMClientProfile";
 
 const queryClient = new QueryClient();
 
