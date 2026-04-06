@@ -99,6 +99,41 @@ export default function Dashboard() {
     },
   });
 
+  // CRM queries
+  const { data: deals = [] } = useQuery({
+    queryKey: ["dashboard-deals"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("deals")
+        .select("id, title, value, stage_id, created_at, expected_close_date, responsible, deal_stages(name, is_won, is_lost, color)")
+        .order("created_at", { ascending: false });
+      return data || [];
+    },
+  });
+
+  const { data: crmTasks = [] } = useQuery({
+    queryKey: ["dashboard-crm-tasks"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("crm_tasks")
+        .select("id, title, status, priority, due_date, created_at")
+        .order("due_date", { ascending: true });
+      return data || [];
+    },
+  });
+
+  const { data: recentActivities = [] } = useQuery({
+    queryKey: ["dashboard-activities"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("activities")
+        .select("id, activity_type, description, activity_date, created_at, clients(razao_social)")
+        .order("activity_date", { ascending: false })
+        .limit(5);
+      return data || [];
+    },
+  });
+
   // Period filter
   const now = new Date();
   const cutoff = periodDays ? new Date(now.getTime() - periodDays * 24 * 60 * 60 * 1000) : null;
