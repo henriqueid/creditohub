@@ -78,6 +78,7 @@ const crmGroup: NavGroup = {
   title: "CRM",
   icon: Handshake,
   items: [
+    { title: "Dashboard", url: "/crm/dashboard", icon: BarChart3, description: "Métricas e forecast" },
     { title: "Pipeline", url: "/crm/pipeline", icon: Handshake, description: "Funil de oportunidades" },
     { title: "Contatos", url: "/crm/contatos", icon: Contact, description: "Gestão de contatos" },
     { title: "Atividades", url: "/crm/atividades", icon: MessageSquare, description: "Histórico de interações" },
