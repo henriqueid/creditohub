@@ -6,7 +6,8 @@ import {
   Building2, FileText, CheckCircle, XCircle, Clock, TrendingUp,
   BarChart3, AlertTriangle, DollarSign, ShieldBan, Scale, FileBarChart,
   Layers, Activity, ArrowRight, Calendar, User, Hash, ArrowUpRight,
-  Gauge, CircleDot, ChevronRight, Zap, Filter
+  Gauge, CircleDot, ChevronRight, Zap, Filter, Handshake, Target,
+  CheckSquare, MessageSquare, ArrowUp, ArrowDown
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { formatBRL, formatDate } from "@/lib/formatters";
@@ -98,6 +99,41 @@ export default function Dashboard() {
     },
   });
 
+  // CRM queries
+  const { data: deals = [] } = useQuery({
+    queryKey: ["dashboard-deals"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("deals")
+        .select("id, title, value, stage_id, created_at, expected_close_date, responsible, deal_stages(name, is_won, is_lost, color)")
+        .order("created_at", { ascending: false });
+      return data || [];
+    },
+  });
+
+  const { data: crmTasks = [] } = useQuery({
+    queryKey: ["dashboard-crm-tasks"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("crm_tasks")
+        .select("id, title, status, priority, due_date, created_at")
+        .order("due_date", { ascending: true });
+      return data || [];
+    },
+  });
+
+  const { data: recentActivities = [] } = useQuery({
+    queryKey: ["dashboard-activities"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("activities")
+        .select("id, activity_type, description, activity_date, created_at, clients(razao_social)")
+        .order("activity_date", { ascending: false })
+        .limit(5);
+      return data || [];
+    },
+  });
+
   // Period filter
   const now = new Date();
   const cutoff = periodDays ? new Date(now.getTime() - periodDays * 24 * 60 * 60 * 1000) : null;
@@ -138,6 +174,18 @@ export default function Dashboard() {
 
   const activeGroups = monitoringGroups.filter(g => g.is_active).length;
   const recentAnalyses = fAnalyses.slice(0, 6);
+
+  // CRM metrics
+  const activeDeals = deals.filter(d => {
+    const stage = d.deal_stages as any;
+    return stage && !stage.is_won && !stage.is_lost;
+  });
+  const pipelineValue = activeDeals.reduce((sum, d) => sum + (d.value ?? 0), 0);
+  const wonDeals = deals.filter(d => (d.deal_stages as any)?.is_won);
+  const wonValue = wonDeals.reduce((sum, d) => sum + (d.value ?? 0), 0);
+  const pendingTasks = crmTasks.filter(t => t.status !== "completed").length;
+  const overdueTasks = crmTasks.filter(t => t.status !== "completed" && t.due_date && new Date(t.due_date) < now).length;
+  const weekActivities = recentActivities.length;
 
   // Build sparkline data: count per week for last 8 weeks
   const buildWeeklySparkline = (items: { created_at: string }[]) => {
@@ -197,7 +245,7 @@ export default function Dashboard() {
       <motion.div className="flex items-center justify-between flex-wrap gap-3" {...fade(0)}>
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground">Painel Inicial</h1>
-          <p className="text-sm text-muted-foreground">Visão consolidada da plataforma de inteligência de crédito</p>
+          <p className="text-sm text-muted-foreground">Visão consolidada — Crédito, Monitoramento e CRM</p>
         </div>
         <div className="flex items-center gap-1 bg-muted/60 rounded-lg p-1">
           {([
@@ -268,7 +316,7 @@ export default function Dashboard() {
           />
           <KpiCard title="Aprovadas" value={approved} icon={CheckCircle} accent="success" sparkline={sparkApproved} onClick={() => navigate("/analises")} />
           <KpiCard title="Reprovadas" value={rejected} icon={XCircle} accent={rejected > 0 ? "danger" : undefined} sparkline={sparkRejected} onClick={() => navigate("/analises")} />
-          <KpiCard title="Score Médio" value={avgScore || "—"} icon={Gauge} />
+          <KpiCard title="Score Médio" value={avgScore || "N/A"} icon={Gauge} />
         </div>
       </motion.div>
 
@@ -336,6 +384,113 @@ export default function Dashboard() {
             </div>
           </CardContent>
         </Card>
+      </motion.div>
+
+      {/* CRM section */}
+      <motion.div {...fade(0.25)}>
+        <SectionHeader title="CRM Comercial" icon={Handshake} />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Pipeline */}
+          <Card
+            className="glass-card cursor-pointer hover:border-primary/30 transition-all"
+            onClick={() => navigate("/crm/pipeline")}
+          >
+            <CardContent className="p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Target className="h-4 w-4 text-primary" />
+                  </div>
+                  <span className="text-xs font-medium text-muted-foreground">Pipeline</span>
+                </div>
+                <ChevronRight className="h-4 w-4 text-muted-foreground/30" />
+              </div>
+              <div>
+                <p className="text-xl font-bold tabular-nums text-foreground">{formatBRL(pipelineValue)}</p>
+                <p className="text-[11px] text-muted-foreground">{activeDeals.length} oportunidade(s) ativa(s)</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Won */}
+          <Card
+            className="glass-card cursor-pointer hover:border-primary/30 transition-all"
+            onClick={() => navigate("/crm/dashboard")}
+          >
+            <CardContent className="p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="h-8 w-8 rounded-lg bg-status-approved/10 flex items-center justify-center">
+                    <CheckCircle className="h-4 w-4 text-status-approved" />
+                  </div>
+                  <span className="text-xs font-medium text-muted-foreground">Ganhos</span>
+                </div>
+              </div>
+              <div>
+                <p className="text-xl font-bold tabular-nums text-status-approved">{formatBRL(wonValue)}</p>
+                <p className="text-[11px] text-muted-foreground">{wonDeals.length} deal(s) fechado(s)</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Tasks */}
+          <Card
+            className="glass-card cursor-pointer hover:border-primary/30 transition-all"
+            onClick={() => navigate("/crm/tarefas")}
+          >
+            <CardContent className="p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className={cn("h-8 w-8 rounded-lg flex items-center justify-center",
+                    overdueTasks > 0 ? "bg-status-rejected/10" : "bg-status-committee/10"
+                  )}>
+                    <CheckSquare className={cn("h-4 w-4",
+                      overdueTasks > 0 ? "text-status-rejected" : "text-status-committee"
+                    )} />
+                  </div>
+                  <span className="text-xs font-medium text-muted-foreground">Tarefas</span>
+                </div>
+              </div>
+              <div>
+                <p className={cn("text-xl font-bold tabular-nums", overdueTasks > 0 ? "text-status-rejected" : "text-foreground")}>{pendingTasks}</p>
+                <p className="text-[11px] text-muted-foreground">
+                  {overdueTasks > 0 ? `${overdueTasks} vencida(s)` : "pendente(s)"}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Recent Activities */}
+          <Card
+            className="glass-card cursor-pointer hover:border-primary/30 transition-all"
+            onClick={() => navigate("/crm/atividades")}
+          >
+            <CardContent className="p-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="h-8 w-8 rounded-lg bg-accent flex items-center justify-center">
+                    <MessageSquare className="h-4 w-4 text-foreground/70" />
+                  </div>
+                  <span className="text-xs font-medium text-muted-foreground">Atividades</span>
+                </div>
+              </div>
+              {recentActivities.length > 0 ? (
+                <div className="space-y-1.5">
+                  {recentActivities.slice(0, 3).map(act => (
+                    <div key={act.id} className="flex items-center gap-2 min-w-0">
+                      <span className="text-[10px] text-muted-foreground shrink-0 w-14 tabular-nums">
+                        {formatDate(act.activity_date)}
+                      </span>
+                      <span className="text-[11px] text-foreground truncate">{act.description}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-[11px] text-muted-foreground">Nenhuma atividade recente</p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </motion.div>
 
       {/* Monitoring section */}
