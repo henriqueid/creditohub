@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Bell, FileText, Users, AlertTriangle, Scale, History, Plus, Pencil, Trash2, ShieldBan } from "lucide-react";
+import { Bell, FileText, Users, AlertTriangle, Scale, History, Plus, Pencil, Trash2, ShieldBan, CheckSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
