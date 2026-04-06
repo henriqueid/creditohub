@@ -269,18 +269,13 @@ export default function Dashboard() {
   const statusLabels: Record<string, string> = { good: "Saudável", warning: "Atenção", danger: "Crítico" };
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 space-y-6 overflow-auto max-w-[1600px] mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-5 overflow-auto max-w-[1600px] mx-auto">
       <motion.div className="flex items-end justify-between flex-wrap gap-4" {...fade(0)}>
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center">
-              <Sparkles className="h-4 w-4 text-primary-foreground" />
-            </div>
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">Painel Inicial</h1>
-          </div>
-          <p className="text-sm text-muted-foreground ml-10">Visão consolidada — Crédito, Monitoramento e CRM</p>
+        <div className="space-y-0.5">
+          <h1 className="text-lg sm:text-xl font-semibold tracking-tight text-foreground">Painel Inicial</h1>
+          <p className="text-xs text-muted-foreground">Visão consolidada — Crédito, Monitoramento e CRM</p>
         </div>
-        <div className="flex items-center gap-1 bg-muted/70 rounded-lg p-1 border border-border/50">
+        <div className="flex items-center gap-0.5 bg-muted/50 rounded-lg p-0.5 border border-border/40">
           {([
             { label: "7d", days: 7 },
             { label: "30d", days: 30 },
@@ -291,9 +286,9 @@ export default function Dashboard() {
               key={opt.label}
               onClick={() => setPeriodDays(opt.days)}
               className={cn(
-                "px-3 py-1.5 text-xs font-semibold rounded-md transition-all",
+                "px-2.5 py-1 text-[11px] font-medium rounded-md transition-all",
                 periodDays === opt.days
-                  ? "bg-background text-foreground shadow-sm border border-border/60"
+                  ? "bg-background text-foreground shadow-sm border border-border/50"
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
@@ -676,18 +671,18 @@ function SectionWrapper({
   linkLabel?: string; onLink?: () => void; children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-xl border border-border/50 bg-card/40 backdrop-blur-sm p-5 space-y-4">
+    <div className="rounded-lg border border-border/40 bg-card/30 backdrop-blur-sm p-4 space-y-3">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className={cn("h-9 w-1.5 rounded-full", accentColor)} />
+        <div className="flex items-center gap-2.5">
+          <div className={cn("h-7 w-1 rounded-full opacity-60", accentColor)} />
           <div>
-            <h2 className="text-sm font-bold text-foreground tracking-tight">{title}</h2>
-            <p className="text-[11px] text-muted-foreground">{subtitle}</p>
+            <h2 className="text-[13px] font-semibold text-foreground">{title}</h2>
+            <p className="text-[10px] text-muted-foreground">{subtitle}</p>
           </div>
         </div>
         {linkLabel && onLink && (
-          <button onClick={onLink} className="text-[11px] text-primary hover:underline flex items-center gap-0.5 font-medium">
-            {linkLabel} <ArrowUpRight className="h-3 w-3" />
+          <button onClick={onLink} className="text-[10px] text-primary hover:underline flex items-center gap-0.5 font-medium">
+            {linkLabel} <ArrowUpRight className="h-2.5 w-2.5" />
           </button>
         )}
       </div>
