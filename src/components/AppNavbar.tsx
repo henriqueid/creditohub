@@ -18,6 +18,7 @@ import {
   X,
   ChevronDown,
   GitBranch,
+  BarChart3,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
