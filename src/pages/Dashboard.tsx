@@ -316,7 +316,7 @@ export default function Dashboard() {
           />
           <KpiCard title="Aprovadas" value={approved} icon={CheckCircle} accent="success" sparkline={sparkApproved} onClick={() => navigate("/analises")} />
           <KpiCard title="Reprovadas" value={rejected} icon={XCircle} accent={rejected > 0 ? "danger" : undefined} sparkline={sparkRejected} onClick={() => navigate("/analises")} />
-          <KpiCard title="Score Médio" value={avgScore || "—"} icon={Gauge} />
+          <KpiCard title="Score Médio" value={avgScore || "N/A"} icon={Gauge} />
         </div>
       </motion.div>
 
