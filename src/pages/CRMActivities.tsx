@@ -138,10 +138,25 @@ export default function CRMActivities() {
         </Dialog>
       </div>
 
-      <div className="flex gap-3">
+      <div className="flex gap-3 flex-wrap">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input placeholder="Buscar atividades..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
+        </div>
+        <div className="flex rounded-md border border-border overflow-hidden">
+          {OWNER_FILTERS.map(f => (
+            <button
+              key={f.value}
+              onClick={() => setOwnerFilter(f.value)}
+              className={cn(
+                "px-3 py-1.5 text-xs font-medium transition-colors",
+                ownerFilter === f.value ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:bg-muted"
+              )}
+            >
+              {f.value === "mine" && <User className="h-3 w-3 inline mr-1" />}
+              {f.label}
+            </button>
+          ))}
         </div>
         <Select value={typeFilter} onValueChange={setTypeFilter}>
           <SelectTrigger className="w-[160px]"><Filter className="h-3.5 w-3.5 mr-1" /><SelectValue /></SelectTrigger>
