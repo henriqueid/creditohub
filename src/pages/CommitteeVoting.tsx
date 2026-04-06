@@ -208,10 +208,43 @@ export default function CommitteeVoting() {
         .update({ status: decision })
         .eq("id", id);
       if (updateError) throw updateError;
+
+      // Auto-create CRM deal on approval
+      if (decision === "approved" || decision === "approved_restricted") {
+        try {
+          // Get first active (non-won, non-lost) stage
+          const { data: firstStage } = await supabase
+            .from("deal_stages")
+            .select("id")
+            .eq("is_active", true)
+            .eq("is_won", false)
+            .eq("is_lost", false)
+            .order("order")
+            .limit(1)
+            .single();
+
+          if (firstStage && analysis) {
+            const clientName = client?.razao_social || "Cliente";
+            const dealTitle = `${decision === "approved" ? "Crédito aprovado" : "Crédito aprovado c/ restrição"} — ${clientName}`;
+            await supabase.from("deals").insert({
+              client_id: analysis.client_id,
+              stage_id: firstStage.id,
+              title: dealTitle,
+              value: limiteAprovado ? parseFloat(limiteAprovado) : (analysis.limite_sugerido || null),
+              responsible: analysis.responsavel_comercial || analysis.analista_credito || null,
+              credit_analysis_id: id!,
+              notes: condicoesAdicionais || null,
+            });
+          }
+        } catch (e) {
+          console.warn("Falha ao criar deal CRM automaticamente:", e);
+        }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["committee-queue"] });
       queryClient.invalidateQueries({ queryKey: ["credit-analyses"] });
+      queryClient.invalidateQueries({ queryKey: ["deals"] });
       toast({ title: "Decisão do comitê finalizada" });
       navigate("/comite");
     },
