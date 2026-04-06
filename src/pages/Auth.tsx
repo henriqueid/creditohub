@@ -67,64 +67,70 @@ export default function Auth() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md glass-card">
-        <CardHeader className="text-center">
-          <div className="flex justify-center mb-3">
-            <div className="h-10 w-10 rounded bg-primary flex items-center justify-center text-primary-foreground font-bold text-sm">AT</div>
+      <div className="w-full max-w-sm">
+        <div className="flex justify-center mb-8">
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 rounded-md bg-primary flex items-center justify-center text-primary-foreground font-bold text-xs">AT</div>
+            <span className="text-base font-semibold text-foreground tracking-tight">Ambiente Teste</span>
           </div>
-          <CardTitle className="text-xl">
-            {mode === "login" && "Entrar"}
-            {mode === "signup" && "Criar Conta"}
-            {mode === "forgot" && "Recuperar Senha"}
-          </CardTitle>
-          <CardDescription>
-            {mode === "login" && "Acesse sua plataforma de crédito"}
-            {mode === "signup" && "Preencha seus dados para se cadastrar"}
-            {mode === "forgot" && "Informe seu email para receber o link de recuperação"}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={mode === "login" ? handleLogin : mode === "signup" ? handleSignup : handleForgotPassword} className="space-y-4">
-            {mode === "signup" && (
-              <div className="space-y-2">
-                <Label htmlFor="fullName">Nome completo</Label>
-                <Input id="fullName" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Seu nome" required />
-              </div>
-            )}
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="seu@email.com" required />
-            </div>
-            {mode !== "forgot" && (
-              <div className="space-y-2">
-                <Label htmlFor="password">Senha</Label>
-                <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required minLength={6} />
-              </div>
-            )}
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+        </div>
+
+        <Card>
+          <CardHeader className="text-center pb-4">
+            <CardTitle className="text-base">
               {mode === "login" && "Entrar"}
               {mode === "signup" && "Criar Conta"}
-              {mode === "forgot" && "Enviar Link"}
-            </Button>
-          </form>
+              {mode === "forgot" && "Recuperar Senha"}
+            </CardTitle>
+            <CardDescription>
+              {mode === "login" && "Acesse sua plataforma de crédito"}
+              {mode === "signup" && "Preencha seus dados para se cadastrar"}
+              {mode === "forgot" && "Informe seu email para receber o link"}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={mode === "login" ? handleLogin : mode === "signup" ? handleSignup : handleForgotPassword} className="space-y-4">
+              {mode === "signup" && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="fullName" className="text-xs">Nome completo</Label>
+                  <Input id="fullName" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Seu nome" required />
+                </div>
+              )}
+              <div className="space-y-1.5">
+                <Label htmlFor="email" className="text-xs">Email</Label>
+                <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="seu@email.com" required />
+              </div>
+              {mode !== "forgot" && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="password" className="text-xs">Senha</Label>
+                  <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required minLength={6} />
+                </div>
+              )}
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                {mode === "login" && "Entrar"}
+                {mode === "signup" && "Criar Conta"}
+                {mode === "forgot" && "Enviar Link"}
+              </Button>
+            </form>
 
-          <div className="mt-4 text-center text-xs text-muted-foreground space-y-1">
-            {mode === "login" && (
-              <>
-                <button onClick={() => setMode("forgot")} className="text-primary hover:underline block mx-auto">Esqueceu a senha?</button>
-                <p>Não tem conta? <button onClick={() => setMode("signup")} className="text-primary hover:underline">Cadastre-se</button></p>
-              </>
-            )}
-            {mode === "signup" && (
-              <p>Já tem conta? <button onClick={() => setMode("login")} className="text-primary hover:underline">Entrar</button></p>
-            )}
-            {mode === "forgot" && (
-              <button onClick={() => setMode("login")} className="text-primary hover:underline">Voltar para login</button>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+            <div className="mt-4 text-center text-xs text-muted-foreground space-y-1">
+              {mode === "login" && (
+                <>
+                  <button onClick={() => setMode("forgot")} className="text-primary hover:underline block mx-auto">Esqueceu a senha?</button>
+                  <p>Não tem conta? <button onClick={() => setMode("signup")} className="text-primary hover:underline">Cadastre-se</button></p>
+                </>
+              )}
+              {mode === "signup" && (
+                <p>Já tem conta? <button onClick={() => setMode("login")} className="text-primary hover:underline">Entrar</button></p>
+              )}
+              {mode === "forgot" && (
+                <button onClick={() => setMode("login")} className="text-primary hover:underline">Voltar para login</button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

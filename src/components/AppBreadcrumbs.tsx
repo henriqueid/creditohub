@@ -44,12 +44,12 @@ export function AppBreadcrumbs() {
   });
 
   return (
-    <div className="border-b border-border/50 bg-muted/30 px-4 py-2">
+    <div className="border-b border-border px-5 py-2 bg-card">
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link to="/" className="flex items-center gap-1 text-muted-foreground hover:text-foreground">
+              <Link to="/" className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors">
                 <Home className="h-3.5 w-3.5" />
                 <span className="sr-only">Início</span>
               </Link>
@@ -60,10 +60,10 @@ export function AppBreadcrumbs() {
               <BreadcrumbSeparator />
               <BreadcrumbItem>
                 {crumb.isLast ? (
-                  <BreadcrumbPage>{crumb.label}</BreadcrumbPage>
+                  <BreadcrumbPage className="text-xs font-medium">{crumb.label}</BreadcrumbPage>
                 ) : (
                   <BreadcrumbLink asChild>
-                    <Link to={crumb.path}>{crumb.label}</Link>
+                    <Link to={crumb.path} className="text-xs">{crumb.label}</Link>
                   </BreadcrumbLink>
                 )}
               </BreadcrumbItem>
