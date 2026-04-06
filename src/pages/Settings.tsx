@@ -525,6 +525,30 @@ export default function Settings() {
                   onChange={(v) => updateSetting("notify_committee_pending", String(v))}
                 />
                 <Separator />
+                <ToggleSetting
+                  label="Follow-up automático de oportunidades"
+                  description="Cria tarefas automaticamente quando uma oportunidade fica parada no mesmo estágio por X dias"
+                  icon={<CalendarClock className="h-4 w-4" />}
+                  checked={getSettingBool("auto_followup_enabled")}
+                  onChange={(v) => updateSetting("auto_followup_enabled", String(v))}
+                />
+                <Separator />
+                <SettingField
+                  label="Dias para follow-up automático"
+                  description="Número de dias sem movimentação para criar tarefa de follow-up"
+                  icon={<Clock className="h-4 w-4" />}
+                >
+                  <Input
+                    type="number"
+                    min={1}
+                    max={90}
+                    value={getSetting("followup_stale_days")}
+                    onChange={(e) => updateSetting("followup_stale_days", e.target.value)}
+                    className="max-w-[120px]"
+                    placeholder="7"
+                  />
+                </SettingField>
+                <Separator />
                 <SettingField
                   label="Dias para expirar análise sem movimentação"
                   description={getDescription("days_to_expire_analysis")}
