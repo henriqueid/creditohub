@@ -300,9 +300,20 @@ export default function Dashboard() {
         </motion.div>
       )}
 
-      {/* KPI strip */}
-      <motion.div {...fade(0.1)}>
-        <SectionHeader title="Esteira de Crédito" icon={Zap} />
+      {/* ═══ Esteira de Crédito ═══ */}
+      <motion.div {...fade(0.1)} className="rounded-xl border border-border/50 bg-card/30 p-5 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="h-8 w-1.5 rounded-full bg-primary" />
+            <div>
+              <h2 className="text-sm font-bold text-foreground tracking-tight">Esteira de Crédito</h2>
+              <p className="text-[11px] text-muted-foreground">Análises, comitê e aprovações</p>
+            </div>
+          </div>
+          <button onClick={() => navigate("/analises")} className="text-[11px] text-primary hover:underline flex items-center gap-0.5">
+            Ver análises <ArrowUpRight className="h-3 w-3" />
+          </button>
+        </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           <KpiCard title="Cedentes" value={clientCount} icon={Building2} onClick={() => navigate("/cedentes")} />
           <KpiCard title="Análises" value={total} icon={FileText} sparkline={sparkAnalyses} onClick={() => navigate("/analises")} />
