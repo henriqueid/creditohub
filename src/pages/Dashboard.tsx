@@ -175,6 +175,18 @@ export default function Dashboard() {
   const activeGroups = monitoringGroups.filter(g => g.is_active).length;
   const recentAnalyses = fAnalyses.slice(0, 6);
 
+  // CRM metrics
+  const activeDeals = deals.filter(d => {
+    const stage = d.deal_stages as any;
+    return stage && !stage.is_won && !stage.is_lost;
+  });
+  const pipelineValue = activeDeals.reduce((sum, d) => sum + (d.value ?? 0), 0);
+  const wonDeals = deals.filter(d => (d.deal_stages as any)?.is_won);
+  const wonValue = wonDeals.reduce((sum, d) => sum + (d.value ?? 0), 0);
+  const pendingTasks = crmTasks.filter(t => t.status !== "completed").length;
+  const overdueTasks = crmTasks.filter(t => t.status !== "completed" && t.due_date && new Date(t.due_date) < now).length;
+  const weekActivities = recentActivities.length;
+
   // Build sparkline data: count per week for last 8 weeks
   const buildWeeklySparkline = (items: { created_at: string }[]) => {
     const weeks = 8;
