@@ -307,7 +307,7 @@ export function AppNavbar() {
       </Link>
 
       {/* Direct links */}
-      <nav className="flex items-center gap-0.5">
+      <nav className="flex items-center gap-0.5 min-w-0 flex-1">
         {directLinks.map((item) => {
           const isActive = item.url === "/" ? location.pathname === "/" : location.pathname.startsWith(item.url);
           return (
@@ -348,7 +348,7 @@ export function AppNavbar() {
       </nav>
 
       {/* Right side */}
-      <div className="ml-auto flex items-center gap-2">
+      <div className="ml-auto flex items-center gap-2 shrink-0">
         <GlobalSearch />
         <NotificationBell />
         <Tooltip>
