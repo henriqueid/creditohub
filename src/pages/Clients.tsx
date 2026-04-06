@@ -352,11 +352,24 @@ export default function Clients() {
                                         <p className="text-xs text-muted-foreground tabular-nums pl-5">
                                           {formatCNPJorCPF(client.cnpj_cpf)}
                                         </p>
-                                        {client.segmento && (
-                                          <Badge variant="secondary" className="text-[10px] font-normal px-1.5 py-0 ml-5">
-                                            {client.segmento}
-                                          </Badge>
-                                        )}
+                                        <div className="flex flex-wrap items-center gap-1 ml-5">
+                                          {client.segmento && (
+                                            <Badge variant="secondary" className="text-[10px] font-normal px-1.5 py-0">
+                                              {client.segmento}
+                                            </Badge>
+                                          )}
+                                          {(clientTagsMap[client.id] || []).map((tag) => (
+                                            <Badge
+                                              key={tag.id}
+                                              variant="outline"
+                                              className="text-[10px] px-1.5 py-0 border-0"
+                                              style={{ backgroundColor: tag.color + "20", color: tag.color }}
+                                            >
+                                              {tag.name}
+                                            </Badge>
+                                          ))}
+                                          <ClientTagManager clientId={client.id} compact />
+                                        </div>
                                         {client.latestStatus !== "cadastrado" && (
                                           <div className="flex items-center justify-between pt-1 border-t border-border/50 ml-5">
                                             {client.latestScore != null && (
