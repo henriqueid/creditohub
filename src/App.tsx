@@ -71,6 +71,7 @@ const App = () => (
               <Route path="/crm/contatos" element={<CRMContacts />} />
               <Route path="/crm/atividades" element={<CRMActivities />} />
               <Route path="/crm/tarefas" element={<CRMTasks />} />
+              <Route path="/crm/dashboard" element={<CRMDashboard />} />
             </Route>
           </Route>
 
