@@ -270,7 +270,83 @@ export default function Dashboard() {
         </div>
       </motion.div>
 
-      {/* Alerts removed — shown only in notification bell */}
+      {/* ═══ Saúde Geral ═══ */}
+      <motion.div {...fade(0.05)} className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {(() => {
+          const creditHealth = inCommittee === 0 && drafts <= 2 ? "good" : inCommittee > 3 || drafts > 5 ? "danger" : "warning";
+          const crmHealth = overdueTasks === 0 ? "good" : overdueTasks > 3 ? "danger" : "warning";
+          const monitorHealth = invoiceInvalid === 0 && bankruptcyMatched === 0 ? "good" : invoiceInvalid > 5 || bankruptcyMatched > 2 ? "danger" : "warning";
+
+          const healthItems = [
+            {
+              label: "Esteira de Crédito",
+              status: creditHealth,
+              detail: creditHealth === "good" ? "Fluxo normal" : `${inCommittee} em comitê · ${drafts} rascunhos`,
+              icon: FileText,
+              color: "bg-primary",
+            },
+            {
+              label: "CRM Comercial",
+              status: crmHealth,
+              detail: crmHealth === "good" ? "Sem atrasos" : `${overdueTasks} tarefa(s) vencida(s)`,
+              icon: Handshake,
+              color: "bg-status-approved",
+            },
+            {
+              label: "Monitoramento",
+              status: monitorHealth,
+              detail: monitorHealth === "good" ? "Sem alertas" : `${invoiceInvalid} NF inválida(s) · ${bankruptcyMatched} falimentar`,
+              icon: Activity,
+              color: "bg-status-committee",
+            },
+          ];
+
+          const statusColors: Record<string, string> = {
+            good: "text-status-approved",
+            warning: "text-status-committee",
+            danger: "text-status-rejected",
+          };
+          const statusBgs: Record<string, string> = {
+            good: "bg-status-approved/10 border-status-approved/30",
+            warning: "bg-status-committee/10 border-status-committee/30",
+            danger: "bg-status-rejected/10 border-status-rejected/30",
+          };
+          const statusDots: Record<string, string> = {
+            good: "bg-status-approved",
+            warning: "bg-status-committee",
+            danger: "bg-status-rejected",
+          };
+          const statusLabels: Record<string, string> = {
+            good: "Saudável",
+            warning: "Atenção",
+            danger: "Crítico",
+          };
+
+          return healthItems.map((item) => (
+            <div
+              key={item.label}
+              className={cn(
+                "flex items-center gap-3 rounded-lg border px-4 py-3 transition-colors",
+                statusBgs[item.status]
+              )}
+            >
+              <div className={cn("flex items-center justify-center h-9 w-9 rounded-lg", item.color + "/15")}>
+                <item.icon className={cn("h-4.5 w-4.5", statusColors[item.status])} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold text-foreground">{item.label}</span>
+                  <span className={cn("inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider", statusColors[item.status])}>
+                    <span className={cn("h-1.5 w-1.5 rounded-full animate-pulse", statusDots[item.status])} />
+                    {statusLabels[item.status]}
+                  </span>
+                </div>
+                <p className="text-[11px] text-muted-foreground truncate">{item.detail}</p>
+              </div>
+            </div>
+          ));
+        })()}
+      </motion.div>
 
       {/* ═══ Esteira de Crédito ═══ */}
       <motion.div {...fade(0.1)} className="rounded-xl border border-border/50 bg-card/30 p-5 space-y-4">
