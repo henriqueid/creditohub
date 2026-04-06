@@ -349,6 +349,8 @@ export default function Dashboard() {
             mainValue={fInvoices.length}
             mainSuffix={formatBRL(invoiceTotalValue)}
             onClick={() => navigate("/monitoramento-nfs")}
+            sparkline={sparkInvoices}
+            sparkColor="hsl(var(--status-approved))"
           >
             <div className="flex gap-3 flex-wrap">
               <StatusDot color="bg-status-approved" label={`${invoiceValid} válidas`} />
@@ -427,6 +429,8 @@ export default function Dashboard() {
             mainSuffix="bloqueado(s)"
             onClick={() => navigate("/blacklist")}
             alert={newBlacklistCount > 0 ? `${newBlacklistCount} novo(s) em 7 dias` : undefined}
+            sparkline={sparkBlacklist}
+            sparkColor="hsl(var(--status-rejected))"
           >
             {fBlacklist.length > 0 ? (
               <div className="space-y-1.5">
@@ -635,7 +639,7 @@ function MetricBlock({ label, value, valueClass }: { label: string; value: strin
 }
 
 function MonitorCard({
-  title, icon: Icon, mainValue, mainSuffix, onClick, alert, children,
+  title, icon: Icon, mainValue, mainSuffix, onClick, alert, sparkline, sparkColor, children,
 }: {
   title: string;
   icon: React.ElementType;
@@ -643,6 +647,8 @@ function MonitorCard({
   mainSuffix?: string;
   onClick?: () => void;
   alert?: string;
+  sparkline?: number[];
+  sparkColor?: string;
   children: React.ReactNode;
 }) {
   return (
@@ -654,7 +660,10 @@ function MonitorCard({
       </CardHeader>
       <CardContent className="px-4 pb-4 space-y-2.5">
         <div className="flex items-baseline justify-between">
-          <span className="text-2xl font-bold tabular-nums text-foreground">{mainValue}</span>
+          <div className="flex items-center gap-3">
+            <span className="text-2xl font-bold tabular-nums text-foreground">{mainValue}</span>
+            {sparkline && sparkline.some(v => v > 0) && <Sparkline data={sparkline} color={sparkColor || "hsl(var(--primary))"} />}
+          </div>
           {mainSuffix && <span className="text-[11px] text-muted-foreground">{mainSuffix}</span>}
         </div>
         {alert && (
