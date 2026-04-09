@@ -31,6 +31,8 @@ import CRMActivities from "@/pages/CRMActivities";
 import CRMTasks from "@/pages/CRMTasks";
 import CRMDashboard from "@/pages/CRMDashboard";
 import CRMClientProfile from "@/pages/CRMClientProfile";
+import Integrations from "@/pages/Integrations";
+import PatrimonialReport from "@/pages/PatrimonialReport";
 
 const queryClient = new QueryClient();
 
