@@ -27,6 +27,8 @@ import {
   Gauge,
   Filter,
   Eye,
+  Plug,
+  Landmark,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -80,6 +82,7 @@ const esteiraGroup: NavGroup = {
     { title: "Consulta CPF/CNPJ", url: "/consulta", icon: SearchCheck, description: "Consultas na Receita Federal" },
     { title: "Análises de Crédito", url: "/analises", icon: FileText, description: "Dossiês e pareceres" },
     { title: "Comitê de Crédito", url: "/comite", icon: Users, description: "Votação e deliberação" },
+    { title: "Patrimonial", url: "/patrimonial", icon: Landmark, description: "Bens e garantias dos cedentes" },
     { title: "Performance", url: "/performance", icon: Gauge, description: "Métricas e gargalos da esteira" },
   ],
 };
@@ -91,6 +94,7 @@ const monitorGroup: NavGroup = {
     { title: "Notas Fiscais", url: "/monitoramento-nfs", icon: Receipt, description: "Acompanhamento e validação de NFs" },
     { title: "Informe Falimentar", url: "/falimentar", icon: Scale, description: "Recuperações judiciais e falências" },
     { title: "Blacklist", url: "/blacklist", icon: ShieldBan, description: "Restrições e bloqueios" },
+    { title: "Integrações", url: "/integracoes", icon: Plug, description: "APIs e fontes de dados externas" },
   ],
 };
 

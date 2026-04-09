@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, History, LayoutGrid, List, FileText, Building2, GripVertical, Pencil } from "lucide-react";
+import { Plus, Search, History, LayoutGrid, List, FileText, Building2, GripVertical, Pencil, Eye } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { formatCNPJorCPF, formatDate, formatBRL } from "@/lib/formatters";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -312,7 +312,7 @@ export default function Clients() {
                                           ? "shadow-lg ring-2 ring-primary/30 rotate-1 scale-[1.02]"
                                           : "hover:shadow-md hover:border-primary/30"
                                       }`}
-                                      onClick={() => !dragSnapshot.isDragging && handleCardClick(client)}
+                                      onClick={() => !dragSnapshot.isDragging && navigate(`/crm/cliente/${client.id}`)}
                                     >
                                       <CardContent className="p-3 space-y-2">
                                         <div className="flex items-start justify-between gap-1">
@@ -439,7 +439,7 @@ export default function Clients() {
                 </TableRow>
               ) : (
                 filtered.map((client) => (
-                  <TableRow key={client.id} className="cursor-pointer" onClick={() => handleCardClick(client)}>
+                  <TableRow key={client.id} className="cursor-pointer" onClick={() => navigate(`/crm/cliente/${client.id}`)}>
                     <TableCell className="font-medium">{client.razao_social}</TableCell>
                     <TableCell className="tabular-nums">{formatCNPJorCPF(client.cnpj_cpf)}</TableCell>
                     <TableCell>{client.segmento || "—"}</TableCell>

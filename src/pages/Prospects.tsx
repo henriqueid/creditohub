@@ -9,6 +9,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import {
   UserSearch, Search, CheckCircle2, XCircle, Clock, AlertTriangle,
   RefreshCw, Trash2, ArrowRight, Shield, TrendingUp, Calendar, Loader2,
+  Building2,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { formatCNPJorCPF, formatDate } from "@/lib/formatters";
@@ -76,6 +77,39 @@ export default function Prospects() {
       qc.invalidateQueries({ queryKey: ["prospects"] });
       toast.success("Prospect removido");
     },
+  });
+
+  const convertMutation = useMutation({
+    mutationFn: async (prospect: Prospect) => {
+      const tipo = prospect.documento.replace(/\D/g, "").length <= 11 ? "CPF" : "CNPJ";
+      const { data: existing } = await supabase
+        .from("clients")
+        .select("id")
+        .eq("cnpj_cpf", prospect.documento.replace(/\D/g, ""))
+        .maybeSingle();
+      if (existing) {
+        await supabase.from("prospects").update({ client_id: existing.id }).eq("id", prospect.id);
+        return existing.id;
+      }
+      const { data: newClient, error } = await supabase
+        .from("clients")
+        .insert({
+          cnpj_cpf: prospect.documento.replace(/\D/g, ""),
+          razao_social: prospect.nome || `Cedente ${prospect.documento}`,
+        })
+        .select("id")
+        .single();
+      if (error) throw error;
+      await supabase.from("prospects").update({ client_id: newClient.id }).eq("id", prospect.id);
+      return newClient.id;
+    },
+    onSuccess: (clientId) => {
+      qc.invalidateQueries({ queryKey: ["prospects"] });
+      qc.invalidateQueries({ queryKey: ["clients"] });
+      toast.success("Cedente criado com sucesso!");
+      navigate(`/crm/cliente/${clientId}`);
+    },
+    onError: () => toast.error("Erro ao converter prospect"),
   });
 
   const filtered = prospects.filter(p => {
@@ -215,6 +249,32 @@ export default function Prospects() {
                       <TableCell className="text-xs text-muted-foreground">{formatDate(p.created_at)}</TableCell>
                       <TableCell>
                         <div className="flex gap-1" onClick={e => e.stopPropagation()}>
+                          {p.qualification_status === "qualified" && !p.client_id && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 text-primary"
+                                  onClick={() => convertMutation.mutate(p)}
+                                  disabled={convertMutation.isPending}
+                                >
+                                  <Building2 className="h-3.5 w-3.5" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Converter em Cedente</TooltipContent>
+                            </Tooltip>
+                          )}
+                          {p.client_id && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-7 w-7 text-primary" onClick={() => navigate(`/crm/cliente/${p.client_id}`)}>
+                                  <ArrowRight className="h-3.5 w-3.5" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Ver Cedente</TooltipContent>
+                            </Tooltip>
+                          )}
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => navigate(`/consulta?doc=${p.documento}`)}>

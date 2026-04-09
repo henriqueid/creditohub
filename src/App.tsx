@@ -31,6 +31,8 @@ import CRMActivities from "@/pages/CRMActivities";
 import CRMTasks from "@/pages/CRMTasks";
 import CRMDashboard from "@/pages/CRMDashboard";
 import CRMClientProfile from "@/pages/CRMClientProfile";
+import Integrations from "@/pages/Integrations";
+import PatrimonialReport from "@/pages/PatrimonialReport";
 
 const queryClient = new QueryClient();
 
@@ -67,6 +69,8 @@ const App = () => (
               <Route path="/configuracoes/motor" element={<CreditEngineSettings />} />
               <Route path="/performance" element={<PipelineMetrics />} />
               <Route path="/audit-log" element={<AuditLog />} />
+              <Route path="/integracoes" element={<Integrations />} />
+              <Route path="/patrimonial" element={<PatrimonialReport />} />
               {/* CRM */}
               <Route path="/crm/pipeline" element={<CRMPipeline />} />
               <Route path="/crm/contatos" element={<CRMContacts />} />
