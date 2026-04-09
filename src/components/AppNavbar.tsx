@@ -27,6 +27,8 @@ import {
   Gauge,
   Filter,
   Eye,
+  Plug,
+  Landmark,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {

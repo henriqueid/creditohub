@@ -69,6 +69,8 @@ const App = () => (
               <Route path="/configuracoes/motor" element={<CreditEngineSettings />} />
               <Route path="/performance" element={<PipelineMetrics />} />
               <Route path="/audit-log" element={<AuditLog />} />
+              <Route path="/integracoes" element={<Integrations />} />
+              <Route path="/patrimonial" element={<PatrimonialReport />} />
               {/* CRM */}
               <Route path="/crm/pipeline" element={<CRMPipeline />} />
               <Route path="/crm/contatos" element={<CRMContacts />} />
