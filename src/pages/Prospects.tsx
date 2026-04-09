@@ -249,6 +249,32 @@ export default function Prospects() {
                       <TableCell className="text-xs text-muted-foreground">{formatDate(p.created_at)}</TableCell>
                       <TableCell>
                         <div className="flex gap-1" onClick={e => e.stopPropagation()}>
+                          {p.qualification_status === "qualified" && !p.client_id && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 text-primary"
+                                  onClick={() => convertMutation.mutate(p)}
+                                  disabled={convertMutation.isPending}
+                                >
+                                  <Building2 className="h-3.5 w-3.5" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Converter em Cedente</TooltipContent>
+                            </Tooltip>
+                          )}
+                          {p.client_id && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-7 w-7 text-primary" onClick={() => navigate(`/crm/cliente/${p.client_id}`)}>
+                                  <ArrowRight className="h-3.5 w-3.5" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Ver Cedente</TooltipContent>
+                            </Tooltip>
+                          )}
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => navigate(`/consulta?doc=${p.documento}`)}>
