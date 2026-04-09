@@ -79,6 +79,39 @@ export default function Prospects() {
     },
   });
 
+  const convertMutation = useMutation({
+    mutationFn: async (prospect: Prospect) => {
+      const tipo = prospect.documento.replace(/\D/g, "").length <= 11 ? "CPF" : "CNPJ";
+      const { data: existing } = await supabase
+        .from("clients")
+        .select("id")
+        .eq("cnpj_cpf", prospect.documento.replace(/\D/g, ""))
+        .maybeSingle();
+      if (existing) {
+        await supabase.from("prospects").update({ client_id: existing.id }).eq("id", prospect.id);
+        return existing.id;
+      }
+      const { data: newClient, error } = await supabase
+        .from("clients")
+        .insert({
+          cnpj_cpf: prospect.documento.replace(/\D/g, ""),
+          razao_social: prospect.nome || `Cedente ${prospect.documento}`,
+        })
+        .select("id")
+        .single();
+      if (error) throw error;
+      await supabase.from("prospects").update({ client_id: newClient.id }).eq("id", prospect.id);
+      return newClient.id;
+    },
+    onSuccess: (clientId) => {
+      qc.invalidateQueries({ queryKey: ["prospects"] });
+      qc.invalidateQueries({ queryKey: ["clients"] });
+      toast.success("Cedente criado com sucesso!");
+      navigate(`/crm/cliente/${clientId}`);
+    },
+    onError: () => toast.error("Erro ao converter prospect"),
+  });
+
   const filtered = prospects.filter(p => {
     if (!search) return true;
     const q = search.toLowerCase();
