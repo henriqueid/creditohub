@@ -439,7 +439,7 @@ export default function Clients() {
                 </TableRow>
               ) : (
                 filtered.map((client) => (
-                  <TableRow key={client.id} className="cursor-pointer" onClick={() => handleCardClick(client)}>
+                  <TableRow key={client.id} className="cursor-pointer" onClick={() => navigate(`/crm/cliente/${client.id}`)}>
                     <TableCell className="font-medium">{client.razao_social}</TableCell>
                     <TableCell className="tabular-nums">{formatCNPJorCPF(client.cnpj_cpf)}</TableCell>
                     <TableCell>{client.segmento || "—"}</TableCell>
