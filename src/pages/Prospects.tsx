@@ -9,6 +9,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import {
   UserSearch, Search, CheckCircle2, XCircle, Clock, AlertTriangle,
   RefreshCw, Trash2, ArrowRight, Shield, TrendingUp, Calendar, Loader2,
+  Building2,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { formatCNPJorCPF, formatDate } from "@/lib/formatters";
