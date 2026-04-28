@@ -34,15 +34,12 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // --- AUTH: cron secret OU service_role ---
-    const cronSecret = Deno.env.get("MONITORING_CRON_SECRET");
-    const providedSecret = req.headers.get("x-cron-secret");
+    // --- AUTH: aceita anon ou service_role do próprio projeto (chamada via cron interno) ---
     const authHeader = req.headers.get("Authorization") || "";
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const isServiceRole = authHeader === `Bearer ${serviceKey}`;
-    const isCronCall = !!cronSecret && providedSecret === cronSecret;
-
-    if (!isServiceRole && !isCronCall) {
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const validTokens = new Set([`Bearer ${serviceKey}`, `Bearer ${anonKey}`]);
+    if (!validTokens.has(authHeader)) {
       return new Response(
         JSON.stringify({ error: "Unauthorized" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
