@@ -1417,9 +1417,11 @@ export type Database = {
           frequency: string
           id: string
           is_active: boolean
+          last_run_at: string | null
           limiar_atraso_dias: number | null
           limiar_variacao: number | null
           name: string
+          next_run_at: string | null
           tenant_id: string
           updated_at: string
           volume_minimo: number | null
@@ -1433,9 +1435,11 @@ export type Database = {
           frequency?: string
           id?: string
           is_active?: boolean
+          last_run_at?: string | null
           limiar_atraso_dias?: number | null
           limiar_variacao?: number | null
           name: string
+          next_run_at?: string | null
           tenant_id?: string
           updated_at?: string
           volume_minimo?: number | null
@@ -1449,9 +1453,11 @@ export type Database = {
           frequency?: string
           id?: string
           is_active?: boolean
+          last_run_at?: string | null
           limiar_atraso_dias?: number | null
           limiar_variacao?: number | null
           name?: string
+          next_run_at?: string | null
           tenant_id?: string
           updated_at?: string
           volume_minimo?: number | null
