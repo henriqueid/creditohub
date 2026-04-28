@@ -72,7 +72,7 @@ export default function BureauSettings() {
   const saveMutation = useMutation({
     mutationFn: async (p: Partial<BureauProvider>) => {
       const payload = {
-        provider_type: p.provider_type!,
+        provider_type: p.provider_type! as "mock" | "serasa" | "boavista" | "spc" | "quod" | "assertiva" | "bigdatacorp",
         nome: p.nome!,
         credential_secret_name: p.credential_secret_name || null,
         base_url: p.base_url || null,
