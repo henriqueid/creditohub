@@ -33,6 +33,7 @@ import CRMDashboard from "@/pages/CRMDashboard";
 import CRMClientProfile from "@/pages/CRMClientProfile";
 import Integrations from "@/pages/Integrations";
 import PatrimonialReport from "@/pages/PatrimonialReport";
+import BureauSettings from "@/pages/BureauSettings";
 
 const queryClient = new QueryClient();
 
@@ -67,6 +68,7 @@ const App = () => (
               <Route path="/blacklist" element={<Blacklist />} />
               <Route path="/configuracoes" element={<Settings />} />
               <Route path="/configuracoes/motor" element={<CreditEngineSettings />} />
+              <Route path="/configuracoes/bureaus" element={<BureauSettings />} />
               <Route path="/performance" element={<PipelineMetrics />} />
               <Route path="/audit-log" element={<AuditLog />} />
               <Route path="/integracoes" element={<Integrations />} />

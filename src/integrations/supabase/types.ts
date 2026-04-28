@@ -236,6 +236,134 @@ export type Database = {
           },
         ]
       }
+      bureau_consultas: {
+        Row: {
+          consultado_em: string
+          consultado_por: string | null
+          custo_estimado: number | null
+          documento: string
+          error_message: string | null
+          id: string
+          provider_id: string | null
+          provider_type:
+            | Database["public"]["Enums"]["bureau_provider_type"]
+            | null
+          response_normalized: Json | null
+          response_raw: Json | null
+          status: Database["public"]["Enums"]["bureau_consulta_status"]
+          tenant_id: string
+          tipo_consulta: string
+          validade_ate: string | null
+        }
+        Insert: {
+          consultado_em?: string
+          consultado_por?: string | null
+          custo_estimado?: number | null
+          documento: string
+          error_message?: string | null
+          id?: string
+          provider_id?: string | null
+          provider_type?:
+            | Database["public"]["Enums"]["bureau_provider_type"]
+            | null
+          response_normalized?: Json | null
+          response_raw?: Json | null
+          status: Database["public"]["Enums"]["bureau_consulta_status"]
+          tenant_id?: string
+          tipo_consulta: string
+          validade_ate?: string | null
+        }
+        Update: {
+          consultado_em?: string
+          consultado_por?: string | null
+          custo_estimado?: number | null
+          documento?: string
+          error_message?: string | null
+          id?: string
+          provider_id?: string | null
+          provider_type?:
+            | Database["public"]["Enums"]["bureau_provider_type"]
+            | null
+          response_normalized?: Json | null
+          response_raw?: Json | null
+          status?: Database["public"]["Enums"]["bureau_consulta_status"]
+          tenant_id?: string
+          tipo_consulta?: string
+          validade_ate?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bureau_consultas_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "bureau_providers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bureau_consultas_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bureau_providers: {
+        Row: {
+          ativo: boolean
+          base_url: string | null
+          created_at: string
+          credential_secret_name: string | null
+          custo_medio_consulta: number | null
+          id: string
+          nome: string
+          observacoes: string | null
+          prioridade: number
+          provider_type: Database["public"]["Enums"]["bureau_provider_type"]
+          tenant_id: string
+          tipos_consulta: string[]
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          base_url?: string | null
+          created_at?: string
+          credential_secret_name?: string | null
+          custo_medio_consulta?: number | null
+          id?: string
+          nome: string
+          observacoes?: string | null
+          prioridade?: number
+          provider_type: Database["public"]["Enums"]["bureau_provider_type"]
+          tenant_id?: string
+          tipos_consulta?: string[]
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          base_url?: string | null
+          created_at?: string
+          credential_secret_name?: string | null
+          custo_medio_consulta?: number | null
+          id?: string
+          nome?: string
+          observacoes?: string | null
+          prioridade?: number
+          provider_type?: Database["public"]["Enums"]["bureau_provider_type"]
+          tenant_id?: string
+          tipos_consulta?: string[]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bureau_providers_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_tags: {
         Row: {
           client_id: string
@@ -1660,6 +1788,15 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "analista" | "comite" | "leitor"
+      bureau_consulta_status: "sucesso" | "erro" | "timeout" | "sem_dados"
+      bureau_provider_type:
+        | "serasa"
+        | "boavista"
+        | "spc"
+        | "quod"
+        | "assertiva"
+        | "bigdatacorp"
+        | "mock"
       committee_vote: "approve" | "restrict" | "reject"
       credit_recommendation: "approve" | "restrict" | "reject"
       credit_status:
@@ -1798,6 +1935,16 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "analista", "comite", "leitor"],
+      bureau_consulta_status: ["sucesso", "erro", "timeout", "sem_dados"],
+      bureau_provider_type: [
+        "serasa",
+        "boavista",
+        "spc",
+        "quod",
+        "assertiva",
+        "bigdatacorp",
+        "mock",
+      ],
       committee_vote: ["approve", "restrict", "reject"],
       credit_recommendation: ["approve", "restrict", "reject"],
       credit_status: [
