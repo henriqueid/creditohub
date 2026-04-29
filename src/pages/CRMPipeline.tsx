@@ -314,6 +314,31 @@ export default function CRMPipeline() {
           )}
         </div>
       </div>
+
+      <AlertDialog open={!!guardDialog?.open} onOpenChange={(o) => !o && setGuardDialog(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-600" />
+              Avançar para "{guardDialog?.stageName}" sem aprovação de crédito?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {guardDialog?.reason} Mover oportunidades para etapas avançadas sem crédito aprovado pode comprometer a operação. Deseja prosseguir mesmo assim?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (guardDialog) moveDeal.mutate({ dealId: guardDialog.dealId, stageId: guardDialog.stageId });
+                setGuardDialog(null);
+              }}
+            >
+              Avançar mesmo assim
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
