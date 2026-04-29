@@ -238,6 +238,48 @@ export default function Dashboard() {
   const sparkCrm = buildWeeklySparkline(crmTasks);
   const sparkMonitor = buildWeeklySparkline(fInvoices);
 
+  // ─── Insights agregados p/ Visão Geral ───
+  const halfWeeks = 4;
+  const sumLast = (arr: number[]) => arr.slice(-halfWeeks).reduce((s, v) => s + v, 0);
+  const sumPrev = (arr: number[]) => arr.slice(0, arr.length - halfWeeks).reduce((s, v) => s + v, 0);
+  const trendPct = (arr: number[]) => {
+    const a = sumLast(arr), b = sumPrev(arr);
+    if (b === 0) return a > 0 ? 100 : 0;
+    return Math.round(((a - b) / b) * 100);
+  };
+  const analysesTrend = trendPct(sparkAnalyses);
+  const approvedTrend = trendPct(sparkApproved);
+  const invoicesTrend = trendPct(sparkInvoices);
+
+  const totalExposure = totalLimiteAprovado + pipelineValue;
+  const conversionRate = total > 0 ? Math.round((wonDeals.length / total) * 100) : 0;
+  const avgTicket = approved > 0 ? totalLimiteAprovado / approved : 0;
+  const carteiraSaude = clientCount > 0
+    ? Math.round(((clientCount - bankruptcyMatched - blacklistCount) / clientCount) * 100)
+    : 100;
+
+  // Top cedentes por limite aprovado (a partir das análises)
+  const topClientsMap = new Map<string, { name: string; total: number; count: number }>();
+  fAnalyses.forEach(a => {
+    const name = (a.clients as any)?.razao_social;
+    if (!name || !a.limite_sugerido) return;
+    const existing = topClientsMap.get(name) || { name, total: 0, count: 0 };
+    existing.total += a.limite_sugerido;
+    existing.count += 1;
+    topClientsMap.set(name, existing);
+  });
+  const topClients = Array.from(topClientsMap.values()).sort((a, b) => b.total - a.total).slice(0, 5);
+  const topClientsMax = topClients[0]?.total || 1;
+
+  // Funil: Cedentes → Análises → Comitê → Aprovadas
+  const funnelData = [
+    { label: "Cedentes", value: clientCount, color: "bg-muted-foreground/40" },
+    { label: "Análises", value: total, color: "bg-primary" },
+    { label: "Em Comitê", value: inCommittee + approved + rejected, color: "bg-status-committee" },
+    { label: "Aprovadas", value: approved, color: "bg-status-approved" },
+  ];
+  const funnelMax = Math.max(...funnelData.map(d => d.value), 1);
+
   const healthItems = [
     {
       label: "Esteira de Crédito",
@@ -360,7 +402,156 @@ export default function Dashboard() {
 
         {/* ─────────── VISÃO GERAL ─────────── */}
         <TabsContent value="overview" className="space-y-5 mt-0">
-          {/* Análises recentes ficam aqui como destaque inicial */}
+          {/* Hero KPIs — métricas consolidadas das 3 áreas */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <HeroKpi
+              label="Exposição Total"
+              value={formatBRL(totalExposure)}
+              sub={`Aprovado ${formatBRL(totalLimiteAprovado)} + Pipeline ${formatBRL(pipelineValue)}`}
+              icon={DollarSign}
+              accent="primary"
+            />
+            <HeroKpi
+              label="Saúde da Carteira"
+              value={`${carteiraSaude}%`}
+              sub={`${clientCount} cedente(s) · ${blacklistCount + bankruptcyMatched} restrição(ões)`}
+              icon={Activity}
+              accent={carteiraSaude >= 90 ? "success" : carteiraSaude >= 70 ? "warning" : "danger"}
+              gauge={carteiraSaude}
+            />
+            <HeroKpi
+              label="Score Médio"
+              value={String(avgScore || "—")}
+              sub={`${total} análise(s) no período`}
+              icon={Gauge}
+              accent={avgScore >= 700 ? "success" : avgScore >= 400 ? "warning" : avgScore > 0 ? "danger" : "neutral"}
+              gauge={avgScore ? (avgScore / 1000) * 100 : 0}
+            />
+            <HeroKpi
+              label="Taxa de Aprovação"
+              value={`${approvalRate.toFixed(0)}%`}
+              sub={`${approved} aprovada(s) / ${rejected} reprovada(s)`}
+              icon={CheckCircle}
+              accent={approvalRate >= 70 ? "success" : approvalRate >= 40 ? "warning" : "danger"}
+              gauge={approvalRate}
+            />
+          </div>
+
+          {/* Tendências comparativas (últimas 4 sem. vs anteriores) */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <TrendCard
+              title="Análises de Crédito"
+              icon={FileText}
+              current={sumLast(sparkAnalyses)}
+              previous={sumPrev(sparkAnalyses)}
+              trend={analysesTrend}
+              sparkline={sparkAnalyses}
+              color="hsl(var(--primary))"
+            />
+            <TrendCard
+              title="Aprovações"
+              icon={CheckCircle}
+              current={sumLast(sparkApproved)}
+              previous={sumPrev(sparkApproved)}
+              trend={approvedTrend}
+              sparkline={sparkApproved}
+              color="hsl(var(--status-approved))"
+              positiveIsGood
+            />
+            <TrendCard
+              title="NFs Monitoradas"
+              icon={Receipt}
+              current={sumLast(sparkInvoices)}
+              previous={sumPrev(sparkInvoices)}
+              trend={invoicesTrend}
+              sparkline={sparkInvoices}
+              color="hsl(var(--status-committee))"
+            />
+          </div>
+
+          {/* Funil + Top cedentes */}
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Filter className="h-4 w-4 text-muted-foreground" />
+                  Funil de Conversão
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2.5">
+                {funnelData.map((step, i) => {
+                  const pct = (step.value / funnelMax) * 100;
+                  const prevValue = i > 0 ? funnelData[i - 1].value : null;
+                  const conv = prevValue && prevValue > 0 ? Math.round((step.value / prevValue) * 100) : null;
+                  return (
+                    <div key={step.label}>
+                      <div className="flex items-center justify-between text-[11px] mb-1">
+                        <span className="text-muted-foreground font-medium">{step.label}</span>
+                        <span className="flex items-center gap-2 tabular-nums">
+                          <span className="text-foreground font-semibold">{step.value}</span>
+                          {conv !== null && <span className="text-muted-foreground">{conv}%</span>}
+                        </span>
+                      </div>
+                      <div className="h-2.5 rounded-sm bg-muted overflow-hidden">
+                        <div className={cn("h-full transition-all duration-500", step.color)} style={{ width: `${pct}%` }} />
+                      </div>
+                    </div>
+                  );
+                })}
+                <div className="pt-2 mt-2 border-t border-border flex items-center justify-between text-[11px]">
+                  <span className="text-muted-foreground">Conversão geral</span>
+                  <span className="font-semibold text-foreground tabular-nums">{conversionRate}%</span>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="lg:col-span-3">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                  Top Cedentes por Volume
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {topClients.length === 0 ? (
+                  <EmptyState message="Sem dados de volume por cedente" small />
+                ) : (
+                  <div className="space-y-2.5">
+                    {topClients.map((c, i) => {
+                      const pct = (c.total / topClientsMax) * 100;
+                      return (
+                        <div key={c.name}>
+                          <div className="flex items-center justify-between text-[11px] mb-1">
+                            <span className="flex items-center gap-2 min-w-0 flex-1">
+                              <span className="text-muted-foreground tabular-nums w-4">{i + 1}</span>
+                              <span className="text-foreground font-medium truncate">{c.name}</span>
+                              <span className="text-muted-foreground shrink-0">· {c.count}x</span>
+                            </span>
+                            <span className="font-semibold tabular-nums text-foreground shrink-0 ml-2">{formatBRL(c.total)}</span>
+                          </div>
+                          <div className="h-1.5 rounded-sm bg-muted overflow-hidden">
+                            <div className="h-full bg-primary/70 transition-all duration-500" style={{ width: `${pct}%` }} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Indicadores secundários — densidade controlada */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            <KpiCard title="Cedentes" value={clientCount} icon={Building2} onClick={() => navigate("/cedentes")} />
+            <KpiCard title="Comitê" value={inCommittee} icon={Clock} accent={inCommittee > 0 ? "warning" : undefined} sparkline={sparkCommittee} onClick={() => navigate("/comite")} />
+            <KpiCard title="Pipeline" value={activeDeals.length} icon={Target} sparkline={sparkCrm} onClick={() => navigate("/crm/pipeline")} />
+            <KpiCard title="Tarefas" value={pendingTasks} icon={CheckSquare} accent={overdueTasks > 0 ? "danger" : undefined} onClick={() => navigate("/crm/tarefas")} />
+            <KpiCard title="NFs Inválidas" value={invoiceInvalid} icon={AlertTriangle} accent={invoiceInvalid > 0 ? "danger" : undefined} onClick={() => navigate("/monitoramento-nfs")} />
+            <KpiCard title="Ticket Médio" value={avgTicket > 0 ? formatBRL(avgTicket) : "—"} icon={DollarSign} />
+          </div>
+
+          {/* Análises recentes — destaque inferior */}
           <RecentAnalysesCard
             recentAnalyses={recentAnalyses}
             now={now}
@@ -881,6 +1072,94 @@ function MonitorCard({
           </div>
         )}
         {children}
+      </CardContent>
+    </Card>
+  );
+}
+
+function HeroKpi({
+  label, value, sub, icon: Icon, accent = "neutral", gauge,
+}: {
+  label: string; value: string; sub: string; icon: React.ElementType;
+  accent?: "primary" | "success" | "warning" | "danger" | "neutral";
+  gauge?: number;
+}) {
+  const accentMap = {
+    primary: { text: "text-primary", bar: "bg-primary", soft: "bg-primary/10" },
+    success: { text: "text-status-approved", bar: "bg-status-approved", soft: "bg-status-approved/10" },
+    warning: { text: "text-status-committee", bar: "bg-status-committee", soft: "bg-status-committee/10" },
+    danger: { text: "text-status-rejected", bar: "bg-status-rejected", soft: "bg-status-rejected/10" },
+    neutral: { text: "text-foreground", bar: "bg-muted-foreground", soft: "bg-muted" },
+  };
+  const a = accentMap[accent];
+  return (
+    <Card className="overflow-hidden">
+      <div className={cn("h-1 w-full", a.bar)} />
+      <CardContent className="p-4 space-y-2.5">
+        <div className="flex items-center justify-between">
+          <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">{label}</span>
+          <div className={cn("h-7 w-7 rounded-md flex items-center justify-center", a.soft)}>
+            <Icon className={cn("h-3.5 w-3.5", a.text)} />
+          </div>
+        </div>
+        <div>
+          <p className={cn("text-2xl font-semibold tabular-nums leading-tight", a.text)}>{value}</p>
+          <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">{sub}</p>
+        </div>
+        {typeof gauge === "number" && (
+          <div className="h-1 rounded-full bg-muted overflow-hidden">
+            <div className={cn("h-full transition-all duration-700", a.bar)} style={{ width: `${Math.min(Math.max(gauge, 0), 100)}%` }} />
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function TrendCard({
+  title, icon: Icon, current, previous, trend, sparkline, color, positiveIsGood,
+}: {
+  title: string; icon: React.ElementType;
+  current: number; previous: number; trend: number;
+  sparkline: number[]; color: string; positiveIsGood?: boolean;
+}) {
+  const isUp = trend > 0;
+  const isFlat = trend === 0;
+  const goodTrend = positiveIsGood ? isUp : false;
+  const trendColor = isFlat
+    ? "text-muted-foreground"
+    : goodTrend || (positiveIsGood && isUp)
+      ? "text-status-approved"
+      : !positiveIsGood && !isUp
+        ? "text-muted-foreground"
+        : isUp
+          ? "text-status-approved"
+          : "text-status-rejected";
+  const TrendIcon = isFlat ? ArrowRight : isUp ? ArrowUp : ArrowDown;
+  return (
+    <Card>
+      <CardContent className="p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="h-7 w-7 rounded-md bg-muted flex items-center justify-center">
+              <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+            </div>
+            <span className="text-xs font-medium text-foreground">{title}</span>
+          </div>
+          <div className={cn("flex items-center gap-0.5 text-[11px] font-semibold tabular-nums", trendColor)}>
+            <TrendIcon className="h-3 w-3" />
+            {Math.abs(trend)}%
+          </div>
+        </div>
+        <div className="flex items-end justify-between gap-3">
+          <div>
+            <p className="text-2xl font-semibold tabular-nums text-foreground leading-none">{current}</p>
+            <p className="text-[10px] text-muted-foreground mt-1">vs {previous} no período anterior</p>
+          </div>
+          <div className="shrink-0">
+            <Sparkline data={sparkline} color={color} />
+          </div>
+        </div>
       </CardContent>
     </Card>
   );
