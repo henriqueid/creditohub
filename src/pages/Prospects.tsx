@@ -101,12 +101,39 @@ export default function Prospects() {
         .single();
       if (error) throw error;
       await supabase.from("prospects").update({ client_id: newClient.id }).eq("id", prospect.id);
-      return newClient.id;
+
+      // Auto-criar deal no funil se prospect estiver qualificado
+      if (prospect.qualification_status === "qualified") {
+        try {
+          const { data: firstStage } = await supabase
+            .from("deal_stages")
+            .select("id")
+            .eq("is_active", true)
+            .eq("is_won", false)
+            .eq("is_lost", false)
+            .order("order")
+            .limit(1)
+            .single();
+          if (firstStage) {
+            await supabase.from("deals").insert({
+              client_id: newClient.id,
+              stage_id: firstStage.id,
+              title: `Oportunidade — ${prospect.nome || prospect.documento}`,
+              notes: `Originado de prospect qualificado (score ${prospect.qualification_score ?? "—"}, risco ${prospect.risk_level}).`,
+            });
+          }
+        } catch (e) {
+          console.warn("Falha ao criar deal automático:", e);
+        }
+      }
+
+      return { clientId: newClient.id, qualified: prospect.qualification_status === "qualified" };
     },
-    onSuccess: (clientId) => {
+    onSuccess: ({ clientId, qualified }) => {
       qc.invalidateQueries({ queryKey: ["prospects"] });
       qc.invalidateQueries({ queryKey: ["clients"] });
-      toast.success("Cedente criado com sucesso!");
+      qc.invalidateQueries({ queryKey: ["deals"] });
+      toast.success(qualified ? "Cedente criado e oportunidade adicionada ao pipeline!" : "Cedente criado com sucesso!");
       navigate(`/crm/cliente/${clientId}`);
     },
     onError: () => toast.error("Erro ao converter prospect"),
