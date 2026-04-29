@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { NotificationBell } from "@/components/NotificationBell";
 import { GlobalSearch } from "@/components/GlobalSearch";
 import { UserAvatar } from "@/components/UserAvatar";
@@ -267,6 +267,7 @@ export function AppNavbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const location = useLocation();
+  const navigate = useNavigate();
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Close mega menu on navigation
@@ -274,6 +275,18 @@ export function AppNavbar() {
     setOpenMenu(null);
     setMobileOpen(false);
   }, [location.pathname]);
+
+  // Atalho Ctrl/Cmd+J → Consulta CPF/CNPJ (origem do fluxo)
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "j") {
+        e.preventDefault();
+        navigate("/consulta");
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [navigate]);
 
   const handleMouseEnter = (title: string) => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
