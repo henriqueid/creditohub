@@ -195,6 +195,11 @@ export default function ConsultaCPFCNPJ() {
   const brasilApiData = externalSources.find((s) => s.source === "BrasilAPI (Receita Federal)" && s.status === "success")?.data;
   const externalName = brasilApiData?.razao_social || brasilApiData?.nome_fantasia;
 
+  // Snapshot consolidado da consulta — usado para popular Prospect, Cedente e Análise.
+  const consultaSnapshot: ConsultaSnapshot | null = hasSearched && !isLoading
+    ? buildConsultaSnapshot({ documento: digits, externalSources })
+    : null;
+
   // Auto-qualify prospect when data is loaded
   useEffect(() => {
     if (!hasSearched || isLoading || qualifyingInProgress) return;
@@ -217,6 +222,7 @@ export default function ConsultaCPFCNPJ() {
           hasBlacklist: !!blacklistEntry,
           tempoAtividade: latestAnalysis?.tempo_atividade,
           faturamentoMedio: latestAnalysis?.faturamento_medio ? Number(latestAnalysis.faturamento_medio) : undefined,
+          snapshot: consultaSnapshot ? (consultaSnapshot as unknown as Record<string, any>) : undefined,
         };
         const result = await qualifyProspect(input);
         setQualification(result);
@@ -242,7 +248,7 @@ export default function ConsultaCPFCNPJ() {
       if (brasilApiData.endereco?.cidade) prefill.cidade = brasilApiData.endereco.cidade;
       if (brasilApiData.endereco?.uf) prefill.estado = brasilApiData.endereco.uf;
     }
-    navigate("/cedentes/novo", { state: { prefill } });
+    navigate("/cedentes/novo", { state: { prefill, snapshot: consultaSnapshot } });
   }
 
   function handleSearch(e: React.FormEvent) {
