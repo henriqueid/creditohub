@@ -89,7 +89,7 @@ export default function Prospects() {
         .maybeSingle();
       if (existing) {
         await supabase.from("prospects").update({ client_id: existing.id }).eq("id", prospect.id);
-        return existing.id;
+        return { clientId: existing.id, qualified: false };
       }
       const { data: newClient, error } = await supabase
         .from("clients")
