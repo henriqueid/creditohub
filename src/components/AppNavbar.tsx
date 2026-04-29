@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { NotificationBell } from "@/components/NotificationBell";
 import { GlobalSearch } from "@/components/GlobalSearch";
 import { UserAvatar } from "@/components/UserAvatar";
@@ -79,7 +79,6 @@ const esteiraGroup: NavGroup = {
   icon: CreditCard,
   items: [
     { title: "Cedentes", url: "/cedentes", icon: Building2, description: "Cadastro e esteira dos cedentes" },
-    { title: "Consulta CPF/CNPJ", url: "/consulta", icon: SearchCheck, description: "Consultas na Receita Federal" },
     { title: "Análises de Crédito", url: "/analises", icon: FileText, description: "Dossiês e pareceres" },
     { title: "Comitê de Crédito", url: "/comite", icon: Users, description: "Votação e deliberação" },
     { title: "Patrimonial", url: "/patrimonial", icon: Landmark, description: "Bens e garantias dos cedentes" },
@@ -198,6 +197,20 @@ function MobileNav({ open, onOpenChange }: { open: boolean; onOpenChange: (v: bo
           </SheetTitle>
         </SheetHeader>
         <nav className="flex flex-col p-2 overflow-y-auto">
+          <Link
+            to="/consulta"
+            onClick={() => onOpenChange(false)}
+            className={cn(
+              "flex items-center gap-2.5 px-3 py-2.5 text-sm rounded-md transition-colors mb-2 border",
+              location.pathname.startsWith("/consulta")
+                ? "bg-primary text-primary-foreground border-primary"
+                : "bg-primary/10 text-foreground border-primary/30 hover:bg-primary/20"
+            )}
+          >
+            <SearchCheck className="h-4 w-4" />
+            <span className="font-semibold">Nova Consulta CPF/CNPJ</span>
+          </Link>
+
           {directLinks.map((item) => {
             const isActive = item.url === "/" ? location.pathname === "/" : location.pathname.startsWith(item.url);
             return (
@@ -268,6 +281,7 @@ export function AppNavbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const location = useLocation();
+  const navigate = useNavigate();
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Close mega menu on navigation
@@ -275,6 +289,18 @@ export function AppNavbar() {
     setOpenMenu(null);
     setMobileOpen(false);
   }, [location.pathname]);
+
+  // Atalho Ctrl/Cmd+J → Consulta CPF/CNPJ (origem do fluxo)
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "j") {
+        e.preventDefault();
+        navigate("/consulta");
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [navigate]);
 
   const handleMouseEnter = (title: string) => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -305,10 +331,34 @@ export function AppNavbar() {
   return (
     <header className="h-12 flex items-center px-5 border-b border-navbar/20 bg-navbar text-navbar-foreground shrink-0">
       {/* Logo */}
-      <Link to="/" className="flex items-center gap-2.5 mr-6">
+      <Link to="/" className="flex items-center gap-2.5 mr-4">
         <div className="h-7 w-7 rounded bg-primary flex items-center justify-center text-primary-foreground font-bold text-xs">AT</div>
         <span className="text-sm font-bold tracking-tight hidden lg:inline">Ambiente Teste</span>
       </Link>
+
+      {/* CTA Origem do fluxo: Consulta CPF/CNPJ */}
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Link
+            to="/consulta"
+            className={cn(
+              "flex items-center gap-2 px-3 py-1.5 mr-3 rounded-md text-[13px] font-semibold transition-colors border",
+              location.pathname.startsWith("/consulta")
+                ? "bg-primary text-primary-foreground border-primary"
+                : "bg-primary/15 text-navbar-foreground border-primary/40 hover:bg-primary/25"
+            )}
+          >
+            <SearchCheck className="h-4 w-4" />
+            <span className="hidden md:inline">Nova Consulta</span>
+            <kbd className="hidden xl:inline-flex items-center gap-0.5 ml-1 px-1.5 py-0.5 rounded text-[10px] font-mono bg-navbar-foreground/15 border border-navbar-foreground/20">
+              Ctrl+J
+            </kbd>
+          </Link>
+        </TooltipTrigger>
+        <TooltipContent side="bottom">Consulta CPF/CNPJ — origem do fluxo (Ctrl+J)</TooltipContent>
+      </Tooltip>
+
+      <div className="h-5 w-px bg-navbar-foreground/20 mr-2" />
 
       {/* Direct links */}
       <nav className="flex items-center gap-0.5 min-w-0 flex-1">
