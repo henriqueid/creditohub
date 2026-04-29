@@ -238,6 +238,48 @@ export default function Dashboard() {
   const sparkCrm = buildWeeklySparkline(crmTasks);
   const sparkMonitor = buildWeeklySparkline(fInvoices);
 
+  // ─── Insights agregados p/ Visão Geral ───
+  const halfWeeks = 4;
+  const sumLast = (arr: number[]) => arr.slice(-halfWeeks).reduce((s, v) => s + v, 0);
+  const sumPrev = (arr: number[]) => arr.slice(0, arr.length - halfWeeks).reduce((s, v) => s + v, 0);
+  const trendPct = (arr: number[]) => {
+    const a = sumLast(arr), b = sumPrev(arr);
+    if (b === 0) return a > 0 ? 100 : 0;
+    return Math.round(((a - b) / b) * 100);
+  };
+  const analysesTrend = trendPct(sparkAnalyses);
+  const approvedTrend = trendPct(sparkApproved);
+  const invoicesTrend = trendPct(sparkInvoices);
+
+  const totalExposure = totalLimiteAprovado + pipelineValue;
+  const conversionRate = total > 0 ? Math.round((wonDeals.length / total) * 100) : 0;
+  const avgTicket = approved > 0 ? totalLimiteAprovado / approved : 0;
+  const carteiraSaude = clientCount > 0
+    ? Math.round(((clientCount - bankruptcyMatched - blacklistCount) / clientCount) * 100)
+    : 100;
+
+  // Top cedentes por limite aprovado (a partir das análises)
+  const topClientsMap = new Map<string, { name: string; total: number; count: number }>();
+  fAnalyses.forEach(a => {
+    const name = (a.clients as any)?.razao_social;
+    if (!name || !a.limite_sugerido) return;
+    const existing = topClientsMap.get(name) || { name, total: 0, count: 0 };
+    existing.total += a.limite_sugerido;
+    existing.count += 1;
+    topClientsMap.set(name, existing);
+  });
+  const topClients = Array.from(topClientsMap.values()).sort((a, b) => b.total - a.total).slice(0, 5);
+  const topClientsMax = topClients[0]?.total || 1;
+
+  // Funil: Cedentes → Análises → Comitê → Aprovadas
+  const funnelData = [
+    { label: "Cedentes", value: clientCount, color: "bg-muted-foreground/40" },
+    { label: "Análises", value: total, color: "bg-primary" },
+    { label: "Em Comitê", value: inCommittee + approved + rejected, color: "bg-status-committee" },
+    { label: "Aprovadas", value: approved, color: "bg-status-approved" },
+  ];
+  const funnelMax = Math.max(...funnelData.map(d => d.value), 1);
+
   const healthItems = [
     {
       label: "Esteira de Crédito",
