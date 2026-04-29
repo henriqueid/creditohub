@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Building2, FileText, CheckCircle, XCircle, Clock, TrendingUp,
   BarChart3, AlertTriangle, DollarSign, ShieldBan, Scale, FileBarChart,
