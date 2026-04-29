@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 interface Deal {
   id: string;
@@ -59,6 +60,7 @@ export default function CRMPipeline() {
   const qc = useQueryClient();
   const [newDealOpen, setNewDealOpen] = useState(false);
   const [newDeal, setNewDeal] = useState({ title: "", client_id: "", stage_id: "", value: "", responsible: "", expected_close_date: "", notes: "" });
+  const [guardDialog, setGuardDialog] = useState<{ open: boolean; dealId: string; stageId: string; stageName: string; reason: string } | null>(null);
 
   const { data: stages = [] } = useQuery({
     queryKey: ["deal-stages"],
@@ -274,7 +276,25 @@ export default function CRMPipeline() {
                       stages={activeStages}
                       currentStage={stage}
                       analysis={getAnalysisForDeal(deal)}
-                      onMove={(stageId) => moveDeal.mutate({ dealId: deal.id, stageId })}
+                      onMove={(stageId) => {
+                        const target = stages.find(s => s.id === stageId);
+                        const requiresApproval = !!target && /proposta|negocia|fechamento/i.test(target.name);
+                        const linkedAnalysis = getAnalysisForDeal(deal);
+                        const approved = linkedAnalysis && (linkedAnalysis.status === "approved" || linkedAnalysis.status === "approved_restricted");
+                        if (requiresApproval && !approved) {
+                          setGuardDialog({
+                            open: true,
+                            dealId: deal.id,
+                            stageId,
+                            stageName: target?.name || "",
+                            reason: linkedAnalysis
+                              ? `A análise vinculada está com status "${linkedAnalysis.status}".`
+                              : "Não há análise de crédito vinculada a esta oportunidade.",
+                          });
+                          return;
+                        }
+                        moveDeal.mutate({ dealId: deal.id, stageId });
+                      }}
                       onLinkAnalysis={(analysisId) => linkAnalysis.mutate({ dealId: deal.id, analysisId })}
                     />
                   ))}
@@ -294,6 +314,31 @@ export default function CRMPipeline() {
           )}
         </div>
       </div>
+
+      <AlertDialog open={!!guardDialog?.open} onOpenChange={(o) => !o && setGuardDialog(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-600" />
+              Avançar para "{guardDialog?.stageName}" sem aprovação de crédito?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {guardDialog?.reason} Mover oportunidades para etapas avançadas sem crédito aprovado pode comprometer a operação. Deseja prosseguir mesmo assim?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (guardDialog) moveDeal.mutate({ dealId: guardDialog.dealId, stageId: guardDialog.stageId });
+                setGuardDialog(null);
+              }}
+            >
+              Avançar mesmo assim
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -5,14 +5,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/StatusBadge";
 import { formatBRL, formatDate, formatCNPJorCPF, voteLabels, recommendationLabels } from "@/lib/formatters";
-import { ArrowLeft, FileText, Users, CheckCircle2, Clock, AlertTriangle, XCircle, Circle } from "lucide-react";
+import { ArrowLeft, FileText, Users, CheckCircle2, Clock, AlertTriangle, XCircle, Circle, Briefcase, MessageSquare, ListTodo } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 
 interface TimelineEvent {
   id: string;
   date: string;
-  type: "analysis_created" | "status_change" | "vote" | "committee_result";
+  type: "analysis_created" | "status_change" | "vote" | "committee_result" | "deal_created" | "activity" | "task";
   title: string;
   description: string;
   status?: string;
@@ -31,6 +31,12 @@ function getTimelineIcon(type: TimelineEvent["type"], status?: string) {
       return <AlertTriangle className="h-4 w-4 text-status-restricted" />;
     case "committee_result":
       return <Users className="h-4 w-4 text-primary" />;
+    case "deal_created":
+      return <Briefcase className="h-4 w-4 text-status-approved" />;
+    case "activity":
+      return <MessageSquare className="h-4 w-4 text-muted-foreground" />;
+    case "task":
+      return <ListTodo className="h-4 w-4 text-status-committee" />;
     default:
       return <Circle className="h-4 w-4 text-muted-foreground" />;
   }
@@ -96,6 +102,45 @@ export default function ClientHistory() {
     enabled: analyses.length > 0,
   });
 
+  const { data: deals = [] } = useQuery({
+    queryKey: ["client-deals-history", id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("deals")
+        .select("*, deal_stages(name, color)")
+        .eq("client_id", id!)
+        .order("created_at", { ascending: true });
+      return data || [];
+    },
+    enabled: !!id,
+  });
+
+  const { data: crmActivities = [] } = useQuery({
+    queryKey: ["client-activities-history", id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("activities")
+        .select("*")
+        .eq("client_id", id!)
+        .order("activity_date", { ascending: true });
+      return data || [];
+    },
+    enabled: !!id,
+  });
+
+  const { data: crmTasks = [] } = useQuery({
+    queryKey: ["client-tasks-history", id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("crm_tasks")
+        .select("*")
+        .eq("client_id", id!)
+        .order("created_at", { ascending: true });
+      return data || [];
+    },
+    enabled: !!id,
+  });
+
   // Build timeline events
   const timeline: TimelineEvent[] = [];
 
@@ -149,6 +194,49 @@ export default function ClientHistory() {
         "Prazo": r.prazo_aprovado ? `${r.prazo_aprovado} dias` : "—",
         "Concentração máx.": r.concentracao_maxima ? `${r.concentracao_maxima}%` : "—",
         ...(r.condicoes_adicionais ? { "Condições": r.condicoes_adicionais } : {}),
+      },
+    });
+  });
+
+  deals.forEach((d: any) => {
+    timeline.push({
+      id: `deal-${d.id}`,
+      date: d.created_at,
+      type: "deal_created",
+      title: "Oportunidade criada",
+      description: d.title,
+      meta: {
+        ...(d.value ? { "Valor": formatBRL(d.value) } : {}),
+        ...(d.deal_stages?.name ? { "Etapa": d.deal_stages.name } : {}),
+        ...(d.responsible ? { "Responsável": d.responsible } : {}),
+        ...(d.credit_analysis_id ? { "Origem": "Análise de crédito" } : {}),
+      },
+    });
+  });
+
+  crmActivities.forEach((act: any) => {
+    timeline.push({
+      id: `act-${act.id}`,
+      date: act.activity_date,
+      type: "activity",
+      title: `Atividade: ${act.activity_type}`,
+      description: act.description,
+      meta: act.created_by ? { "Por": act.created_by } : undefined,
+    });
+  });
+
+  crmTasks.forEach((t: any) => {
+    timeline.push({
+      id: `task-${t.id}`,
+      date: t.completed_at || t.created_at,
+      type: "task",
+      title: t.completed_at ? `Tarefa concluída: ${t.title}` : `Tarefa criada: ${t.title}`,
+      description: t.description || "—",
+      status: t.status,
+      meta: {
+        ...(t.priority ? { "Prioridade": t.priority } : {}),
+        ...(t.due_date ? { "Prazo": new Date(t.due_date).toLocaleDateString("pt-BR") } : {}),
+        ...(t.assigned_to ? { "Responsável": t.assigned_to } : {}),
       },
     });
   });

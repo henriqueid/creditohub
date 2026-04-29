@@ -26,6 +26,7 @@ import { RiskIndicator } from "@/components/RiskIndicator";
 import { ConcentrationChart } from "@/components/ConcentrationChart";
 import { SectionFileUpload } from "@/components/SectionFileUpload";
 import { AIInsightsPanel } from "@/components/AIInsightsPanel";
+import { AnalysisDealsLink } from "@/components/AnalysisDealsLink";
 import { FinancialIndicatorsPanel } from "@/components/FinancialIndicatorsPanel";
 import {
   classifyRisk, suggestLimit, calculateConcentration,
@@ -857,6 +858,19 @@ export default function CreditAnalysisForm() {
                 {Object.values(sectionAttachments).flat().length}
               </p>
             </div>
+
+            {isEditing && id && selectedClient && (
+              <>
+                <div className="h-8 w-px bg-border/60 shrink-0" />
+                <AnalysisDealsLink
+                  analysisId={id}
+                  clientId={selectedClient.id}
+                  clientName={selectedClient.razao_social}
+                  limiteSugerido={limiteNum || null}
+                  responsavel={responsavelComercial || analistaCredito || null}
+                />
+              </>
+            )}
           </div>
         </motion.div>
 
