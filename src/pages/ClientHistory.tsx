@@ -198,6 +198,49 @@ export default function ClientHistory() {
     });
   });
 
+  deals.forEach((d: any) => {
+    timeline.push({
+      id: `deal-${d.id}`,
+      date: d.created_at,
+      type: "deal_created",
+      title: "Oportunidade criada",
+      description: d.title,
+      meta: {
+        ...(d.value ? { "Valor": formatBRL(d.value) } : {}),
+        ...(d.deal_stages?.name ? { "Etapa": d.deal_stages.name } : {}),
+        ...(d.responsible ? { "Responsável": d.responsible } : {}),
+        ...(d.credit_analysis_id ? { "Origem": "Análise de crédito" } : {}),
+      },
+    });
+  });
+
+  crmActivities.forEach((act: any) => {
+    timeline.push({
+      id: `act-${act.id}`,
+      date: act.activity_date,
+      type: "activity",
+      title: `Atividade: ${act.activity_type}`,
+      description: act.description,
+      meta: act.created_by ? { "Por": act.created_by } : undefined,
+    });
+  });
+
+  crmTasks.forEach((t: any) => {
+    timeline.push({
+      id: `task-${t.id}`,
+      date: t.completed_at || t.created_at,
+      type: "task",
+      title: t.completed_at ? `Tarefa concluída: ${t.title}` : `Tarefa criada: ${t.title}`,
+      description: t.description || "—",
+      status: t.status,
+      meta: {
+        ...(t.priority ? { "Prioridade": t.priority } : {}),
+        ...(t.due_date ? { "Prazo": new Date(t.due_date).toLocaleDateString("pt-BR") } : {}),
+        ...(t.assigned_to ? { "Responsável": t.assigned_to } : {}),
+      },
+    });
+  });
+
   timeline.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   return (
