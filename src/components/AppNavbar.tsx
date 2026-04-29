@@ -329,11 +329,11 @@ export function AppNavbar() {
   }
 
   return (
-    <header className="h-12 flex items-center px-5 border-b border-navbar/20 bg-navbar text-navbar-foreground shrink-0">
+    <header className="h-12 flex items-center px-4 gap-2 border-b border-navbar/20 bg-navbar text-navbar-foreground shrink-0">
       {/* Logo */}
-      <Link to="/" className="flex items-center gap-2.5 mr-4">
+      <Link to="/" className="flex items-center gap-2 shrink-0">
         <div className="h-7 w-7 rounded bg-primary flex items-center justify-center text-primary-foreground font-bold text-xs">AT</div>
-        <span className="text-sm font-bold tracking-tight hidden lg:inline">Ambiente Teste</span>
+        <span className="text-sm font-bold tracking-tight hidden 2xl:inline">Ambiente Teste</span>
       </Link>
 
       {/* CTA Origem do fluxo: Consulta CPF/CNPJ */}
@@ -342,15 +342,15 @@ export function AppNavbar() {
           <Link
             to="/consulta"
             className={cn(
-              "flex items-center gap-2 px-3 py-1.5 mr-3 rounded-md text-[13px] font-semibold transition-colors border",
+              "flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[13px] font-semibold transition-colors border shrink-0",
               location.pathname.startsWith("/consulta")
                 ? "bg-primary text-primary-foreground border-primary"
                 : "bg-primary/15 text-navbar-foreground border-primary/40 hover:bg-primary/25"
             )}
           >
             <SearchCheck className="h-4 w-4" />
-            <span className="hidden md:inline">Nova Consulta</span>
-            <kbd className="hidden xl:inline-flex items-center gap-0.5 ml-1 px-1.5 py-0.5 rounded text-[10px] font-mono bg-navbar-foreground/15 border border-navbar-foreground/20">
+            <span className="hidden xl:inline">Nova Consulta</span>
+            <kbd className="hidden 2xl:inline-flex items-center gap-0.5 ml-1 px-1.5 py-0.5 rounded text-[10px] font-mono bg-navbar-foreground/15 border border-navbar-foreground/20">
               Ctrl+J
             </kbd>
           </Link>
@@ -358,9 +358,9 @@ export function AppNavbar() {
         <TooltipContent side="bottom">Consulta CPF/CNPJ — origem do fluxo (Ctrl+J)</TooltipContent>
       </Tooltip>
 
-      <div className="h-5 w-px bg-navbar-foreground/20 mr-2" />
+      <div className="h-5 w-px bg-navbar-foreground/20 shrink-0" />
 
-      {/* Direct links */}
+      {/* Direct links + Groups */}
       <nav className="flex items-center gap-0.5 min-w-0 flex-1">
         {directLinks.map((item) => {
           const isActive = item.url === "/" ? location.pathname === "/" : location.pathname.startsWith(item.url);
@@ -370,26 +370,24 @@ export function AppNavbar() {
                 <Link
                   to={item.url}
                   className={cn(
-                    "flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-md transition-colors",
+                    "flex items-center gap-1.5 px-2.5 py-2 text-sm font-medium rounded-md transition-colors",
                     "hover:bg-navbar-foreground/15 hover:text-navbar-foreground",
                     isActive ? "text-navbar-foreground bg-navbar-foreground/15" : "text-navbar-foreground/70"
                   )}
                 >
                   <item.icon className="h-4 w-4" />
-                  <span className="hidden xl:inline">{item.title}</span>
+                  <span className="hidden 2xl:inline">{item.title}</span>
                 </Link>
               </TooltipTrigger>
-              <TooltipContent side="bottom" className="xl:hidden">
+              <TooltipContent side="bottom" className="2xl:hidden">
                 {item.title}
               </TooltipContent>
             </Tooltip>
           );
         })}
 
-        {/* Divider */}
-        <div className="h-5 w-px bg-navbar-foreground/20 mx-1.5" />
+        <div className="h-5 w-px bg-navbar-foreground/20 mx-1" />
 
-        {/* Groups with mega menu */}
         {groups.map((group) => (
           <MegaMenuDropdown
             key={group.title}
@@ -402,7 +400,7 @@ export function AppNavbar() {
       </nav>
 
       {/* Right side */}
-      <div className="ml-auto flex items-center gap-2 shrink-0">
+      <div className="ml-auto flex items-center gap-1 shrink-0">
         <GlobalSearch />
         <NotificationBell />
         <Tooltip>
@@ -410,7 +408,7 @@ export function AppNavbar() {
             <Link
               to="/configuracoes"
               className={cn(
-                "flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-md transition-colors",
+                "flex items-center justify-center h-9 w-9 rounded-md transition-colors",
                 "hover:bg-navbar-foreground/15 hover:text-navbar-foreground",
                 location.pathname.startsWith("/configuracoes")
                   ? "text-navbar-foreground bg-navbar-foreground/15"
@@ -418,12 +416,9 @@ export function AppNavbar() {
               )}
             >
               <Settings className="h-4 w-4" />
-              <span className="hidden xl:inline">Configurações</span>
             </Link>
           </TooltipTrigger>
-          <TooltipContent side="bottom" className="xl:hidden">
-            Configurações
-          </TooltipContent>
+          <TooltipContent side="bottom">Configurações</TooltipContent>
         </Tooltip>
         <div className="h-5 w-px bg-navbar-foreground/20 mx-0.5" />
         <UserAvatar />
