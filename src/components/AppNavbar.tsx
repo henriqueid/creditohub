@@ -79,7 +79,6 @@ const esteiraGroup: NavGroup = {
   icon: CreditCard,
   items: [
     { title: "Cedentes", url: "/cedentes", icon: Building2, description: "Cadastro e esteira dos cedentes" },
-    { title: "Consulta CPF/CNPJ", url: "/consulta", icon: SearchCheck, description: "Consultas na Receita Federal" },
     { title: "Análises de Crédito", url: "/analises", icon: FileText, description: "Dossiês e pareceres" },
     { title: "Comitê de Crédito", url: "/comite", icon: Users, description: "Votação e deliberação" },
     { title: "Patrimonial", url: "/patrimonial", icon: Landmark, description: "Bens e garantias dos cedentes" },
