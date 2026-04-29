@@ -1077,6 +1077,94 @@ function MonitorCard({
   );
 }
 
+function HeroKpi({
+  label, value, sub, icon: Icon, accent = "neutral", gauge,
+}: {
+  label: string; value: string; sub: string; icon: React.ElementType;
+  accent?: "primary" | "success" | "warning" | "danger" | "neutral";
+  gauge?: number;
+}) {
+  const accentMap = {
+    primary: { text: "text-primary", bar: "bg-primary", soft: "bg-primary/10" },
+    success: { text: "text-status-approved", bar: "bg-status-approved", soft: "bg-status-approved/10" },
+    warning: { text: "text-status-committee", bar: "bg-status-committee", soft: "bg-status-committee/10" },
+    danger: { text: "text-status-rejected", bar: "bg-status-rejected", soft: "bg-status-rejected/10" },
+    neutral: { text: "text-foreground", bar: "bg-muted-foreground", soft: "bg-muted" },
+  };
+  const a = accentMap[accent];
+  return (
+    <Card className="overflow-hidden">
+      <div className={cn("h-1 w-full", a.bar)} />
+      <CardContent className="p-4 space-y-2.5">
+        <div className="flex items-center justify-between">
+          <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">{label}</span>
+          <div className={cn("h-7 w-7 rounded-md flex items-center justify-center", a.soft)}>
+            <Icon className={cn("h-3.5 w-3.5", a.text)} />
+          </div>
+        </div>
+        <div>
+          <p className={cn("text-2xl font-semibold tabular-nums leading-tight", a.text)}>{value}</p>
+          <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">{sub}</p>
+        </div>
+        {typeof gauge === "number" && (
+          <div className="h-1 rounded-full bg-muted overflow-hidden">
+            <div className={cn("h-full transition-all duration-700", a.bar)} style={{ width: `${Math.min(Math.max(gauge, 0), 100)}%` }} />
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function TrendCard({
+  title, icon: Icon, current, previous, trend, sparkline, color, positiveIsGood,
+}: {
+  title: string; icon: React.ElementType;
+  current: number; previous: number; trend: number;
+  sparkline: number[]; color: string; positiveIsGood?: boolean;
+}) {
+  const isUp = trend > 0;
+  const isFlat = trend === 0;
+  const goodTrend = positiveIsGood ? isUp : false;
+  const trendColor = isFlat
+    ? "text-muted-foreground"
+    : goodTrend || (positiveIsGood && isUp)
+      ? "text-status-approved"
+      : !positiveIsGood && !isUp
+        ? "text-muted-foreground"
+        : isUp
+          ? "text-status-approved"
+          : "text-status-rejected";
+  const TrendIcon = isFlat ? ArrowRight : isUp ? ArrowUp : ArrowDown;
+  return (
+    <Card>
+      <CardContent className="p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="h-7 w-7 rounded-md bg-muted flex items-center justify-center">
+              <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+            </div>
+            <span className="text-xs font-medium text-foreground">{title}</span>
+          </div>
+          <div className={cn("flex items-center gap-0.5 text-[11px] font-semibold tabular-nums", trendColor)}>
+            <TrendIcon className="h-3 w-3" />
+            {Math.abs(trend)}%
+          </div>
+        </div>
+        <div className="flex items-end justify-between gap-3">
+          <div>
+            <p className="text-2xl font-semibold tabular-nums text-foreground leading-none">{current}</p>
+            <p className="text-[10px] text-muted-foreground mt-1">vs {previous} no período anterior</p>
+          </div>
+          <div className="shrink-0">
+            <Sparkline data={sparkline} color={color} />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 function StatusDot({ color, label }: { color: string; label: string }) {
   return (
     <span className="inline-flex items-center gap-1.5 text-[11px] text-foreground">
