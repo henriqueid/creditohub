@@ -21,6 +21,7 @@ import { formatCNPJorCPF, formatBRL, formatDate, formatPercent, statusLabels, st
 import { motion, AnimatePresence } from "framer-motion";
 import { fetchExternalConsulta, type ExternalSourceResult, type ExternalConsultaData } from "@/lib/external-consulta";
 import { qualifyProspect, saveProspectQualification, type QualificationResult } from "@/lib/prospect-qualification";
+import { buildConsultaSnapshot, type ConsultaSnapshot } from "@/lib/consulta-snapshot";
 import { toast } from "sonner";
 
 // --- Helpers ---
