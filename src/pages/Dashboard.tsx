@@ -1193,30 +1193,36 @@ function HeroKpiClean({
   const trendColor = isFlat ? "text-muted-foreground" : isUp ? "text-status-approved" : "text-status-rejected";
 
   return (
-    <Card className="border-border">
-      <CardContent className="p-5">
-        <p className="text-[10px] font-semibold tracking-[0.14em] text-muted-foreground uppercase mb-3">{label}</p>
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            <p className="text-3xl font-semibold tabular-nums text-foreground leading-none tracking-tight">{value}</p>
-            <p className="text-[12px] text-muted-foreground mt-2">{sub}</p>
-            {!isFlat && (
-              <div className={cn("flex items-center gap-1 mt-2 text-[11px] font-medium tabular-nums", trendColor)}>
-                <TrendIcon className="h-3 w-3" />
-                {Math.abs(trend)}% vs período ant.
-              </div>
-            )}
+    <Card className="border-border/70 hover:border-border transition-colors">
+      <CardContent className="p-5 space-y-4">
+        <div className="flex items-center justify-between">
+          <p className="text-[10px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">{label}</p>
+          {!isFlat && (
+            <div className={cn("flex items-center gap-0.5 text-[10px] font-medium tabular-nums px-1.5 py-0.5 rounded",
+              isUp ? "bg-status-approved/8 text-status-approved" : "bg-status-rejected/8 text-status-rejected"
+            )}>
+              <TrendIcon className="h-2.5 w-2.5" />
+              {Math.abs(trend)}%
+            </div>
+          )}
+        </div>
+        <div className="flex items-end justify-between gap-3 min-h-[58px]">
+          <div className="min-w-0 flex-1 space-y-1">
+            <p className="text-[28px] font-semibold tabular-nums text-foreground leading-none tracking-tight">{value}</p>
+            <p className="text-[11px] text-muted-foreground leading-snug">{sub}</p>
           </div>
           {variant === "line" && sparkline && (
-            <div className="shrink-0">
-              <SparklineLarge data={sparkline} />
+            <div className="shrink-0 self-end">
+              <SparklineLarge data={sparkline} positive={isUp || isFlat} />
             </div>
           )}
           {variant === "gauge" && typeof gaugeValue === "number" && (
-            <div className="shrink-0 flex flex-col items-center">
+            <div className="shrink-0 self-end relative">
               <GaugeArc value={gaugeValue} />
-              {gaugeMain && <span className="text-[11px] font-semibold text-foreground tabular-nums -mt-3">{gaugeMain}</span>}
-              {gaugeLabel && <span className="text-[9px] uppercase tracking-[0.12em] text-muted-foreground mt-0.5">{gaugeLabel}</span>}
+              <div className="absolute inset-x-0 bottom-0 flex flex-col items-center pb-0.5">
+                {gaugeMain && <span className="text-[12px] font-semibold text-foreground tabular-nums leading-none">{gaugeMain}</span>}
+                {gaugeLabel && <span className="text-[8px] uppercase tracking-[0.14em] text-muted-foreground mt-0.5">{gaugeLabel}</span>}
+              </div>
             </div>
           )}
         </div>
@@ -1225,49 +1231,62 @@ function HeroKpiClean({
   );
 }
 
-function SparklineLarge({ data }: { data: number[] }) {
+function SparklineLarge({ data, positive = true }: { data: number[]; positive?: boolean }) {
   const max = Math.max(...data, 1);
-  const w = 110;
-  const h = 44;
+  const min = Math.min(...data, 0);
+  const range = Math.max(max - min, 1);
+  const w = 96;
+  const h = 36;
   const step = data.length > 1 ? w / (data.length - 1) : w;
-  const points = data.map((v, i) => `${i * step},${h - (v / max) * (h - 4) - 2}`).join(" ");
+  const points = data.map((v, i) => `${i * step},${h - ((v - min) / range) * (h - 4) - 2}`);
+  const polyline = points.join(" ");
+  const areaPath = `M 0,${h} L ${points.join(" L ")} L ${w},${h} Z`;
+  const stroke = positive ? "hsl(var(--foreground))" : "hsl(var(--status-rejected))";
+  const lastPoint = points[points.length - 1]?.split(",").map(Number);
+
   return (
-    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
+    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} className="overflow-visible">
+      <path d={areaPath} fill={stroke} opacity="0.04" />
       <polyline
-        points={points}
+        points={polyline}
         fill="none"
-        stroke="hsl(var(--foreground))"
-        strokeWidth="1.5"
+        stroke={stroke}
+        strokeWidth="1.25"
         strokeLinecap="round"
         strokeLinejoin="round"
+        opacity="0.85"
       />
+      {lastPoint && (
+        <circle cx={lastPoint[0]} cy={lastPoint[1]} r="2" fill={stroke} />
+      )}
     </svg>
   );
 }
 
 function GaugeArc({ value }: { value: number }) {
   const pct = Math.min(Math.max(value, 0), 100) / 100;
-  const r = 32;
-  const cx = 40;
-  const cy = 40;
-  const circ = Math.PI * r; // half circle
+  const r = 30;
+  const cx = 38;
+  const cy = 38;
+  const circ = Math.PI * r;
   const dash = circ * pct;
   return (
-    <svg width="80" height="50" viewBox="0 0 80 50">
+    <svg width="76" height="50" viewBox="0 0 76 50">
       <path
         d={`M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`}
         fill="none"
         stroke="hsl(var(--muted))"
-        strokeWidth="5"
+        strokeWidth="3.5"
         strokeLinecap="round"
       />
       <path
         d={`M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`}
         fill="none"
         stroke="hsl(var(--status-approved))"
-        strokeWidth="5"
+        strokeWidth="3.5"
         strokeLinecap="round"
         strokeDasharray={`${dash} ${circ}`}
+        style={{ transition: "stroke-dasharray 0.7s ease" }}
       />
     </svg>
   );
@@ -1283,20 +1302,18 @@ function TrendRow({
   const TrendIcon = isFlat ? ArrowRight : isUp ? ArrowUp : ArrowDown;
   const trendColor = isFlat ? "text-muted-foreground" : isUp ? "text-status-approved" : "text-status-rejected";
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex items-center gap-3 px-2 py-2.5 rounded-md hover:bg-muted/40 transition-colors">
       <div className="min-w-0 flex-1">
-        <p className="text-[12px] text-foreground font-medium">{label}</p>
-        {!isFlat && (
-          <div className={cn("flex items-center gap-0.5 text-[10px] font-medium tabular-nums mt-0.5", trendColor)}>
-            <TrendIcon className="h-2.5 w-2.5" />
-            {Math.abs(trend)}%
-          </div>
-        )}
+        <p className="text-[12px] text-foreground font-medium leading-tight">{label}</p>
+        <div className={cn("flex items-center gap-0.5 text-[10px] font-medium tabular-nums mt-1", trendColor)}>
+          <TrendIcon className="h-2.5 w-2.5" />
+          {isFlat ? "estável" : `${Math.abs(trend)}%`}
+        </div>
       </div>
-      <div className="shrink-0">
-        <SparklineLarge data={sparkline} />
+      <div className="shrink-0 opacity-80">
+        <SparklineLarge data={sparkline} positive={isUp || isFlat} />
       </div>
-      <span className="text-base font-semibold tabular-nums text-foreground w-12 text-right">{value}</span>
+      <span className="text-[15px] font-semibold tabular-nums text-foreground w-14 text-right tracking-tight">{value}</span>
     </div>
   );
 }
