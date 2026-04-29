@@ -319,14 +319,37 @@ export default function Dashboard() {
     monitoring: { bar: "bg-status-committee",   soft: "bg-status-committee/8",   text: "text-status-committee",   border: "border-status-committee/20",   label: "Monitoramento" },
   } as const;
 
+  const monthLabel = now.toLocaleDateString("pt-BR", { month: "short", year: "numeric" }).toUpperCase().replace(".", "");
+  const updatedLabel = "agora há pouco";
+
   return (
     <div className="p-5 sm:p-6 lg:p-8 space-y-6 overflow-auto max-w-[1440px] mx-auto">
-      {/* Header */}
+      {/* Header — modelo Tracto */}
       <div className="flex items-end justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-lg font-semibold text-foreground">Painel Inicial</h1>
-          <p className="text-[13px] text-muted-foreground mt-0.5">Visão consolidada — Crédito, Monitoramento e CRM</p>
+          <h1 className="text-2xl font-semibold text-foreground tracking-tight">Painel inicial</h1>
+          <p className="text-[11px] text-muted-foreground mt-1 uppercase tracking-[0.12em] font-medium">
+            Atualizado {updatedLabel} · {monthLabel}
+          </p>
         </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => navigate("/analises/nova")}
+            className="px-3 py-1.5 text-xs font-medium rounded-md border border-border bg-card text-foreground hover:bg-muted transition-colors"
+          >
+            Exportar
+          </button>
+          <button
+            onClick={() => navigate("/analises/nova")}
+            className="px-3 py-1.5 text-xs font-semibold rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+          >
+            + Nova análise
+          </button>
+        </div>
+      </div>
+
+      {/* Period selector compacto */}
+      <div className="flex items-center justify-end -mt-3">
         <div className="flex items-center gap-px bg-muted rounded-md p-0.5">
           {([
             { label: "7d", days: 7 },
