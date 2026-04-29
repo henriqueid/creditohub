@@ -402,7 +402,156 @@ export default function Dashboard() {
 
         {/* ─────────── VISÃO GERAL ─────────── */}
         <TabsContent value="overview" className="space-y-5 mt-0">
-          {/* Análises recentes ficam aqui como destaque inicial */}
+          {/* Hero KPIs — métricas consolidadas das 3 áreas */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <HeroKpi
+              label="Exposição Total"
+              value={formatBRL(totalExposure)}
+              sub={`Aprovado ${formatBRL(totalLimiteAprovado)} + Pipeline ${formatBRL(pipelineValue)}`}
+              icon={DollarSign}
+              accent="primary"
+            />
+            <HeroKpi
+              label="Saúde da Carteira"
+              value={`${carteiraSaude}%`}
+              sub={`${clientCount} cedente(s) · ${blacklistCount + bankruptcyMatched} restrição(ões)`}
+              icon={Activity}
+              accent={carteiraSaude >= 90 ? "success" : carteiraSaude >= 70 ? "warning" : "danger"}
+              gauge={carteiraSaude}
+            />
+            <HeroKpi
+              label="Score Médio"
+              value={String(avgScore || "—")}
+              sub={`${total} análise(s) no período`}
+              icon={Gauge}
+              accent={avgScore >= 700 ? "success" : avgScore >= 400 ? "warning" : avgScore > 0 ? "danger" : "neutral"}
+              gauge={avgScore ? (avgScore / 1000) * 100 : 0}
+            />
+            <HeroKpi
+              label="Taxa de Aprovação"
+              value={`${approvalRate.toFixed(0)}%`}
+              sub={`${approved} aprovada(s) / ${rejected} reprovada(s)`}
+              icon={CheckCircle}
+              accent={approvalRate >= 70 ? "success" : approvalRate >= 40 ? "warning" : "danger"}
+              gauge={approvalRate}
+            />
+          </div>
+
+          {/* Tendências comparativas (últimas 4 sem. vs anteriores) */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <TrendCard
+              title="Análises de Crédito"
+              icon={FileText}
+              current={sumLast(sparkAnalyses)}
+              previous={sumPrev(sparkAnalyses)}
+              trend={analysesTrend}
+              sparkline={sparkAnalyses}
+              color="hsl(var(--primary))"
+            />
+            <TrendCard
+              title="Aprovações"
+              icon={CheckCircle}
+              current={sumLast(sparkApproved)}
+              previous={sumPrev(sparkApproved)}
+              trend={approvedTrend}
+              sparkline={sparkApproved}
+              color="hsl(var(--status-approved))"
+              positiveIsGood
+            />
+            <TrendCard
+              title="NFs Monitoradas"
+              icon={Receipt}
+              current={sumLast(sparkInvoices)}
+              previous={sumPrev(sparkInvoices)}
+              trend={invoicesTrend}
+              sparkline={sparkInvoices}
+              color="hsl(var(--status-committee))"
+            />
+          </div>
+
+          {/* Funil + Top cedentes */}
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Filter className="h-4 w-4 text-muted-foreground" />
+                  Funil de Conversão
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2.5">
+                {funnelData.map((step, i) => {
+                  const pct = (step.value / funnelMax) * 100;
+                  const prevValue = i > 0 ? funnelData[i - 1].value : null;
+                  const conv = prevValue && prevValue > 0 ? Math.round((step.value / prevValue) * 100) : null;
+                  return (
+                    <div key={step.label}>
+                      <div className="flex items-center justify-between text-[11px] mb-1">
+                        <span className="text-muted-foreground font-medium">{step.label}</span>
+                        <span className="flex items-center gap-2 tabular-nums">
+                          <span className="text-foreground font-semibold">{step.value}</span>
+                          {conv !== null && <span className="text-muted-foreground">{conv}%</span>}
+                        </span>
+                      </div>
+                      <div className="h-2.5 rounded-sm bg-muted overflow-hidden">
+                        <div className={cn("h-full transition-all duration-500", step.color)} style={{ width: `${pct}%` }} />
+                      </div>
+                    </div>
+                  );
+                })}
+                <div className="pt-2 mt-2 border-t border-border flex items-center justify-between text-[11px]">
+                  <span className="text-muted-foreground">Conversão geral</span>
+                  <span className="font-semibold text-foreground tabular-nums">{conversionRate}%</span>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="lg:col-span-3">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                  Top Cedentes por Volume
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {topClients.length === 0 ? (
+                  <EmptyState message="Sem dados de volume por cedente" small />
+                ) : (
+                  <div className="space-y-2.5">
+                    {topClients.map((c, i) => {
+                      const pct = (c.total / topClientsMax) * 100;
+                      return (
+                        <div key={c.name}>
+                          <div className="flex items-center justify-between text-[11px] mb-1">
+                            <span className="flex items-center gap-2 min-w-0 flex-1">
+                              <span className="text-muted-foreground tabular-nums w-4">{i + 1}</span>
+                              <span className="text-foreground font-medium truncate">{c.name}</span>
+                              <span className="text-muted-foreground shrink-0">· {c.count}x</span>
+                            </span>
+                            <span className="font-semibold tabular-nums text-foreground shrink-0 ml-2">{formatBRL(c.total)}</span>
+                          </div>
+                          <div className="h-1.5 rounded-sm bg-muted overflow-hidden">
+                            <div className="h-full bg-primary/70 transition-all duration-500" style={{ width: `${pct}%` }} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Indicadores secundários — densidade controlada */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            <KpiCard title="Cedentes" value={clientCount} icon={Building2} onClick={() => navigate("/cedentes")} />
+            <KpiCard title="Comitê" value={inCommittee} icon={Clock} accent={inCommittee > 0 ? "warning" : undefined} sparkline={sparkCommittee} onClick={() => navigate("/comite")} />
+            <KpiCard title="Pipeline" value={activeDeals.length} icon={Target} sparkline={sparkCrm} onClick={() => navigate("/crm/pipeline")} />
+            <KpiCard title="Tarefas" value={pendingTasks} icon={CheckSquare} accent={overdueTasks > 0 ? "danger" : undefined} onClick={() => navigate("/crm/tarefas")} />
+            <KpiCard title="NFs Inválidas" value={invoiceInvalid} icon={AlertTriangle} accent={invoiceInvalid > 0 ? "danger" : undefined} onClick={() => navigate("/monitoramento-nfs")} />
+            <KpiCard title="Ticket Médio" value={avgTicket > 0 ? formatBRL(avgTicket) : "—"} icon={DollarSign} />
+          </div>
+
+          {/* Análises recentes — destaque inferior */}
           <RecentAnalysesCard
             recentAnalyses={recentAnalyses}
             now={now}
