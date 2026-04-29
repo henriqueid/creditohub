@@ -268,6 +268,15 @@ export default function Dashboard() {
   const statusDots: Record<string, string> = { good: "bg-status-approved", warning: "bg-status-committee", danger: "bg-status-rejected" };
   const statusLabels: Record<string, string> = { good: "Saudável", warning: "Atenção", danger: "Crítico" };
 
+  const [activeTab, setActiveTab] = useState<"overview" | "credit" | "crm" | "monitoring">("overview");
+
+  // Accent colors per área (semantic tokens via index.css)
+  const areaAccents = {
+    credit:     { bar: "bg-primary",            soft: "bg-primary/8",            text: "text-primary",            border: "border-primary/20",            label: "Esteira de Crédito" },
+    crm:        { bar: "bg-status-approved",    soft: "bg-status-approved/8",    text: "text-status-approved",    border: "border-status-approved/20",    label: "CRM Comercial" },
+    monitoring: { bar: "bg-status-committee",   soft: "bg-status-committee/8",   text: "text-status-committee",   border: "border-status-committee/20",   label: "Monitoramento" },
+  } as const;
+
   return (
     <div className="p-5 sm:p-6 lg:p-8 space-y-6 overflow-auto max-w-[1440px] mx-auto">
       {/* Header */}
@@ -299,36 +308,433 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Health indicators */}
+      {/* Health indicators (sempre visíveis — quick-jump por área) */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        {healthItems.map((item) => (
-          <button
-            key={item.label}
-            onClick={() => navigate(item.href)}
-            className="text-left rounded-md border border-border bg-card px-4 py-3.5 hover:shadow-sm transition-shadow group"
-          >
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3 min-w-0 flex-1">
-                <div className="flex items-center justify-center h-9 w-9 rounded-md bg-muted shrink-0">
-                  <item.icon className="h-4 w-4 text-muted-foreground" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-[13px] font-semibold text-foreground">{item.label}</p>
-                  <div className="flex items-center gap-1.5 mt-0.5">
-                    <span className={cn("h-1.5 w-1.5 rounded-full", statusDots[item.status])} />
-                    <span className="text-xs text-muted-foreground">{statusLabels[item.status]}</span>
-                    <span className="text-[11px] text-muted-foreground/70 hidden sm:inline">· {item.detail}</span>
+        {healthItems.map((item, idx) => {
+          const tabKey = (["credit", "crm", "monitoring"] as const)[idx];
+          const accent = areaAccents[tabKey];
+          return (
+            <button
+              key={item.label}
+              onClick={() => setActiveTab(tabKey)}
+              className={cn(
+                "text-left rounded-md border bg-card hover:shadow-sm transition-all group overflow-hidden",
+                activeTab === tabKey ? cn(accent.border, "ring-1 ring-offset-0", accent.text.replace("text-", "ring-") + "/30") : "border-border"
+              )}
+            >
+              <div className={cn("h-1 w-full", accent.bar)} />
+              <div className="px-4 py-3.5">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <div className={cn("flex items-center justify-center h-9 w-9 rounded-md shrink-0", accent.soft)}>
+                      <item.icon className={cn("h-4 w-4", accent.text)} />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[13px] font-semibold text-foreground">{item.label}</p>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className={cn("h-1.5 w-1.5 rounded-full", statusDots[item.status])} />
+                        <span className="text-xs text-muted-foreground">{statusLabels[item.status]}</span>
+                        <span className="text-[11px] text-muted-foreground/70 hidden sm:inline">· {item.detail}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="shrink-0 flex items-center gap-2">
+                    <Sparkline data={item.sparkline} color="hsl(var(--muted-foreground))" />
+                    <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/30 group-hover:text-muted-foreground transition-colors" />
                   </div>
                 </div>
               </div>
-              <div className="shrink-0 flex items-center gap-2">
-                <Sparkline data={item.sparkline} color="hsl(var(--muted-foreground))" />
-                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/30 group-hover:text-muted-foreground transition-colors" />
-              </div>
-            </div>
-          </button>
-        ))}
+            </button>
+          );
+        })}
       </div>
+
+      {/* Tabs por área — separa visualmente Crédito / CRM / Monitoramento */}
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)} className="space-y-5">
+        <TabsList className="grid grid-cols-4 w-full max-w-2xl">
+          <TabsTrigger value="overview" className="text-xs">Visão Geral</TabsTrigger>
+          <TabsTrigger value="credit" className="text-xs data-[state=active]:text-primary">Crédito</TabsTrigger>
+          <TabsTrigger value="crm" className="text-xs data-[state=active]:text-status-approved">CRM</TabsTrigger>
+          <TabsTrigger value="monitoring" className="text-xs data-[state=active]:text-status-committee">Monitoramento</TabsTrigger>
+        </TabsList>
+
+        {/* ─────────── VISÃO GERAL ─────────── */}
+        <TabsContent value="overview" className="space-y-5 mt-0">
+          {/* Análises recentes ficam aqui como destaque inicial */}
+          <RecentAnalysesCard
+            recentAnalyses={recentAnalyses}
+            now={now}
+            navigate={navigate}
+            scoreBg={scoreBg}
+            scoreColor={scoreColor}
+          />
+        </TabsContent>
+
+        {/* ─────────── CRÉDITO ─────────── */}
+        <TabsContent value="credit" className="space-y-5 mt-0">
+          <AreaHeader accent={areaAccents.credit} subtitle="Análises, comitê e aprovações" linkLabel="Ver análises" onLink={() => navigate("/analises")} />
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            <KpiCard title="Cedentes" value={clientCount} icon={Building2} onClick={() => navigate("/cedentes")} />
+            <KpiCard title="Análises" value={total} icon={FileText} sparkline={sparkAnalyses} onClick={() => navigate("/analises")} />
+            <KpiCard title="Comitê" value={inCommittee} icon={Clock} accent={inCommittee > 0 ? "warning" : undefined} sparkline={sparkCommittee} onClick={() => navigate("/comite")} />
+            <KpiCard title="Aprovadas" value={approved} icon={CheckCircle} accent="success" sparkline={sparkApproved} onClick={() => navigate("/analises")} />
+            <KpiCard title="Reprovadas" value={rejected} icon={XCircle} accent={rejected > 0 ? "danger" : undefined} sparkline={sparkRejected} onClick={() => navigate("/analises")} />
+            <KpiCard title="Score Médio" value={avgScore || "N/A"} icon={Gauge} />
+          </div>
+
+          {/* Financeiro + Distribuição */}
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <DollarSign className="h-4 w-4 text-muted-foreground" />
+                  Resumo Financeiro
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <MetricBlock label="Vol. Sugerido" value={formatBRL(totalLimiteSugerido)} />
+                  <MetricBlock label="Vol. Aprovado" value={formatBRL(totalLimiteAprovado)} valueClass="text-status-approved" />
+                </div>
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-xs text-muted-foreground">Taxa de Aprovação</span>
+                    <span className="text-sm font-semibold tabular-nums text-foreground">{approvalRate.toFixed(0)}%</span>
+                  </div>
+                  <div className="h-2 rounded-full bg-muted overflow-hidden">
+                    <div className="h-full rounded-full bg-status-approved transition-all duration-500" style={{ width: `${approvalRate}%` }} />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="lg:col-span-3">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                  Distribuição por Status
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {total > 0 ? (
+                  <>
+                    <div className="h-4 rounded-full bg-muted overflow-hidden flex mb-4">
+                      {statusData.filter(s => s.pct > 0).map((s) => (
+                        <div
+                          key={s.label}
+                          className={cn("h-full first:rounded-l-full last:rounded-r-full transition-all duration-500", s.color)}
+                          style={{ width: `${s.pct}%` }}
+                          title={`${s.label}: ${s.value}`}
+                        />
+                      ))}
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                      {statusData.map((s) => (
+                        <div key={s.label} className="flex items-center gap-2">
+                          <div className={cn("h-2.5 w-2.5 rounded-full shrink-0", s.dotColor)} />
+                          <div>
+                            <p className="text-[11px] text-muted-foreground leading-tight">{s.label}</p>
+                            <p className="text-sm font-semibold tabular-nums text-foreground">{s.value}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  <EmptyState message="Nenhuma análise para exibir distribuição" />
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          <RecentAnalysesCard
+            recentAnalyses={recentAnalyses}
+            now={now}
+            navigate={navigate}
+            scoreBg={scoreBg}
+            scoreColor={scoreColor}
+          />
+        </TabsContent>
+
+        {/* ─────────── CRM ─────────── */}
+        <TabsContent value="crm" className="space-y-5 mt-0">
+          <AreaHeader accent={areaAccents.crm} subtitle="Pipeline, tarefas e atividades" linkLabel="Ver dashboard CRM" onLink={() => navigate("/crm/dashboard")} />
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <CrmMetricCard
+              label="Pipeline" value={formatBRL(pipelineValue)} sub={`${activeDeals.length} oportunidade(s) ativa(s)`}
+              icon={Target} onClick={() => navigate("/crm/pipeline")}
+            />
+            <CrmMetricCard
+              label="Ganhos" value={formatBRL(wonValue)} sub={`${wonDeals.length} deal(s) fechado(s)`}
+              icon={CheckCircle} valueClass="text-status-approved"
+              onClick={() => navigate("/crm/dashboard")}
+            />
+            <CrmMetricCard
+              label="Tarefas" value={String(pendingTasks)} sub={overdueTasks > 0 ? `${overdueTasks} vencida(s)` : "pendente(s)"}
+              icon={CheckSquare}
+              valueClass={overdueTasks > 0 ? "text-status-rejected" : undefined}
+              onClick={() => navigate("/crm/tarefas")}
+            />
+            <Card className="cursor-pointer hover:shadow-sm transition-shadow group" onClick={() => navigate("/crm/atividades")}>
+              <CardContent className="p-4 space-y-2.5">
+                <div className="flex items-center gap-2">
+                  <div className="h-8 w-8 rounded-md bg-muted flex items-center justify-center">
+                    <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <span className="text-xs font-medium text-muted-foreground">Atividades</span>
+                  <ChevronRight className="h-3.5 w-3.5 text-transparent group-hover:text-muted-foreground transition-colors ml-auto" />
+                </div>
+                {recentActivities.length > 0 ? (() => {
+                  const userName = currentProfile?.full_name?.toLowerCase() || "";
+                  const myActs = userName ? recentActivities.filter(a => a.created_by?.toLowerCase() === userName) : [];
+                  const othersActs = userName ? recentActivities.filter(a => a.created_by?.toLowerCase() !== userName) : recentActivities;
+                  return (
+                    <div className="space-y-2">
+                      {myActs.length > 0 && (
+                        <div className="space-y-1">
+                          <span className="text-[10px] font-medium text-primary flex items-center gap-1"><User className="h-2.5 w-2.5" />Minhas ({myActs.length})</span>
+                          {myActs.slice(0, 2).map(act => (
+                            <div key={act.id} className="flex items-center gap-2 min-w-0 pl-3">
+                              <span className="text-[10px] text-muted-foreground shrink-0 w-14 tabular-nums">{formatDate(act.activity_date)}</span>
+                              <span className="text-[11px] text-foreground truncate">{act.description}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {othersActs.length > 0 && (
+                        <div className="space-y-1">
+                          <span className="text-[10px] font-medium text-muted-foreground flex items-center gap-1"><Handshake className="h-2.5 w-2.5" />Equipe ({othersActs.length})</span>
+                          {othersActs.slice(0, 2).map(act => (
+                            <div key={act.id} className="flex items-center gap-2 min-w-0 pl-3">
+                              <span className="text-[10px] text-muted-foreground shrink-0 w-14 tabular-nums">{formatDate(act.activity_date)}</span>
+                              <span className="text-[11px] text-foreground truncate">{act.description}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })() : (
+                  <EmptyState message="Nenhuma atividade recente" small />
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        {/* ─────────── MONITORAMENTO ─────────── */}
+        <TabsContent value="monitoring" className="space-y-5 mt-0">
+          <AreaHeader accent={areaAccents.monitoring} subtitle="NFs, falimentar, blacklist e grupos" />
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <MonitorCard
+              title="Monitoramento NFs" icon={Receipt}
+              mainValue={fInvoices.length} mainSuffix={formatBRL(invoiceTotalValue)}
+              onClick={() => navigate("/monitoramento-nfs")}
+              sparkline={sparkInvoices} sparkColor="hsl(var(--status-approved))"
+            >
+              <div className="flex gap-3 flex-wrap">
+                <StatusDot color="bg-status-approved" label={`${invoiceValid} válidas`} />
+                <StatusDot color="bg-status-rejected" label={`${invoiceInvalid} inválidas`} />
+                <StatusDot color="bg-muted-foreground" label={`${invoicePending} pendentes`} />
+              </div>
+            </MonitorCard>
+
+            <MonitorCard
+              title="Grupos de Monitoramento" icon={Layers}
+              mainValue={monitoringGroups.length} mainSuffix={`${activeGroups} ativo(s)`}
+              onClick={() => navigate("/monitoramento-nfs")}
+            >
+              {monitoringGroups.length > 0 ? (
+                <div className="space-y-2">
+                  {monitoringGroups.slice(0, 3).map(g => {
+                    const grpClients = (g as any).monitoring_group_clients?.length ?? 0;
+                    return (
+                      <div key={g.id} className="rounded-md border border-border p-2 space-y-1 bg-muted/30">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <CircleDot className={cn("h-2.5 w-2.5 shrink-0", g.is_active ? "text-status-approved" : "text-muted-foreground/40")} />
+                            <span className="truncate text-[11px] font-medium text-foreground">{g.name}</span>
+                          </div>
+                          <span className="text-[10px] text-muted-foreground shrink-0 ml-2">{frequencyLabel[g.frequency] || g.frequency}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-[10px] text-muted-foreground flex-wrap">
+                          <span className="flex items-center gap-0.5"><Building2 className="h-2.5 w-2.5" />{grpClients} cedente(s)</span>
+                          {g.concentracao_maxima != null && <span>Conc. {g.concentracao_maxima}%</span>}
+                          {g.limiar_variacao != null && <span>Var. {g.limiar_variacao}%</span>}
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {monitoringGroups.length > 3 && <p className="text-[10px] text-muted-foreground">+{monitoringGroups.length - 3} grupo(s)</p>}
+                </div>
+              ) : (
+                <EmptyState message="Nenhum grupo criado" small />
+              )}
+            </MonitorCard>
+
+            <MonitorCard
+              title="Informe Falimentar" icon={Scale}
+              mainValue={fBankruptcy.length} mainSuffix={`${bankruptcyActive} ativo(s)`}
+              onClick={() => navigate("/falimentar")}
+            >
+              {bankruptcyMatched > 0 ? (
+                <div className="flex items-center gap-1.5 text-[11px] text-destructive font-medium">
+                  <AlertTriangle className="h-3 w-3 shrink-0" />
+                  {bankruptcyMatched} coincidência(s) na carteira
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                  <CheckCircle className="h-3 w-3 shrink-0 text-status-approved" />
+                  Sem coincidências
+                </div>
+              )}
+            </MonitorCard>
+
+            <MonitorCard
+              title="Blacklist" icon={ShieldBan}
+              mainValue={blacklistCount} mainSuffix="bloqueado(s)"
+              onClick={() => navigate("/blacklist")}
+              alert={newBlacklistCount > 0 ? `${newBlacklistCount} novo(s) em 7 dias` : undefined}
+              sparkline={sparkBlacklist} sparkColor="hsl(var(--status-rejected))"
+            >
+              {fBlacklist.length > 0 ? (
+                <div className="space-y-1.5">
+                  {fBlacklist.slice(0, 3).map(b => (
+                    <div key={b.id} className="rounded-md border border-border px-2.5 py-1.5 bg-muted/30">
+                      <div className="flex items-center justify-between mb-0.5">
+                        <span className="font-mono text-[11px] text-foreground truncate">{b.documento}</span>
+                        <span className={cn(
+                          "text-[9px] uppercase shrink-0 ml-2 font-semibold rounded px-1.5 py-0.5",
+                          b.tipo === "CNPJ" ? "bg-status-rejected/8 text-status-rejected" : "bg-status-committee/8 text-status-committee"
+                        )}>{b.tipo}</span>
+                      </div>
+                      {b.motivo && <p className="text-[10px] text-muted-foreground truncate">{b.motivo}</p>}
+                    </div>
+                  ))}
+                  {blacklistCount > 3 && <p className="text-[10px] text-muted-foreground text-center">+{blacklistCount - 3} registro(s)</p>}
+                </div>
+              ) : (
+                <EmptyState message="Nenhum registro" small />
+              )}
+            </MonitorCard>
+          </div>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
+/* ──── Sub-components ──── */
+
+function AreaHeader({
+  accent, subtitle, linkLabel, onLink,
+}: {
+  accent: { bar: string; soft: string; text: string; border: string; label: string };
+  subtitle: string; linkLabel?: string; onLink?: () => void;
+}) {
+  return (
+    <div className={cn("flex items-center justify-between rounded-md border px-4 py-2.5", accent.border, accent.soft)}>
+      <div className="flex items-center gap-3">
+        <div className={cn("h-6 w-1 rounded-full", accent.bar)} />
+        <div>
+          <h2 className={cn("text-sm font-semibold", accent.text)}>{accent.label}</h2>
+          <p className="text-[11px] text-muted-foreground">{subtitle}</p>
+        </div>
+      </div>
+      {linkLabel && onLink && (
+        <button onClick={onLink} className={cn("text-xs hover:underline flex items-center gap-0.5 font-medium", accent.text)}>
+          {linkLabel} <ArrowUpRight className="h-3 w-3" />
+        </button>
+      )}
+    </div>
+  );
+}
+
+function RecentAnalysesCard({
+  recentAnalyses, now, navigate, scoreBg, scoreColor,
+}: {
+  recentAnalyses: any[]; now: Date;
+  navigate: (path: string) => void;
+  scoreBg: (s: number | null) => string;
+  scoreColor: (s: number | null) => string;
+}) {
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <FileText className="h-4 w-4 text-muted-foreground" />
+            Análises Recentes
+          </CardTitle>
+          <button className="text-xs text-primary hover:underline flex items-center gap-0.5 font-medium" onClick={() => navigate("/analises")}>
+            Ver todas <ArrowUpRight className="h-3 w-3" />
+          </button>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {recentAnalyses.length === 0 ? (
+          <EmptyState message="Nenhuma análise encontrada. Comece criando uma nova análise de crédito." />
+        ) : (
+          <div className="space-y-1">
+            {recentAnalyses.map((a) => {
+              const client = a.clients as any;
+              const daysAgo = Math.floor((now.getTime() - new Date(a.created_at).getTime()) / (1000 * 60 * 60 * 24));
+              const daysLabel = daysAgo === 0 ? "Hoje" : daysAgo === 1 ? "Ontem" : `${daysAgo}d atrás`;
+              const recLabel: Record<string, { text: string; cls: string }> = {
+                approve: { text: "Aprovar", cls: "text-status-approved" },
+                restrict: { text: "Restringir", cls: "text-status-committee" },
+                reject: { text: "Rejeitar", cls: "text-status-rejected" },
+              };
+              const rec = a.recommendation ? recLabel[a.recommendation] : null;
+
+              return (
+                <div
+                  key={a.id}
+                  className="flex items-center gap-3 py-3 px-3 rounded-md hover:bg-muted/50 cursor-pointer transition-colors group"
+                  onClick={() => navigate(`/analises/${a.id}`)}
+                >
+                  <div className="flex flex-col items-center gap-1 shrink-0">
+                    <div className={cn("h-10 w-10 rounded-md flex items-center justify-center text-xs font-semibold border", scoreBg(a.credit_score))}>
+                      <span className={scoreColor(a.credit_score)}>{a.credit_score || "—"}</span>
+                    </div>
+                    {a.credit_score && (
+                      <div className="w-10 h-1 rounded-full bg-muted overflow-hidden">
+                        <div
+                          className={cn("h-full rounded-full", a.credit_score >= 700 ? "bg-status-approved" : a.credit_score >= 400 ? "bg-status-committee" : "bg-status-rejected")}
+                          style={{ width: `${Math.min((a.credit_score / 1000) * 100, 100)}%` }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                      <p className="text-sm font-medium text-foreground truncate">{client?.razao_social || "—"}</p>
+                      <StatusBadge status={a.status} />
+                      {rec && <span className={cn("text-[10px] font-medium", rec.cls)}>• {rec.text}</span>}
+                    </div>
+                    <div className="flex items-center gap-3 text-[11px] text-muted-foreground flex-wrap">
+                      {client?.cnpj_cpf && <span className="flex items-center gap-0.5 font-mono"><Hash className="h-2.5 w-2.5" />{client.cnpj_cpf}</span>}
+                      {a.analista_credito && <span className="flex items-center gap-0.5"><User className="h-2.5 w-2.5" />{a.analista_credito}</span>}
+                      <span className="flex items-center gap-0.5"><Clock className="h-2.5 w-2.5" />{daysLabel}</span>
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0 space-y-0.5">
+                    <p className="text-sm font-semibold tabular-nums text-foreground">{a.limite_sugerido ? formatBRL(a.limite_sugerido) : "—"}</p>
+                    {a.faturamento_medio && <p className="text-[10px] text-muted-foreground tabular-nums">Fat. {formatBRL(a.faturamento_medio)}</p>}
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-transparent group-hover:text-muted-foreground transition-colors shrink-0" />
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
 
       {/* Credit Pipeline */}
       <SectionWrapper
