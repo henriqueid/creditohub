@@ -276,7 +276,25 @@ export default function CRMPipeline() {
                       stages={activeStages}
                       currentStage={stage}
                       analysis={getAnalysisForDeal(deal)}
-                      onMove={(stageId) => moveDeal.mutate({ dealId: deal.id, stageId })}
+                      onMove={(stageId) => {
+                        const target = stages.find(s => s.id === stageId);
+                        const requiresApproval = !!target && /proposta|negocia|fechamento/i.test(target.name);
+                        const linkedAnalysis = getAnalysisForDeal(deal);
+                        const approved = linkedAnalysis && (linkedAnalysis.status === "approved" || linkedAnalysis.status === "approved_restricted");
+                        if (requiresApproval && !approved) {
+                          setGuardDialog({
+                            open: true,
+                            dealId: deal.id,
+                            stageId,
+                            stageName: target?.name || "",
+                            reason: linkedAnalysis
+                              ? `A análise vinculada está com status "${linkedAnalysis.status}".`
+                              : "Não há análise de crédito vinculada a esta oportunidade.",
+                          });
+                          return;
+                        }
+                        moveDeal.mutate({ dealId: deal.id, stageId });
+                      }}
                       onLinkAnalysis={(analysisId) => linkAnalysis.mutate({ dealId: deal.id, analysisId })}
                     />
                   ))}
