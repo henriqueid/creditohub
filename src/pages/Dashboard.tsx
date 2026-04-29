@@ -323,57 +323,55 @@ export default function Dashboard() {
   const updatedLabel = "agora há pouco";
 
   return (
-    <div className="p-5 sm:p-6 lg:p-8 space-y-6 overflow-auto max-w-[1440px] mx-auto">
-      {/* Header — modelo Tracto */}
-      <div className="flex items-end justify-between flex-wrap gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold text-foreground tracking-tight">Painel inicial</h1>
-          <p className="text-[11px] text-muted-foreground mt-1 uppercase tracking-[0.12em] font-medium">
+    <div className="p-6 lg:p-10 space-y-8 overflow-auto max-w-[1440px] mx-auto">
+      {/* Header — refinado */}
+      <div className="flex items-end justify-between flex-wrap gap-6 pb-1">
+        <div className="space-y-1.5">
+          <h1 className="text-[22px] font-semibold text-foreground tracking-tight leading-none">Painel inicial</h1>
+          <p className="text-[11px] text-muted-foreground uppercase tracking-[0.14em] font-medium">
             Atualizado {updatedLabel} · {monthLabel}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          {/* Period selector inline */}
+          <div className="flex items-center gap-px bg-muted/60 rounded-md p-0.5">
+            {([
+              { label: "7d", days: 7 },
+              { label: "30d", days: 30 },
+              { label: "90d", days: 90 },
+              { label: "Tudo", days: null },
+            ] as const).map(opt => (
+              <button
+                key={opt.label}
+                onClick={() => setPeriodDays(opt.days)}
+                className={cn(
+                  "px-2.5 py-1 text-[11px] font-medium rounded transition-colors",
+                  periodDays === opt.days
+                    ? "bg-card text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+          <div className="h-5 w-px bg-border" />
           <button
             onClick={() => navigate("/analises/nova")}
-            className="px-3 py-1.5 text-xs font-medium rounded-md border border-border bg-card text-foreground hover:bg-muted transition-colors"
+            className="px-3 py-1.5 text-[12px] font-medium rounded-md border border-border bg-card text-foreground hover:bg-muted transition-colors"
           >
             Exportar
           </button>
           <button
             onClick={() => navigate("/analises/nova")}
-            className="px-3 py-1.5 text-xs font-semibold rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+            className="px-3 py-1.5 text-[12px] font-semibold rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
           >
             + Nova análise
           </button>
         </div>
       </div>
 
-      {/* Period selector compacto */}
-      <div className="flex items-center justify-end -mt-3">
-        <div className="flex items-center gap-px bg-muted rounded-md p-0.5">
-          {([
-            { label: "7d", days: 7 },
-            { label: "30d", days: 30 },
-            { label: "90d", days: 90 },
-            { label: "Tudo", days: null },
-          ] as const).map(opt => (
-            <button
-              key={opt.label}
-              onClick={() => setPeriodDays(opt.days)}
-              className={cn(
-                "px-3 py-1.5 text-xs font-medium rounded transition-colors",
-                periodDays === opt.days
-                  ? "bg-card text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)} className="space-y-5">
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)} className="space-y-6">
         <TabsList className="grid grid-cols-4 w-full max-w-2xl">
           <TabsTrigger value="overview" className="text-xs">Visão Geral</TabsTrigger>
           <TabsTrigger value="credit" className="text-xs data-[state=active]:text-primary">Crédito</TabsTrigger>
@@ -381,9 +379,9 @@ export default function Dashboard() {
           <TabsTrigger value="monitoring" className="text-xs data-[state=active]:text-status-committee">Monitoramento</TabsTrigger>
         </TabsList>
 
-        {/* ─────────── VISÃO GERAL — modelo Tracto ─────────── */}
-        <TabsContent value="overview" className="space-y-5 mt-0">
-          {/* Hero KPIs com sparklines (estilo editorial limpo) */}
+        {/* ─────────── VISÃO GERAL — refinada ─────────── */}
+        <TabsContent value="overview" className="space-y-6 mt-0">
+          {/* Hero KPIs */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <HeroKpiClean
               label="Exposição Total"
@@ -422,52 +420,84 @@ export default function Dashboard() {
 
           {/* Funil + Tendências */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            {/* Funil de conversão · esteira */}
-            <Card className="lg:col-span-2">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-semibold">Funil de conversão · esteira</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-4 gap-2">
-                  {[
-                    { label: "CEDENTES", value: clientCount, pct: 100, accent: false },
-                    { label: "ANÁLISES", value: total, pct: clientCount > 0 ? Math.round((total / clientCount) * 100) : 0, accent: false },
-                    { label: "COMITÊ", value: inCommittee + approved + rejected, pct: total > 0 ? Math.round(((inCommittee + approved + rejected) / total) * 100) : 0, accent: false },
-                    { label: "APROVADAS", value: approved, pct: total > 0 ? Math.round((approved / total) * 100) : 0, accent: true },
-                  ].map((step, i) => (
-                    <div
-                      key={step.label}
-                      className={cn(
-                        "rounded-md px-3 py-4 flex flex-col justify-between min-h-[110px]",
-                        step.accent
-                          ? "bg-status-approved text-status-approved-foreground"
-                          : "bg-primary text-primary-foreground"
-                      )}
-                      style={{ opacity: step.accent ? 1 : 1 - i * 0.1 }}
-                    >
-                      <span className="text-[10px] font-semibold tracking-[0.12em] opacity-75">{step.label}</span>
-                      <div className="flex items-end justify-between gap-2 mt-2">
-                        <span className="text-2xl font-semibold tabular-nums leading-none">{step.value}</span>
-                        <span className="text-[11px] tabular-nums opacity-80">{step.pct}%</span>
-                      </div>
-                    </div>
-                  ))}
+            {/* Funil — design refinado, claro com barras de proporção */}
+            <Card className="lg:col-span-2 border-border/70">
+              <CardHeader className="pb-4 flex-row items-center justify-between space-y-0">
+                <div>
+                  <CardTitle className="text-[13px] font-semibold text-foreground">Funil de conversão</CardTitle>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">Esteira de crédito · período atual</p>
                 </div>
-                <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-3 border-t border-border">
-                  <span>Tempo médio: <span className="font-semibold text-foreground tabular-nums">4,2 dias</span></span>
-                  <span>Gargalo: <span className="font-semibold text-status-committee">Comitê (2,1 dias)</span></span>
-                  <span>Estagnadas &gt; 7d: <span className="font-semibold text-status-rejected tabular-nums">{drafts}</span></span>
+                <button onClick={() => navigate("/performance")} className="text-[11px] text-muted-foreground hover:text-foreground font-medium flex items-center gap-1">
+                  Ver detalhes <ArrowUpRight className="h-3 w-3" />
+                </button>
+              </CardHeader>
+              <CardContent className="space-y-5">
+                <div className="grid grid-cols-4 gap-3">
+                  {(() => {
+                    const steps = [
+                      { label: "Cedentes", value: clientCount, pct: 100, accent: "neutral" as const },
+                      { label: "Análises", value: total, pct: clientCount > 0 ? Math.round((total / clientCount) * 100) : 0, accent: "primary" as const },
+                      { label: "Em Comitê", value: inCommittee + approved + rejected, pct: total > 0 ? Math.round(((inCommittee + approved + rejected) / total) * 100) : 0, accent: "warning" as const },
+                      { label: "Aprovadas", value: approved, pct: total > 0 ? Math.round((approved / total) * 100) : 0, accent: "success" as const },
+                    ];
+                    const accentMap = {
+                      neutral: { bar: "bg-muted-foreground/40", text: "text-muted-foreground", val: "text-foreground" },
+                      primary: { bar: "bg-primary", text: "text-primary", val: "text-foreground" },
+                      warning: { bar: "bg-status-committee", text: "text-status-committee", val: "text-foreground" },
+                      success: { bar: "bg-status-approved", text: "text-status-approved", val: "text-status-approved" },
+                    };
+                    return steps.map((step, i) => {
+                      const a = accentMap[step.accent];
+                      return (
+                        <div key={step.label} className="space-y-2.5">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-medium tracking-wider uppercase text-muted-foreground">{step.label}</span>
+                            <span className="text-[10px] tabular-nums text-muted-foreground">{step.pct}%</span>
+                          </div>
+                          <p className={cn("text-[26px] font-semibold tabular-nums leading-none tracking-tight", a.val)}>{step.value}</p>
+                          <div className="h-[3px] rounded-full bg-muted overflow-hidden">
+                            <div className={cn("h-full rounded-full transition-all duration-700", a.bar)} style={{ width: `${Math.max(step.pct, 4)}%` }} />
+                          </div>
+                          {i < steps.length - 1 && (
+                            <p className="text-[10px] text-muted-foreground/70 tabular-nums">
+                              → {steps[i + 1].value > 0 && step.value > 0 ? Math.round((steps[i + 1].value / step.value) * 100) : 0}% conversão
+                            </p>
+                          )}
+                          {i === steps.length - 1 && <p className="text-[10px] text-muted-foreground/70">&nbsp;</p>}
+                        </div>
+                      );
+                    });
+                  })()}
+                </div>
+                <div className="flex items-center justify-between gap-4 text-[11px] pt-4 border-t border-border/70">
+                  <div className="flex items-center gap-1.5">
+                    <Clock className="h-3 w-3 text-muted-foreground" />
+                    <span className="text-muted-foreground">Tempo médio</span>
+                    <span className="font-semibold text-foreground tabular-nums">4,2 d</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <AlertTriangle className="h-3 w-3 text-status-committee" />
+                    <span className="text-muted-foreground">Gargalo</span>
+                    <span className="font-semibold text-foreground">Comitê <span className="text-muted-foreground tabular-nums">(2,1d)</span></span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <CircleDot className="h-3 w-3 text-status-rejected" />
+                    <span className="text-muted-foreground">Estagnadas &gt; 7d</span>
+                    <span className="font-semibold text-foreground tabular-nums">{drafts}</span>
+                  </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Tendências */}
-            <Card>
-              <CardHeader className="pb-3 flex-row items-center justify-between space-y-0">
-                <CardTitle className="text-sm font-semibold">Tendências</CardTitle>
-                <span className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground font-medium">30 dias</span>
+            {/* Tendências — refinada */}
+            <Card className="border-border/70">
+              <CardHeader className="pb-4 flex-row items-center justify-between space-y-0">
+                <div>
+                  <CardTitle className="text-[13px] font-semibold text-foreground">Tendências</CardTitle>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">Evolução · 30 dias</p>
+                </div>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-1 -mx-2">
                 <TrendRow label="Análises iniciadas" value={total} trend={analysesTrend} sparkline={sparkAnalyses} />
                 <TrendRow label="Aprovações" value={approved} trend={approvedTrend} sparkline={sparkApproved} />
                 <TrendRow label="NFs monitoradas" value={fInvoices.length} trend={invoicesTrend} sparkline={sparkInvoices} />
@@ -475,42 +505,48 @@ export default function Dashboard() {
             </Card>
           </div>
 
-          {/* Top 5 cedentes por volume aprovado */}
-          <Card>
+          {/* Top 5 cedentes — refinada */}
+          <Card className="border-border/70">
             <CardHeader className="pb-3 flex-row items-center justify-between space-y-0">
-              <CardTitle className="text-sm font-semibold">Top 5 cedentes por volume aprovado</CardTitle>
-              <button onClick={() => navigate("/cedentes")} className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground hover:text-foreground font-medium flex items-center gap-1">
+              <div>
+                <CardTitle className="text-[13px] font-semibold text-foreground">Top cedentes</CardTitle>
+                <p className="text-[11px] text-muted-foreground mt-0.5">Por volume aprovado no período</p>
+              </div>
+              <button onClick={() => navigate("/cedentes")} className="text-[11px] text-muted-foreground hover:text-foreground font-medium flex items-center gap-1">
                 Ver todos <ArrowUpRight className="h-3 w-3" />
               </button>
             </CardHeader>
-            <CardContent className="px-0 pb-2">
+            <CardContent className="px-0 pb-1">
               {topClients.length === 0 ? (
                 <div className="px-6"><EmptyState message="Sem cedentes para ranquear no período" /></div>
               ) : (
                 <table className="w-full">
                   <thead>
-                    <tr className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground border-b border-border">
-                      <th className="text-left font-medium px-6 py-2">Cedente</th>
-                      <th className="text-left font-medium py-2">CNPJ</th>
-                      <th className="text-right font-medium py-2">Volume</th>
-                      <th className="text-right font-medium py-2">Score</th>
-                      <th className="text-right font-medium px-6 py-2">Tier</th>
+                    <tr className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground border-b border-border/70">
+                      <th className="text-left font-medium px-6 py-2.5 w-[8%]">#</th>
+                      <th className="text-left font-medium py-2.5">Cedente</th>
+                      <th className="text-left font-medium py-2.5">CNPJ</th>
+                      <th className="text-right font-medium py-2.5">Volume aprovado</th>
+                      <th className="text-right font-medium py-2.5">Score</th>
+                      <th className="text-right font-medium px-6 py-2.5">Tier</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {topClients.map((c) => {
+                    {topClients.map((c, idx) => {
                       const cedente = fAnalyses.find(a => (a.clients as any)?.razao_social === c.name);
                       const cnpj = (cedente?.clients as any)?.cnpj_cpf || "—";
                       const score = cedente?.credit_score || 0;
                       const tier = score >= 800 ? "AAA" : score >= 700 ? "AA" : score >= 600 ? "A" : "B";
+                      const tierColor = score >= 700 ? "bg-status-approved/12 text-status-approved" : score >= 600 ? "bg-status-committee/15 text-status-committee" : "bg-muted text-muted-foreground";
                       return (
-                        <tr key={c.name} className="border-b border-border/40 last:border-0 hover:bg-muted/40 cursor-pointer" onClick={() => navigate("/cedentes")}>
-                          <td className="px-6 py-3 text-sm text-foreground font-medium">{c.name}</td>
-                          <td className="py-3 text-[12px] text-muted-foreground font-mono tabular-nums">{cnpj}</td>
-                          <td className="py-3 text-sm text-foreground tabular-nums text-right font-semibold">{formatBRL(c.total)}</td>
-                          <td className="py-3 text-sm text-foreground tabular-nums text-right">{score || "—"}</td>
-                          <td className="px-6 py-3 text-right">
-                            <span className="inline-flex items-center justify-center px-2 py-0.5 rounded text-[10px] font-semibold bg-status-approved/15 text-status-approved">
+                        <tr key={c.name} className="border-b border-border/40 last:border-0 hover:bg-muted/30 cursor-pointer transition-colors group" onClick={() => navigate("/cedentes")}>
+                          <td className="px-6 py-3.5 text-[11px] text-muted-foreground tabular-nums font-medium">{String(idx + 1).padStart(2, "0")}</td>
+                          <td className="py-3.5 text-[13px] text-foreground font-medium">{c.name}</td>
+                          <td className="py-3.5 text-[12px] text-muted-foreground font-mono tabular-nums">{cnpj}</td>
+                          <td className="py-3.5 text-[13px] text-foreground tabular-nums text-right font-semibold">{formatBRL(c.total)}</td>
+                          <td className="py-3.5 text-[13px] text-foreground tabular-nums text-right">{score || "—"}</td>
+                          <td className="px-6 py-3.5 text-right">
+                            <span className={cn("inline-flex items-center justify-center px-2 py-0.5 rounded text-[10px] font-semibold tabular-nums", tierColor)}>
                               {tier}
                             </span>
                           </td>
@@ -1157,30 +1193,36 @@ function HeroKpiClean({
   const trendColor = isFlat ? "text-muted-foreground" : isUp ? "text-status-approved" : "text-status-rejected";
 
   return (
-    <Card className="border-border">
-      <CardContent className="p-5">
-        <p className="text-[10px] font-semibold tracking-[0.14em] text-muted-foreground uppercase mb-3">{label}</p>
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            <p className="text-3xl font-semibold tabular-nums text-foreground leading-none tracking-tight">{value}</p>
-            <p className="text-[12px] text-muted-foreground mt-2">{sub}</p>
-            {!isFlat && (
-              <div className={cn("flex items-center gap-1 mt-2 text-[11px] font-medium tabular-nums", trendColor)}>
-                <TrendIcon className="h-3 w-3" />
-                {Math.abs(trend)}% vs período ant.
-              </div>
-            )}
+    <Card className="border-border/70 hover:border-border transition-colors">
+      <CardContent className="p-5 space-y-4">
+        <div className="flex items-center justify-between">
+          <p className="text-[10px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">{label}</p>
+          {!isFlat && (
+            <div className={cn("flex items-center gap-0.5 text-[10px] font-medium tabular-nums px-1.5 py-0.5 rounded",
+              isUp ? "bg-status-approved/8 text-status-approved" : "bg-status-rejected/8 text-status-rejected"
+            )}>
+              <TrendIcon className="h-2.5 w-2.5" />
+              {Math.abs(trend)}%
+            </div>
+          )}
+        </div>
+        <div className="flex items-end justify-between gap-3 min-h-[58px]">
+          <div className="min-w-0 flex-1 space-y-1">
+            <p className="text-[28px] font-semibold tabular-nums text-foreground leading-none tracking-tight">{value}</p>
+            <p className="text-[11px] text-muted-foreground leading-snug">{sub}</p>
           </div>
           {variant === "line" && sparkline && (
-            <div className="shrink-0">
-              <SparklineLarge data={sparkline} />
+            <div className="shrink-0 self-end">
+              <SparklineLarge data={sparkline} positive={isUp || isFlat} />
             </div>
           )}
           {variant === "gauge" && typeof gaugeValue === "number" && (
-            <div className="shrink-0 flex flex-col items-center">
+            <div className="shrink-0 self-end relative">
               <GaugeArc value={gaugeValue} />
-              {gaugeMain && <span className="text-[11px] font-semibold text-foreground tabular-nums -mt-3">{gaugeMain}</span>}
-              {gaugeLabel && <span className="text-[9px] uppercase tracking-[0.12em] text-muted-foreground mt-0.5">{gaugeLabel}</span>}
+              <div className="absolute inset-x-0 bottom-0 flex flex-col items-center pb-0.5">
+                {gaugeMain && <span className="text-[12px] font-semibold text-foreground tabular-nums leading-none">{gaugeMain}</span>}
+                {gaugeLabel && <span className="text-[8px] uppercase tracking-[0.14em] text-muted-foreground mt-0.5">{gaugeLabel}</span>}
+              </div>
             </div>
           )}
         </div>
@@ -1189,49 +1231,62 @@ function HeroKpiClean({
   );
 }
 
-function SparklineLarge({ data }: { data: number[] }) {
+function SparklineLarge({ data, positive = true }: { data: number[]; positive?: boolean }) {
   const max = Math.max(...data, 1);
-  const w = 110;
-  const h = 44;
+  const min = Math.min(...data, 0);
+  const range = Math.max(max - min, 1);
+  const w = 96;
+  const h = 36;
   const step = data.length > 1 ? w / (data.length - 1) : w;
-  const points = data.map((v, i) => `${i * step},${h - (v / max) * (h - 4) - 2}`).join(" ");
+  const points = data.map((v, i) => `${i * step},${h - ((v - min) / range) * (h - 4) - 2}`);
+  const polyline = points.join(" ");
+  const areaPath = `M 0,${h} L ${points.join(" L ")} L ${w},${h} Z`;
+  const stroke = positive ? "hsl(var(--foreground))" : "hsl(var(--status-rejected))";
+  const lastPoint = points[points.length - 1]?.split(",").map(Number);
+
   return (
-    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
+    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} className="overflow-visible">
+      <path d={areaPath} fill={stroke} opacity="0.04" />
       <polyline
-        points={points}
+        points={polyline}
         fill="none"
-        stroke="hsl(var(--foreground))"
-        strokeWidth="1.5"
+        stroke={stroke}
+        strokeWidth="1.25"
         strokeLinecap="round"
         strokeLinejoin="round"
+        opacity="0.85"
       />
+      {lastPoint && (
+        <circle cx={lastPoint[0]} cy={lastPoint[1]} r="2" fill={stroke} />
+      )}
     </svg>
   );
 }
 
 function GaugeArc({ value }: { value: number }) {
   const pct = Math.min(Math.max(value, 0), 100) / 100;
-  const r = 32;
-  const cx = 40;
-  const cy = 40;
-  const circ = Math.PI * r; // half circle
+  const r = 30;
+  const cx = 38;
+  const cy = 38;
+  const circ = Math.PI * r;
   const dash = circ * pct;
   return (
-    <svg width="80" height="50" viewBox="0 0 80 50">
+    <svg width="76" height="50" viewBox="0 0 76 50">
       <path
         d={`M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`}
         fill="none"
         stroke="hsl(var(--muted))"
-        strokeWidth="5"
+        strokeWidth="3.5"
         strokeLinecap="round"
       />
       <path
         d={`M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`}
         fill="none"
         stroke="hsl(var(--status-approved))"
-        strokeWidth="5"
+        strokeWidth="3.5"
         strokeLinecap="round"
         strokeDasharray={`${dash} ${circ}`}
+        style={{ transition: "stroke-dasharray 0.7s ease" }}
       />
     </svg>
   );
@@ -1247,20 +1302,18 @@ function TrendRow({
   const TrendIcon = isFlat ? ArrowRight : isUp ? ArrowUp : ArrowDown;
   const trendColor = isFlat ? "text-muted-foreground" : isUp ? "text-status-approved" : "text-status-rejected";
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex items-center gap-3 px-2 py-2.5 rounded-md hover:bg-muted/40 transition-colors">
       <div className="min-w-0 flex-1">
-        <p className="text-[12px] text-foreground font-medium">{label}</p>
-        {!isFlat && (
-          <div className={cn("flex items-center gap-0.5 text-[10px] font-medium tabular-nums mt-0.5", trendColor)}>
-            <TrendIcon className="h-2.5 w-2.5" />
-            {Math.abs(trend)}%
-          </div>
-        )}
+        <p className="text-[12px] text-foreground font-medium leading-tight">{label}</p>
+        <div className={cn("flex items-center gap-0.5 text-[10px] font-medium tabular-nums mt-1", trendColor)}>
+          <TrendIcon className="h-2.5 w-2.5" />
+          {isFlat ? "estável" : `${Math.abs(trend)}%`}
+        </div>
       </div>
-      <div className="shrink-0">
-        <SparklineLarge data={sparkline} />
+      <div className="shrink-0 opacity-80">
+        <SparklineLarge data={sparkline} positive={isUp || isFlat} />
       </div>
-      <span className="text-base font-semibold tabular-nums text-foreground w-12 text-right">{value}</span>
+      <span className="text-[15px] font-semibold tabular-nums text-foreground w-14 text-right tracking-tight">{value}</span>
     </div>
   );
 }
