@@ -102,6 +102,45 @@ export default function ClientHistory() {
     enabled: analyses.length > 0,
   });
 
+  const { data: deals = [] } = useQuery({
+    queryKey: ["client-deals-history", id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("deals")
+        .select("*, deal_stages(name, color)")
+        .eq("client_id", id!)
+        .order("created_at", { ascending: true });
+      return data || [];
+    },
+    enabled: !!id,
+  });
+
+  const { data: crmActivities = [] } = useQuery({
+    queryKey: ["client-activities-history", id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("activities")
+        .select("*")
+        .eq("client_id", id!)
+        .order("activity_date", { ascending: true });
+      return data || [];
+    },
+    enabled: !!id,
+  });
+
+  const { data: crmTasks = [] } = useQuery({
+    queryKey: ["client-tasks-history", id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("crm_tasks")
+        .select("*")
+        .eq("client_id", id!)
+        .order("created_at", { ascending: true });
+      return data || [];
+    },
+    enabled: !!id,
+  });
+
   // Build timeline events
   const timeline: TimelineEvent[] = [];
 
