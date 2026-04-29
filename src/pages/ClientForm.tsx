@@ -111,7 +111,7 @@ export default function ClientForm() {
         }
         const { data: analysis, error } = await supabase
           .from("credit_analysis")
-          .insert(analysisPayload)
+          .insert(analysisPayload as { client_id: string } & Record<string, unknown>)
           .select("id")
           .single();
 
