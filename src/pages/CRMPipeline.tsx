@@ -60,6 +60,7 @@ export default function CRMPipeline() {
   const qc = useQueryClient();
   const [newDealOpen, setNewDealOpen] = useState(false);
   const [newDeal, setNewDeal] = useState({ title: "", client_id: "", stage_id: "", value: "", responsible: "", expected_close_date: "", notes: "" });
+  const [guardDialog, setGuardDialog] = useState<{ open: boolean; dealId: string; stageId: string; stageName: string; reason: string } | null>(null);
 
   const { data: stages = [] } = useQuery({
     queryKey: ["deal-stages"],
