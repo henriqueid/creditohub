@@ -11,6 +11,7 @@ import { toast } from "@/hooks/use-toast";
 import { formatCNPJorCPF, ESTADOS_BR } from "@/lib/formatters";
 import { ArrowLeft, Rocket } from "lucide-react";
 import { ClientTagManager } from "@/components/ClientTagManager";
+import { snapshotToCreditAnalysis, insertSnapshotSocios, type ConsultaSnapshot } from "@/lib/consulta-snapshot";
 
 interface ClientFormData {
   cnpj_cpf: string;
@@ -42,7 +43,8 @@ export default function ClientForm() {
   const [startAnalysis, setStartAnalysis] = useState(false);
 
   // Pre-fill from consulta page
-  const prefill = (location.state as { prefill?: Record<string, string> })?.prefill;
+  const prefill = (location.state as { prefill?: Record<string, string>; snapshot?: ConsultaSnapshot })?.prefill;
+  const snapshot = (location.state as { prefill?: Record<string, string>; snapshot?: ConsultaSnapshot })?.snapshot;
 
   const { data: client } = useQuery({
     queryKey: ["client", id],
