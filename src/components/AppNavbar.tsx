@@ -197,6 +197,20 @@ function MobileNav({ open, onOpenChange }: { open: boolean; onOpenChange: (v: bo
           </SheetTitle>
         </SheetHeader>
         <nav className="flex flex-col p-2 overflow-y-auto">
+          <Link
+            to="/consulta"
+            onClick={() => onOpenChange(false)}
+            className={cn(
+              "flex items-center gap-2.5 px-3 py-2.5 text-sm rounded-md transition-colors mb-2 border",
+              location.pathname.startsWith("/consulta")
+                ? "bg-primary text-primary-foreground border-primary"
+                : "bg-primary/10 text-foreground border-primary/30 hover:bg-primary/20"
+            )}
+          >
+            <SearchCheck className="h-4 w-4" />
+            <span className="font-semibold">Nova Consulta CPF/CNPJ</span>
+          </Link>
+
           {directLinks.map((item) => {
             const isActive = item.url === "/" ? location.pathname === "/" : location.pathname.startsWith(item.url);
             return (
