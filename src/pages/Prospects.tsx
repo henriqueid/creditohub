@@ -17,6 +17,12 @@ import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { useState } from "react";
 import { getQualificationValidityDays } from "@/lib/prospect-qualification";
+import {
+  snapshotToClient,
+  snapshotToCreditAnalysis,
+  insertSnapshotSocios,
+  type ConsultaSnapshot,
+} from "@/lib/consulta-snapshot";
 
 interface Prospect {
   id: string;
@@ -81,26 +87,55 @@ export default function Prospects() {
 
   const convertMutation = useMutation({
     mutationFn: async (prospect: Prospect) => {
-      const tipo = prospect.documento.replace(/\D/g, "").length <= 11 ? "CPF" : "CNPJ";
+      const docDigits = prospect.documento.replace(/\D/g, "");
+      const snapshot = (prospect.qualification_data?.snapshot ?? null) as ConsultaSnapshot | null;
+
+      // Cliente já existe? Apenas vincula.
       const { data: existing } = await supabase
         .from("clients")
         .select("id")
-        .eq("cnpj_cpf", prospect.documento.replace(/\D/g, ""))
+        .eq("cnpj_cpf", docDigits)
         .maybeSingle();
       if (existing) {
         await supabase.from("prospects").update({ client_id: existing.id }).eq("id", prospect.id);
-        return { clientId: existing.id, qualified: false };
+        return { clientId: existing.id, qualified: false, hadSnapshot: !!snapshot };
       }
+
+      // Monta payload do cliente — se houver snapshot, usa todos os campos cadastrais.
+      const clientPayload = snapshot
+        ? snapshotToClient(snapshot)
+        : {
+            cnpj_cpf: docDigits,
+            razao_social: prospect.nome || `Cedente ${prospect.documento}`,
+          };
+
       const { data: newClient, error } = await supabase
         .from("clients")
-        .insert({
-          cnpj_cpf: prospect.documento.replace(/\D/g, ""),
-          razao_social: prospect.nome || `Cedente ${prospect.documento}`,
-        })
+        .insert(clientPayload as { cnpj_cpf: string; razao_social: string })
         .select("id")
         .single();
       if (error) throw error;
       await supabase.from("prospects").update({ client_id: newClient.id }).eq("id", prospect.id);
+
+      // Cria análise de crédito já pré-preenchida com os dados da consulta.
+      if (snapshot) {
+        try {
+          const analysisPayload = {
+            client_id: newClient.id,
+            ...snapshotToCreditAnalysis(snapshot),
+          };
+          const { data: analysis } = await supabase
+            .from("credit_analysis")
+            .insert(analysisPayload as { client_id: string } & Record<string, unknown>)
+            .select("id")
+            .single();
+          if (analysis) {
+            await insertSnapshotSocios(analysis.id, snapshot);
+          }
+        } catch (e) {
+          console.warn("Falha ao criar análise pré-preenchida:", e);
+        }
+      }
 
       // Auto-criar deal no funil se prospect estiver qualificado
       if (prospect.qualification_status === "qualified") {
@@ -127,13 +162,20 @@ export default function Prospects() {
         }
       }
 
-      return { clientId: newClient.id, qualified: prospect.qualification_status === "qualified" };
+      return {
+        clientId: newClient.id,
+        qualified: prospect.qualification_status === "qualified",
+        hadSnapshot: !!snapshot,
+      };
     },
-    onSuccess: ({ clientId, qualified }) => {
+    onSuccess: ({ clientId, qualified, hadSnapshot }) => {
       qc.invalidateQueries({ queryKey: ["prospects"] });
       qc.invalidateQueries({ queryKey: ["clients"] });
       qc.invalidateQueries({ queryKey: ["deals"] });
-      toast.success(qualified ? "Cedente criado e oportunidade adicionada ao pipeline!" : "Cedente criado com sucesso!");
+      const parts = ["Cedente criado"];
+      if (hadSnapshot) parts.push("análise pré-preenchida");
+      if (qualified) parts.push("oportunidade no pipeline");
+      toast.success(parts.join(" • "));
       navigate(`/crm/cliente/${clientId}`);
     },
     onError: () => toast.error("Erro ao converter prospect"),
