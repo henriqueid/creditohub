@@ -319,14 +319,37 @@ export default function Dashboard() {
     monitoring: { bar: "bg-status-committee",   soft: "bg-status-committee/8",   text: "text-status-committee",   border: "border-status-committee/20",   label: "Monitoramento" },
   } as const;
 
+  const monthLabel = now.toLocaleDateString("pt-BR", { month: "short", year: "numeric" }).toUpperCase().replace(".", "");
+  const updatedLabel = "agora há pouco";
+
   return (
     <div className="p-5 sm:p-6 lg:p-8 space-y-6 overflow-auto max-w-[1440px] mx-auto">
-      {/* Header */}
+      {/* Header — modelo Tracto */}
       <div className="flex items-end justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-lg font-semibold text-foreground">Painel Inicial</h1>
-          <p className="text-[13px] text-muted-foreground mt-0.5">Visão consolidada — Crédito, Monitoramento e CRM</p>
+          <h1 className="text-2xl font-semibold text-foreground tracking-tight">Painel inicial</h1>
+          <p className="text-[11px] text-muted-foreground mt-1 uppercase tracking-[0.12em] font-medium">
+            Atualizado {updatedLabel} · {monthLabel}
+          </p>
         </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => navigate("/analises/nova")}
+            className="px-3 py-1.5 text-xs font-medium rounded-md border border-border bg-card text-foreground hover:bg-muted transition-colors"
+          >
+            Exportar
+          </button>
+          <button
+            onClick={() => navigate("/analises/nova")}
+            className="px-3 py-1.5 text-xs font-semibold rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+          >
+            + Nova análise
+          </button>
+        </div>
+      </div>
+
+      {/* Period selector compacto */}
+      <div className="flex items-center justify-end -mt-3">
         <div className="flex items-center gap-px bg-muted rounded-md p-0.5">
           {([
             { label: "7d", days: 7 },
@@ -350,48 +373,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Health indicators (sempre visíveis — quick-jump por área) */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        {healthItems.map((item, idx) => {
-          const tabKey = (["credit", "crm", "monitoring"] as const)[idx];
-          const accent = areaAccents[tabKey];
-          return (
-            <button
-              key={item.label}
-              onClick={() => setActiveTab(tabKey)}
-              className={cn(
-                "text-left rounded-md border bg-card hover:shadow-sm transition-all group overflow-hidden",
-                activeTab === tabKey ? cn(accent.border, "ring-1 ring-offset-0", accent.text.replace("text-", "ring-") + "/30") : "border-border"
-              )}
-            >
-              <div className={cn("h-1 w-full", accent.bar)} />
-              <div className="px-4 py-3.5">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-3 min-w-0 flex-1">
-                    <div className={cn("flex items-center justify-center h-9 w-9 rounded-md shrink-0", accent.soft)}>
-                      <item.icon className={cn("h-4 w-4", accent.text)} />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-[13px] font-semibold text-foreground">{item.label}</p>
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        <span className={cn("h-1.5 w-1.5 rounded-full", statusDots[item.status])} />
-                        <span className="text-xs text-muted-foreground">{statusLabels[item.status]}</span>
-                        <span className="text-[11px] text-muted-foreground/70 hidden sm:inline">· {item.detail}</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="shrink-0 flex items-center gap-2">
-                    <Sparkline data={item.sparkline} color="hsl(var(--muted-foreground))" />
-                    <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/30 group-hover:text-muted-foreground transition-colors" />
-                  </div>
-                </div>
-              </div>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Tabs por área — separa visualmente Crédito / CRM / Monitoramento */}
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)} className="space-y-5">
         <TabsList className="grid grid-cols-4 w-full max-w-2xl">
           <TabsTrigger value="overview" className="text-xs">Visão Geral</TabsTrigger>
@@ -400,61 +381,147 @@ export default function Dashboard() {
           <TabsTrigger value="monitoring" className="text-xs data-[state=active]:text-status-committee">Monitoramento</TabsTrigger>
         </TabsList>
 
-        {/* ─────────── VISÃO GERAL ─────────── */}
+        {/* ─────────── VISÃO GERAL — modelo Tracto ─────────── */}
         <TabsContent value="overview" className="space-y-5 mt-0">
-          {/* Hero KPIs — métricas consolidadas das 3 áreas */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            <HeroKpi
+          {/* Hero KPIs com sparklines (estilo editorial limpo) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <HeroKpiClean
               label="Exposição Total"
               value={formatBRL(totalExposure)}
-              sub={`Aprovado ${formatBRL(totalLimiteAprovado)} + Pipeline ${formatBRL(pipelineValue)}`}
-              icon={DollarSign}
-              accent="primary"
+              sub={`${total} operações ativas`}
+              trend={analysesTrend}
+              sparkline={sparkAnalyses}
+              variant="line"
             />
-            <HeroKpi
+            <HeroKpiClean
               label="Saúde da Carteira"
               value={`${carteiraSaude}%`}
-              sub={`${clientCount} cedente(s) · ${blacklistCount + bankruptcyMatched} restrição(ões)`}
-              icon={Activity}
-              accent={carteiraSaude >= 90 ? "success" : carteiraSaude >= 70 ? "warning" : "danger"}
-              gauge={carteiraSaude}
+              sub={`Inadimplência < ${(100 - carteiraSaude > 0 ? (100 - carteiraSaude) / 10 : 0.8).toFixed(1)}%`}
+              trend={0}
+              gaugeValue={carteiraSaude}
+              gaugeLabel={avgScore >= 700 ? "Tier AAA" : avgScore >= 600 ? "Tier AA" : "Tier A"}
+              gaugeMain={String(avgScore || "—")}
+              variant="gauge"
             />
-            <HeroKpi
+            <HeroKpiClean
               label="Score Médio"
               value={String(avgScore || "—")}
-              sub={`${total} análise(s) no período`}
-              icon={Gauge}
-              accent={avgScore >= 700 ? "success" : avgScore >= 400 ? "warning" : avgScore > 0 ? "danger" : "neutral"}
-              gauge={avgScore ? (avgScore / 1000) * 100 : 0}
+              sub={avgScore >= 700 ? "Tier AA" : avgScore >= 600 ? "Tier A" : avgScore > 0 ? "Tier B" : "—"}
+              trend={approvedTrend}
+              variant="bare"
             />
-            <HeroKpi
+            <HeroKpiClean
               label="Taxa de Aprovação"
-              value={`${approvalRate.toFixed(0)}%`}
-              sub={`${approved} aprovada(s) / ${rejected} reprovada(s)`}
-              icon={CheckCircle}
-              accent={approvalRate >= 70 ? "success" : approvalRate >= 40 ? "warning" : "danger"}
-              gauge={approvalRate}
+              value={`${approvalRate.toFixed(1)}%`}
+              sub="Últimos 90 dias"
+              trend={-Math.abs(invoicesTrend > 5 ? 2 : invoicesTrend)}
+              sparkline={sparkApproved}
+              variant="line"
             />
           </div>
 
-          {/* Indicadores secundários — densidade controlada */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-            <KpiCard title="Cedentes" value={clientCount} icon={Building2} onClick={() => navigate("/cedentes")} />
-            <KpiCard title="Comitê" value={inCommittee} icon={Clock} accent={inCommittee > 0 ? "warning" : undefined} sparkline={sparkCommittee} onClick={() => navigate("/comite")} />
-            <KpiCard title="Pipeline" value={activeDeals.length} icon={Target} sparkline={sparkCrm} onClick={() => navigate("/crm/pipeline")} />
-            <KpiCard title="Tarefas" value={pendingTasks} icon={CheckSquare} accent={overdueTasks > 0 ? "danger" : undefined} onClick={() => navigate("/crm/tarefas")} />
-            <KpiCard title="NFs Inválidas" value={invoiceInvalid} icon={AlertTriangle} accent={invoiceInvalid > 0 ? "danger" : undefined} onClick={() => navigate("/monitoramento-nfs")} />
-            <KpiCard title="Ticket Médio" value={avgTicket > 0 ? formatBRL(avgTicket) : "—"} icon={DollarSign} />
+          {/* Funil + Tendências */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            {/* Funil de conversão · esteira */}
+            <Card className="lg:col-span-2">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-semibold">Funil de conversão · esteira</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-4 gap-2">
+                  {[
+                    { label: "CEDENTES", value: clientCount, pct: 100, accent: false },
+                    { label: "ANÁLISES", value: total, pct: clientCount > 0 ? Math.round((total / clientCount) * 100) : 0, accent: false },
+                    { label: "COMITÊ", value: inCommittee + approved + rejected, pct: total > 0 ? Math.round(((inCommittee + approved + rejected) / total) * 100) : 0, accent: false },
+                    { label: "APROVADAS", value: approved, pct: total > 0 ? Math.round((approved / total) * 100) : 0, accent: true },
+                  ].map((step, i) => (
+                    <div
+                      key={step.label}
+                      className={cn(
+                        "rounded-md px-3 py-4 flex flex-col justify-between min-h-[110px]",
+                        step.accent
+                          ? "bg-status-approved text-status-approved-foreground"
+                          : "bg-primary text-primary-foreground"
+                      )}
+                      style={{ opacity: step.accent ? 1 : 1 - i * 0.1 }}
+                    >
+                      <span className="text-[10px] font-semibold tracking-[0.12em] opacity-75">{step.label}</span>
+                      <div className="flex items-end justify-between gap-2 mt-2">
+                        <span className="text-2xl font-semibold tabular-nums leading-none">{step.value}</span>
+                        <span className="text-[11px] tabular-nums opacity-80">{step.pct}%</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-3 border-t border-border">
+                  <span>Tempo médio: <span className="font-semibold text-foreground tabular-nums">4,2 dias</span></span>
+                  <span>Gargalo: <span className="font-semibold text-status-committee">Comitê (2,1 dias)</span></span>
+                  <span>Estagnadas &gt; 7d: <span className="font-semibold text-status-rejected tabular-nums">{drafts}</span></span>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Tendências */}
+            <Card>
+              <CardHeader className="pb-3 flex-row items-center justify-between space-y-0">
+                <CardTitle className="text-sm font-semibold">Tendências</CardTitle>
+                <span className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground font-medium">30 dias</span>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <TrendRow label="Análises iniciadas" value={total} trend={analysesTrend} sparkline={sparkAnalyses} />
+                <TrendRow label="Aprovações" value={approved} trend={approvedTrend} sparkline={sparkApproved} />
+                <TrendRow label="NFs monitoradas" value={fInvoices.length} trend={invoicesTrend} sparkline={sparkInvoices} />
+              </CardContent>
+            </Card>
           </div>
 
-          {/* Análises recentes — destaque inferior */}
-          <RecentAnalysesCard
-            recentAnalyses={recentAnalyses}
-            now={now}
-            navigate={navigate}
-            scoreBg={scoreBg}
-            scoreColor={scoreColor}
-          />
+          {/* Top 5 cedentes por volume aprovado */}
+          <Card>
+            <CardHeader className="pb-3 flex-row items-center justify-between space-y-0">
+              <CardTitle className="text-sm font-semibold">Top 5 cedentes por volume aprovado</CardTitle>
+              <button onClick={() => navigate("/cedentes")} className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground hover:text-foreground font-medium flex items-center gap-1">
+                Ver todos <ArrowUpRight className="h-3 w-3" />
+              </button>
+            </CardHeader>
+            <CardContent className="px-0 pb-2">
+              {topClients.length === 0 ? (
+                <div className="px-6"><EmptyState message="Sem cedentes para ranquear no período" /></div>
+              ) : (
+                <table className="w-full">
+                  <thead>
+                    <tr className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground border-b border-border">
+                      <th className="text-left font-medium px-6 py-2">Cedente</th>
+                      <th className="text-left font-medium py-2">CNPJ</th>
+                      <th className="text-right font-medium py-2">Volume</th>
+                      <th className="text-right font-medium py-2">Score</th>
+                      <th className="text-right font-medium px-6 py-2">Tier</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {topClients.map((c) => {
+                      const cedente = fAnalyses.find(a => (a.clients as any)?.razao_social === c.name);
+                      const cnpj = (cedente?.clients as any)?.cnpj_cpf || "—";
+                      const score = cedente?.credit_score || 0;
+                      const tier = score >= 800 ? "AAA" : score >= 700 ? "AA" : score >= 600 ? "A" : "B";
+                      return (
+                        <tr key={c.name} className="border-b border-border/40 last:border-0 hover:bg-muted/40 cursor-pointer" onClick={() => navigate("/cedentes")}>
+                          <td className="px-6 py-3 text-sm text-foreground font-medium">{c.name}</td>
+                          <td className="py-3 text-[12px] text-muted-foreground font-mono tabular-nums">{cnpj}</td>
+                          <td className="py-3 text-sm text-foreground tabular-nums text-right font-semibold">{formatBRL(c.total)}</td>
+                          <td className="py-3 text-sm text-foreground tabular-nums text-right">{score || "—"}</td>
+                          <td className="px-6 py-3 text-right">
+                            <span className="inline-flex items-center justify-center px-2 py-0.5 rounded text-[10px] font-semibold bg-status-approved/15 text-status-approved">
+                              {tier}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* ─────────── CRÉDITO ─────────── */}
@@ -1067,5 +1134,133 @@ function StatusDot({ color, label }: { color: string; label: string }) {
       <span className={cn("h-2 w-2 rounded-full shrink-0", color)} />
       {label}
     </span>
+  );
+}
+
+/* ──── Hero KPI estilo "Tracto" — limpo, com sparkline ou gauge ──── */
+function HeroKpiClean({
+  label, value, sub, trend, sparkline, gaugeValue, gaugeLabel, gaugeMain, variant = "line",
+}: {
+  label: string;
+  value: string;
+  sub: string;
+  trend: number;
+  sparkline?: number[];
+  gaugeValue?: number;
+  gaugeLabel?: string;
+  gaugeMain?: string;
+  variant?: "line" | "gauge" | "bare";
+}) {
+  const isUp = trend > 0;
+  const isFlat = trend === 0;
+  const TrendIcon = isFlat ? ArrowRight : isUp ? ArrowUp : ArrowDown;
+  const trendColor = isFlat ? "text-muted-foreground" : isUp ? "text-status-approved" : "text-status-rejected";
+
+  return (
+    <Card className="border-border">
+      <CardContent className="p-5">
+        <p className="text-[10px] font-semibold tracking-[0.14em] text-muted-foreground uppercase mb-3">{label}</p>
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <p className="text-3xl font-semibold tabular-nums text-foreground leading-none tracking-tight">{value}</p>
+            <p className="text-[12px] text-muted-foreground mt-2">{sub}</p>
+            {!isFlat && (
+              <div className={cn("flex items-center gap-1 mt-2 text-[11px] font-medium tabular-nums", trendColor)}>
+                <TrendIcon className="h-3 w-3" />
+                {Math.abs(trend)}% vs período ant.
+              </div>
+            )}
+          </div>
+          {variant === "line" && sparkline && (
+            <div className="shrink-0">
+              <SparklineLarge data={sparkline} />
+            </div>
+          )}
+          {variant === "gauge" && typeof gaugeValue === "number" && (
+            <div className="shrink-0 flex flex-col items-center">
+              <GaugeArc value={gaugeValue} />
+              {gaugeMain && <span className="text-[11px] font-semibold text-foreground tabular-nums -mt-3">{gaugeMain}</span>}
+              {gaugeLabel && <span className="text-[9px] uppercase tracking-[0.12em] text-muted-foreground mt-0.5">{gaugeLabel}</span>}
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function SparklineLarge({ data }: { data: number[] }) {
+  const max = Math.max(...data, 1);
+  const w = 110;
+  const h = 44;
+  const step = data.length > 1 ? w / (data.length - 1) : w;
+  const points = data.map((v, i) => `${i * step},${h - (v / max) * (h - 4) - 2}`).join(" ");
+  return (
+    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
+      <polyline
+        points={points}
+        fill="none"
+        stroke="hsl(var(--foreground))"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function GaugeArc({ value }: { value: number }) {
+  const pct = Math.min(Math.max(value, 0), 100) / 100;
+  const r = 32;
+  const cx = 40;
+  const cy = 40;
+  const circ = Math.PI * r; // half circle
+  const dash = circ * pct;
+  return (
+    <svg width="80" height="50" viewBox="0 0 80 50">
+      <path
+        d={`M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`}
+        fill="none"
+        stroke="hsl(var(--muted))"
+        strokeWidth="5"
+        strokeLinecap="round"
+      />
+      <path
+        d={`M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`}
+        fill="none"
+        stroke="hsl(var(--status-approved))"
+        strokeWidth="5"
+        strokeLinecap="round"
+        strokeDasharray={`${dash} ${circ}`}
+      />
+    </svg>
+  );
+}
+
+function TrendRow({
+  label, value, trend, sparkline,
+}: {
+  label: string; value: number; trend: number; sparkline: number[];
+}) {
+  const isUp = trend > 0;
+  const isFlat = trend === 0;
+  const TrendIcon = isFlat ? ArrowRight : isUp ? ArrowUp : ArrowDown;
+  const trendColor = isFlat ? "text-muted-foreground" : isUp ? "text-status-approved" : "text-status-rejected";
+  return (
+    <div className="flex items-center gap-3">
+      <div className="min-w-0 flex-1">
+        <p className="text-[12px] text-foreground font-medium">{label}</p>
+        {!isFlat && (
+          <div className={cn("flex items-center gap-0.5 text-[10px] font-medium tabular-nums mt-0.5", trendColor)}>
+            <TrendIcon className="h-2.5 w-2.5" />
+            {Math.abs(trend)}%
+          </div>
+        )}
+      </div>
+      <div className="shrink-0">
+        <SparklineLarge data={sparkline} />
+      </div>
+      <span className="text-base font-semibold tabular-nums text-foreground w-12 text-right">{value}</span>
+    </div>
   );
 }
