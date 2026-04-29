@@ -11,6 +11,7 @@ import { toast } from "@/hooks/use-toast";
 import { formatCNPJorCPF, ESTADOS_BR } from "@/lib/formatters";
 import { ArrowLeft, Rocket } from "lucide-react";
 import { ClientTagManager } from "@/components/ClientTagManager";
+import { snapshotToCreditAnalysis, insertSnapshotSocios, type ConsultaSnapshot } from "@/lib/consulta-snapshot";
 
 interface ClientFormData {
   cnpj_cpf: string;
@@ -42,7 +43,8 @@ export default function ClientForm() {
   const [startAnalysis, setStartAnalysis] = useState(false);
 
   // Pre-fill from consulta page
-  const prefill = (location.state as { prefill?: Record<string, string> })?.prefill;
+  const prefill = (location.state as { prefill?: Record<string, string>; snapshot?: ConsultaSnapshot })?.prefill;
+  const snapshot = (location.state as { prefill?: Record<string, string>; snapshot?: ConsultaSnapshot })?.snapshot;
 
   const { data: client } = useQuery({
     queryKey: ["client", id],
@@ -103,9 +105,13 @@ export default function ClientForm() {
       queryClient.invalidateQueries({ queryKey: ["clients"] });
 
       if (startAnalysis && !isEditing) {
+        const analysisPayload: Record<string, unknown> = { client_id: clientId };
+        if (snapshot) {
+          Object.assign(analysisPayload, snapshotToCreditAnalysis(snapshot));
+        }
         const { data: analysis, error } = await supabase
           .from("credit_analysis")
-          .insert({ client_id: clientId })
+          .insert(analysisPayload as { client_id: string } & Record<string, unknown>)
           .select("id")
           .single();
 
@@ -115,7 +121,16 @@ export default function ClientForm() {
           return;
         }
 
-        toast({ title: "Cedente cadastrado! Análise de crédito iniciada." });
+        // Popular sócios da consulta (QSA) na análise
+        if (snapshot) {
+          try { await insertSnapshotSocios(analysis.id, snapshot); } catch (e) { console.warn("Falha ao inserir sócios:", e); }
+        }
+
+        toast({
+          title: snapshot
+            ? "Cedente cadastrado! Análise pré-preenchida com dados da consulta."
+            : "Cedente cadastrado! Análise de crédito iniciada.",
+        });
         navigate(`/analises/${analysis.id}`);
       } else {
         toast({ title: isEditing ? "Cedente atualizado" : "Cedente cadastrado" });

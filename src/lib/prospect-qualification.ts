@@ -17,6 +17,9 @@ interface QualificationInput {
   faturamentoMedio?: number | null;
   // External data
   externalData?: Record<string, any>;
+  // Snapshot completo da consulta (BrasilAPI + bureau + restritivos)
+  // — armazenado para reaproveitar ao converter o prospect em cliente/análise.
+  snapshot?: Record<string, any>;
 }
 
 export interface QualificationResult {
@@ -201,6 +204,7 @@ export async function saveProspectQualification(
         creditScore: input.creditScore,
         analysisStatus: input.analysisStatus,
         hasBlacklist: input.hasBlacklist,
+        snapshot: input.snapshot ?? null,
       },
       client_id: input.clientId || null,
       source: "consulta",
