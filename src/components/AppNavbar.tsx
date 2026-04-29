@@ -317,10 +317,34 @@ export function AppNavbar() {
   return (
     <header className="h-12 flex items-center px-5 border-b border-navbar/20 bg-navbar text-navbar-foreground shrink-0">
       {/* Logo */}
-      <Link to="/" className="flex items-center gap-2.5 mr-6">
+      <Link to="/" className="flex items-center gap-2.5 mr-4">
         <div className="h-7 w-7 rounded bg-primary flex items-center justify-center text-primary-foreground font-bold text-xs">AT</div>
         <span className="text-sm font-bold tracking-tight hidden lg:inline">Ambiente Teste</span>
       </Link>
+
+      {/* CTA Origem do fluxo: Consulta CPF/CNPJ */}
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Link
+            to="/consulta"
+            className={cn(
+              "flex items-center gap-2 px-3 py-1.5 mr-3 rounded-md text-[13px] font-semibold transition-colors border",
+              location.pathname.startsWith("/consulta")
+                ? "bg-primary text-primary-foreground border-primary"
+                : "bg-primary/15 text-navbar-foreground border-primary/40 hover:bg-primary/25"
+            )}
+          >
+            <SearchCheck className="h-4 w-4" />
+            <span className="hidden md:inline">Nova Consulta</span>
+            <kbd className="hidden xl:inline-flex items-center gap-0.5 ml-1 px-1.5 py-0.5 rounded text-[10px] font-mono bg-navbar-foreground/15 border border-navbar-foreground/20">
+              Ctrl+J
+            </kbd>
+          </Link>
+        </TooltipTrigger>
+        <TooltipContent side="bottom">Consulta CPF/CNPJ — origem do fluxo (Ctrl+J)</TooltipContent>
+      </Tooltip>
+
+      <div className="h-5 w-px bg-navbar-foreground/20 mr-2" />
 
       {/* Direct links */}
       <nav className="flex items-center gap-0.5 min-w-0 flex-1">
