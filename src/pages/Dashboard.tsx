@@ -1136,3 +1136,131 @@ function StatusDot({ color, label }: { color: string; label: string }) {
     </span>
   );
 }
+
+/* ──── Hero KPI estilo "Tracto" — limpo, com sparkline ou gauge ──── */
+function HeroKpiClean({
+  label, value, sub, trend, sparkline, gaugeValue, gaugeLabel, gaugeMain, variant = "line",
+}: {
+  label: string;
+  value: string;
+  sub: string;
+  trend: number;
+  sparkline?: number[];
+  gaugeValue?: number;
+  gaugeLabel?: string;
+  gaugeMain?: string;
+  variant?: "line" | "gauge" | "bare";
+}) {
+  const isUp = trend > 0;
+  const isFlat = trend === 0;
+  const TrendIcon = isFlat ? ArrowRight : isUp ? ArrowUp : ArrowDown;
+  const trendColor = isFlat ? "text-muted-foreground" : isUp ? "text-status-approved" : "text-status-rejected";
+
+  return (
+    <Card className="border-border">
+      <CardContent className="p-5">
+        <p className="text-[10px] font-semibold tracking-[0.14em] text-muted-foreground uppercase mb-3">{label}</p>
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <p className="text-3xl font-semibold tabular-nums text-foreground leading-none tracking-tight">{value}</p>
+            <p className="text-[12px] text-muted-foreground mt-2">{sub}</p>
+            {!isFlat && (
+              <div className={cn("flex items-center gap-1 mt-2 text-[11px] font-medium tabular-nums", trendColor)}>
+                <TrendIcon className="h-3 w-3" />
+                {Math.abs(trend)}% vs período ant.
+              </div>
+            )}
+          </div>
+          {variant === "line" && sparkline && (
+            <div className="shrink-0">
+              <SparklineLarge data={sparkline} />
+            </div>
+          )}
+          {variant === "gauge" && typeof gaugeValue === "number" && (
+            <div className="shrink-0 flex flex-col items-center">
+              <GaugeArc value={gaugeValue} />
+              {gaugeMain && <span className="text-[11px] font-semibold text-foreground tabular-nums -mt-3">{gaugeMain}</span>}
+              {gaugeLabel && <span className="text-[9px] uppercase tracking-[0.12em] text-muted-foreground mt-0.5">{gaugeLabel}</span>}
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function SparklineLarge({ data }: { data: number[] }) {
+  const max = Math.max(...data, 1);
+  const w = 110;
+  const h = 44;
+  const step = data.length > 1 ? w / (data.length - 1) : w;
+  const points = data.map((v, i) => `${i * step},${h - (v / max) * (h - 4) - 2}`).join(" ");
+  return (
+    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
+      <polyline
+        points={points}
+        fill="none"
+        stroke="hsl(var(--foreground))"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function GaugeArc({ value }: { value: number }) {
+  const pct = Math.min(Math.max(value, 0), 100) / 100;
+  const r = 32;
+  const cx = 40;
+  const cy = 40;
+  const circ = Math.PI * r; // half circle
+  const dash = circ * pct;
+  return (
+    <svg width="80" height="50" viewBox="0 0 80 50">
+      <path
+        d={`M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`}
+        fill="none"
+        stroke="hsl(var(--muted))"
+        strokeWidth="5"
+        strokeLinecap="round"
+      />
+      <path
+        d={`M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`}
+        fill="none"
+        stroke="hsl(var(--status-approved))"
+        strokeWidth="5"
+        strokeLinecap="round"
+        strokeDasharray={`${dash} ${circ}`}
+      />
+    </svg>
+  );
+}
+
+function TrendRow({
+  label, value, trend, sparkline,
+}: {
+  label: string; value: number; trend: number; sparkline: number[];
+}) {
+  const isUp = trend > 0;
+  const isFlat = trend === 0;
+  const TrendIcon = isFlat ? ArrowRight : isUp ? ArrowUp : ArrowDown;
+  const trendColor = isFlat ? "text-muted-foreground" : isUp ? "text-status-approved" : "text-status-rejected";
+  return (
+    <div className="flex items-center gap-3">
+      <div className="min-w-0 flex-1">
+        <p className="text-[12px] text-foreground font-medium">{label}</p>
+        {!isFlat && (
+          <div className={cn("flex items-center gap-0.5 text-[10px] font-medium tabular-nums mt-0.5", trendColor)}>
+            <TrendIcon className="h-2.5 w-2.5" />
+            {Math.abs(trend)}%
+          </div>
+        )}
+      </div>
+      <div className="shrink-0">
+        <SparklineLarge data={sparkline} />
+      </div>
+      <span className="text-base font-semibold tabular-nums text-foreground w-12 text-right">{value}</span>
+    </div>
+  );
+}
