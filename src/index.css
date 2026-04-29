@@ -6,56 +6,57 @@
 
 @layer base {
   :root {
-    --background: 220 14% 96%;
-    --foreground: 220 20% 14%;
+    /* Paleta — Off-white / Marinho / Esmeralda / Grafite / Cinza claro */
+    --background: 60 19% 98%;          /* Off-white #FAFAF7 */
+    --foreground: 223 16% 12%;         /* Grafite #1A1D24 */
 
     --card: 0 0% 100%;
-    --card-foreground: 220 20% 14%;
+    --card-foreground: 223 16% 12%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 20% 14%;
+    --popover-foreground: 223 16% 12%;
 
-    --primary: 220 50% 24%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 228 71% 13%;            /* Marinho #0A1538 */
+    --primary-foreground: 60 19% 98%;
 
-    --secondary: 220 12% 92%;
-    --secondary-foreground: 220 16% 22%;
+    --secondary: 220 13% 91%;          /* Cinza claro #E5E7EB */
+    --secondary-foreground: 223 16% 12%;
 
-    --muted: 220 12% 93%;
-    --muted-foreground: 220 8% 50%;
+    --muted: 220 14% 94%;
+    --muted-foreground: 223 10% 42%;
 
-    --accent: 220 12% 94%;
-    --accent-foreground: 220 16% 22%;
+    --accent: 162 100% 42%;            /* Esmeralda #00D49A */
+    --accent-foreground: 223 16% 12%;
 
     --destructive: 0 65% 48%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 10% 88%;
-    --input: 220 10% 88%;
-    --ring: 220 50% 24%;
+    --border: 220 13% 88%;
+    --input: 220 13% 88%;
+    --ring: 228 71% 13%;
 
     --radius: 0.375rem;
 
-    /* Status — muted professional tones */
-    --status-draft: 220 8% 56%;
-    --status-committee: 38 60% 50%;
-    --status-approved: 152 44% 38%;
-    --status-restricted: 28 60% 48%;
-    --status-rejected: 0 55% 48%;
+    /* Status — alinhado à paleta (Esmeralda p/ aprovado) */
+    --status-draft: 223 8% 52%;
+    --status-committee: 38 80% 48%;
+    --status-approved: 162 100% 36%;   /* Esmeralda escurecida p/ contraste */
+    --status-restricted: 28 75% 50%;
+    --status-rejected: 0 70% 50%;
 
-    /* Sidebar */
-    --sidebar-background: 222 22% 12%;
-    --sidebar-foreground: 220 12% 76%;
-    --sidebar-primary: 216 40% 56%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 222 16% 18%;
-    --sidebar-accent-foreground: 220 12% 88%;
-    --sidebar-border: 222 14% 20%;
-    --sidebar-ring: 216 40% 56%;
+    /* Sidebar — Marinho */
+    --sidebar-background: 228 71% 13%;
+    --sidebar-foreground: 220 13% 88%;
+    --sidebar-primary: 162 100% 42%;
+    --sidebar-primary-foreground: 228 71% 13%;
+    --sidebar-accent: 228 50% 18%;
+    --sidebar-accent-foreground: 60 19% 98%;
+    --sidebar-border: 228 40% 20%;
+    --sidebar-ring: 162 100% 42%;
 
-    /* Navbar */
-    --navbar: 222 24% 14%;
-    --navbar-foreground: 220 16% 92%;
+    /* Navbar — Grafite */
+    --navbar: 223 16% 12%;
+    --navbar-foreground: 60 19% 98%;
   }
 
   .dark {
