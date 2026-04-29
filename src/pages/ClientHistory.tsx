@@ -5,14 +5,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/StatusBadge";
 import { formatBRL, formatDate, formatCNPJorCPF, voteLabels, recommendationLabels } from "@/lib/formatters";
-import { ArrowLeft, FileText, Users, CheckCircle2, Clock, AlertTriangle, XCircle, Circle } from "lucide-react";
+import { ArrowLeft, FileText, Users, CheckCircle2, Clock, AlertTriangle, XCircle, Circle, Briefcase, MessageSquare, ListTodo } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 
 interface TimelineEvent {
   id: string;
   date: string;
-  type: "analysis_created" | "status_change" | "vote" | "committee_result";
+  type: "analysis_created" | "status_change" | "vote" | "committee_result" | "deal_created" | "activity" | "task";
   title: string;
   description: string;
   status?: string;
@@ -31,6 +31,12 @@ function getTimelineIcon(type: TimelineEvent["type"], status?: string) {
       return <AlertTriangle className="h-4 w-4 text-status-restricted" />;
     case "committee_result":
       return <Users className="h-4 w-4 text-primary" />;
+    case "deal_created":
+      return <Briefcase className="h-4 w-4 text-status-approved" />;
+    case "activity":
+      return <MessageSquare className="h-4 w-4 text-muted-foreground" />;
+    case "task":
+      return <ListTodo className="h-4 w-4 text-status-committee" />;
     default:
       return <Circle className="h-4 w-4 text-muted-foreground" />;
   }
