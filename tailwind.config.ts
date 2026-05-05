@@ -14,6 +14,7 @@ export default {
     },
     extend: {
       colors: {
+        // shadcn tokens — mapeados para variáveis CSS (mantidos intactos)
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
@@ -68,11 +69,53 @@ export default {
           restricted: "hsl(var(--status-restricted))",
           rejected: "hsl(var(--status-rejected))",
         },
+
+        // SINK Design System — tokens diretos (use: text-sink-mint, bg-sink-deep, etc.)
+        sink: {
+          // Escala deep (teal escuro)
+          deep:    "#07232A",
+          "deep-2": "#0B2A2E",
+          "deep-3": "#103239",
+          "deep-4": "#18404A",
+          // Escala mint (verde menta)
+          mint:        "#2BD49C",
+          "mint-2":    "#5FE3B5",
+          "mint-3":    "#17A679",
+          "mint-soft": "#D4F5E8",
+          // Neutros quentes
+          cream:    "#F3EFE6",
+          "cream-2": "#EAE4D5",
+          paper:    "#FBF9F3",
+          // Texto
+          ink:      "#0A1F24",
+          fog:      "#D9E3DF",
+          // Semânticos
+          warn:   "#F3B84A",
+          danger: "#E26B5A",
+        },
+      },
+      fontFamily: {
+        // SINK typografia
+        sans: ["Geist", "ui-sans-serif", "system-ui", "-apple-system", "Segoe UI", "sans-serif"],
+        mono: ["JetBrains Mono", "ui-monospace", "SF Mono", "Menlo", "monospace"],
       },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+        // SINK border-radius extras
+        "sink-sm":   "6px",
+        "sink-md":   "10px",
+        "sink-lg":   "16px",
+        "sink-xl":   "24px",
+        "sink-pill": "999px",
+      },
+      boxShadow: {
+        // SINK sombras
+        "sink-sm":   "0 1px 2px rgba(7,35,42,0.06), 0 1px 3px rgba(7,35,42,0.04)",
+        "sink-md":   "0 4px 12px rgba(7,35,42,0.08), 0 2px 4px rgba(7,35,42,0.04)",
+        "sink-lg":   "0 12px 32px rgba(7,35,42,0.12), 0 4px 12px rgba(7,35,42,0.06)",
+        "sink-glow": "0 0 0 6px rgba(43,212,156,0.18)",
       },
       keyframes: {
         "accordion-down": {

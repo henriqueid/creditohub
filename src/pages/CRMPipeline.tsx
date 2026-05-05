@@ -48,11 +48,11 @@ interface CreditAnalysis {
 }
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ElementType }> = {
-  draft: { label: "Em Análise", color: "text-amber-600 bg-amber-50 border-amber-200", icon: FileSearch },
-  in_committee: { label: "Em Comitê", color: "text-blue-600 bg-blue-50 border-blue-200", icon: FileSearch },
-  approved: { label: "Aprovado", color: "text-emerald-600 bg-emerald-50 border-emerald-200", icon: ShieldCheck },
-  approved_restricted: { label: "Restrição", color: "text-orange-600 bg-orange-50 border-orange-200", icon: ShieldAlert },
-  rejected: { label: "Reprovado", color: "text-red-600 bg-red-50 border-red-200", icon: ShieldX },
+  draft: { label: "Em Análise", color: "text-sink-warn bg-sink-warn/10 border-sink-warn/30", icon: FileSearch },
+  in_committee: { label: "Em Comitê", color: "text-sink-mint-3 bg-sink-mint-3/10 border-sink-mint-3/30", icon: FileSearch },
+  approved: { label: "Aprovado", color: "text-status-approved bg-status-approved/10 border-status-approved/30", icon: ShieldCheck },
+  approved_restricted: { label: "Restrição", color: "text-status-restricted bg-status-restricted/10 border-status-restricted/30", icon: ShieldAlert },
+  rejected: { label: "Reprovado", color: "text-sink-danger bg-sink-danger/10 border-sink-danger/30", icon: ShieldX },
 };
 
 export default function CRMPipeline() {
@@ -234,14 +234,14 @@ export default function CRMPipeline() {
             </div>
           </div>
           <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/50">
-            <Trophy className="h-4 w-4 text-green-500" />
+            <Trophy className="h-4 w-4 text-status-approved" />
             <div>
               <p className="text-[10px] text-muted-foreground uppercase">Ganhos</p>
-              <p className="text-sm font-bold text-green-600">{wonTotal.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</p>
+              <p className="text-sm font-bold text-status-approved">{wonTotal.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</p>
             </div>
           </div>
           <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/50">
-            <TrendingUp className="h-4 w-4 text-blue-500" />
+            <TrendingUp className="h-4 w-4 text-sink-mint-3" />
             <div>
               <p className="text-[10px] text-muted-foreground uppercase">Oportunidades</p>
               <p className="text-sm font-bold">{deals.length}</p>
@@ -319,7 +319,7 @@ export default function CRMPipeline() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-amber-600" />
+              <AlertTriangle className="h-5 w-5 text-sink-warn" />
               Avançar para "{guardDialog?.stageName}" sem aprovação de crédito?
             </AlertDialogTitle>
             <AlertDialogDescription>
@@ -432,7 +432,7 @@ function DealCard({ deal, stages, currentStage, analysis, onMove, onLinkAnalysis
         {!analysis && (
           <button
             onClick={(e) => { e.stopPropagation(); navigate(`/analises/nova?client_id=${deal.client_id}`); }}
-            className="flex-1 flex items-center justify-center gap-1 text-[10px] text-amber-600 font-medium py-1 rounded border border-amber-200 hover:bg-amber-50 transition-colors"
+            className="flex-1 flex items-center justify-center gap-1 text-[10px] text-sink-warn font-medium py-1 rounded border border-sink-warn/30 hover:bg-sink-warn/10 transition-colors"
           >
             <FileSearch className="h-3 w-3" /> Iniciar Análise
           </button>
@@ -449,7 +449,7 @@ function DealCard({ deal, stages, currentStage, analysis, onMove, onLinkAnalysis
 
       {/* Warning if no analysis and deal has high value */}
       {!analysis && deal.value && deal.value > 50000 && (
-        <div className="mt-1.5 flex items-center gap-1 text-[9px] text-amber-600">
+        <div className="mt-1.5 flex items-center gap-1 text-[9px] text-sink-warn">
           <AlertTriangle className="h-3 w-3" />
           <span>Sem análise de crédito vinculada</span>
         </div>

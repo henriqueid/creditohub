@@ -15,11 +15,11 @@ export interface RiskClassification {
 
 export function classifyRisk(creditScore: number | null): RiskClassification {
   const s = creditScore ?? 0;
-  if (s >= 800) return { level: "very_low", label: "Muito Baixo", color: "text-emerald-700", bgColor: "bg-emerald-500", score: s };
-  if (s >= 600) return { level: "low", label: "Baixo", color: "text-green-600", bgColor: "bg-green-500", score: s };
-  if (s >= 400) return { level: "medium", label: "Médio", color: "text-amber-600", bgColor: "bg-amber-500", score: s };
-  if (s >= 200) return { level: "high", label: "Alto", color: "text-orange-600", bgColor: "bg-orange-500", score: s };
-  return { level: "very_high", label: "Muito Alto", color: "text-red-600", bgColor: "bg-red-500", score: s };
+  if (s >= 800) return { level: "very_low", label: "Muito Baixo", color: "text-status-approved", bgColor: "bg-status-approved", score: s };
+  if (s >= 600) return { level: "low", label: "Baixo", color: "text-sink-mint-3", bgColor: "bg-sink-mint-3", score: s };
+  if (s >= 400) return { level: "medium", label: "Médio", color: "text-sink-warn", bgColor: "bg-sink-warn", score: s };
+  if (s >= 200) return { level: "high", label: "Alto", color: "text-status-restricted", bgColor: "bg-status-restricted", score: s };
+  return { level: "very_high", label: "Muito Alto", color: "text-sink-danger", bgColor: "bg-sink-danger", score: s };
 }
 
 export function suggestLimit(faturamentoMedio: number | null, creditScore: number | null): number {

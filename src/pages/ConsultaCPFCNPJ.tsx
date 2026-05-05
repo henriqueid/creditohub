@@ -48,9 +48,9 @@ function formatInputDocument(value: string) {
 
 function RiskBadge({ level }: { level: "low" | "medium" | "high" | "unknown" }) {
   const config = {
-    low: { label: "Baixo", className: "bg-emerald-500/15 text-emerald-600 border-emerald-500/30" },
-    medium: { label: "Médio", className: "bg-amber-500/15 text-amber-600 border-amber-500/30" },
-    high: { label: "Alto", className: "bg-red-500/15 text-red-600 border-red-500/30" },
+    low: { label: "Baixo", className: "bg-status-approved/10 text-status-approved border-status-approved/30" },
+    medium: { label: "Médio", className: "bg-sink-warn/10 text-sink-warn border-sink-warn/30" },
+    high: { label: "Alto", className: "bg-sink-danger/10 text-sink-danger border-sink-danger/30" },
     unknown: { label: "Indeterminado", className: "bg-muted text-muted-foreground border-border" },
   };
   const c = config[level];
@@ -383,23 +383,23 @@ export default function ConsultaCPFCNPJ() {
             {qualification && (
               <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
                 <Card className={`border ${
-                  qualification.status === "qualified" ? "border-emerald-200 bg-emerald-50/30" :
-                  qualification.status === "not_qualified" ? "border-red-200 bg-red-50/30" :
-                  "border-amber-200 bg-amber-50/30"
+                  qualification.status === "qualified" ? "border-status-approved/30 bg-status-approved/5" :
+                  qualification.status === "not_qualified" ? "border-sink-danger/30 bg-sink-danger/5" :
+                  "border-sink-warn/30 bg-sink-warn/5"
                 }`}>
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex items-center gap-3">
                         <div className={`p-2 rounded-full ${
-                          qualification.status === "qualified" ? "bg-emerald-100" :
-                          qualification.status === "not_qualified" ? "bg-red-100" : "bg-amber-100"
+                          qualification.status === "qualified" ? "bg-status-approved/15" :
+                          qualification.status === "not_qualified" ? "bg-sink-danger/15" : "bg-sink-warn/15"
                         }`}>
                           {qualification.status === "qualified" ? (
-                            <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+                            <CheckCircle2 className="h-5 w-5 text-status-approved" />
                           ) : qualification.status === "not_qualified" ? (
-                            <XCircle className="h-5 w-5 text-red-600" />
+                            <XCircle className="h-5 w-5 text-sink-danger" />
                           ) : (
-                            <Clock className="h-5 w-5 text-amber-600" />
+                            <Clock className="h-5 w-5 text-sink-warn" />
                           )}
                         </div>
                         <div>
@@ -434,7 +434,7 @@ export default function ConsultaCPFCNPJ() {
                         {qualification.positives.length > 0 && (
                           <div className="space-y-1">
                             {qualification.positives.map((p, i) => (
-                              <div key={i} className="flex items-center gap-1.5 text-xs text-emerald-700">
+                              <div key={i} className="flex items-center gap-1.5 text-xs text-status-approved">
                                 <CheckCircle2 className="h-3 w-3 shrink-0" /> {p}
                               </div>
                             ))}
@@ -443,7 +443,7 @@ export default function ConsultaCPFCNPJ() {
                         {qualification.reasons.length > 0 && (
                           <div className="space-y-1">
                             {qualification.reasons.map((r, i) => (
-                              <div key={i} className="flex items-center gap-1.5 text-xs text-red-700">
+                              <div key={i} className="flex items-center gap-1.5 text-xs text-sink-danger">
                                 <AlertTriangle className="h-3 w-3 shrink-0" /> {r}
                               </div>
                             ))}
@@ -668,9 +668,9 @@ export default function ConsultaCPFCNPJ() {
                                 <TableCell>
                                   {a.recommendation ? (
                                     <Badge variant="outline" className={
-                                      a.recommendation === "approve" ? "bg-emerald-500/15 text-emerald-600" :
-                                      a.recommendation === "restrict" ? "bg-amber-500/15 text-amber-600" :
-                                      "bg-red-500/15 text-red-600"
+                                      a.recommendation === "approve" ? "bg-status-approved/10 text-status-approved" :
+                                      a.recommendation === "restrict" ? "bg-sink-warn/10 text-sink-warn" :
+                                      "bg-sink-danger/10 text-sink-danger"
                                     }>
                                       {a.recommendation === "approve" ? "Aprovar" : a.recommendation === "restrict" ? "Restringir" : "Reprovar"}
                                     </Badge>
@@ -951,7 +951,7 @@ function ExternalDataDisplay({ sources }: { sources: ExternalSourceResult[] }) {
             <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
               <span className="text-muted-foreground">Simples Nacional</span>
               <Badge variant="outline" className={
-                data.opcao_simples === true ? "bg-emerald-500/15 text-emerald-600 border-emerald-500/30"
+                data.opcao_simples === true ? "bg-status-approved/10 text-status-approved border-status-approved/30"
                 : data.opcao_simples === false ? "bg-muted text-muted-foreground"
                 : "bg-muted text-muted-foreground"
               }>
@@ -964,7 +964,7 @@ function ExternalDataDisplay({ sources }: { sources: ExternalSourceResult[] }) {
             <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
               <span className="text-muted-foreground">MEI</span>
               <Badge variant="outline" className={
-                data.opcao_mei === true ? "bg-emerald-500/15 text-emerald-600 border-emerald-500/30"
+                data.opcao_mei === true ? "bg-status-approved/10 text-status-approved border-status-approved/30"
                 : data.opcao_mei === false ? "bg-muted text-muted-foreground"
                 : "bg-muted text-muted-foreground"
               }>

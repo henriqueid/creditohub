@@ -37,11 +37,10 @@ Deno.serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } },
     );
 
-    const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsErr } = await supabase.auth.getClaims(token);
-    if (claimsErr || !claimsData?.claims) return json({ error: "Unauthorized" }, 401);
+    const { data: { user }, error: authErr } = await supabase.auth.getUser();
+    if (authErr || !user) return json({ error: "Unauthorized" }, 401);
 
-    const userId = claimsData.claims.sub as string;
+    const userId = user.id;
 
     const { data: tenantData, error: tenantErr } = await supabase.rpc("get_user_tenant_id", {
       _user_id: userId,

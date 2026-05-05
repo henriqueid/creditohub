@@ -102,47 +102,77 @@ export function AIInsightsPanel({
   };
 
   return (
-    <div className={cn("rounded-xl border overflow-hidden",
-      content ? "border-primary/20 bg-gradient-to-br from-primary/5 to-transparent" : 
-      insufficientData ? "border-destructive/30 bg-destructive/5" : "border-dashed border-muted-foreground/30",
+    <div className={cn(
+      "rounded-sink-lg border overflow-hidden border-l-[3px] transition-all",
+      content
+        ? "border-sink-fog border-l-sink-mint bg-sink-mint/5"
+        : insufficientData
+        ? "border-sink-danger/30 border-l-sink-danger bg-sink-danger/5"
+        : "border-dashed border-sink-fog border-l-sink-fog bg-sink-paper",
       className
     )}>
       <div className="flex items-center justify-between px-4 py-3">
-        <div className="flex items-center gap-2">
-          <div className={cn("p-1.5 rounded-md", 
-            content ? "bg-primary/10" : insufficientData ? "bg-destructive/10" : "bg-muted"
+        <div className="flex items-center gap-2.5">
+          <div className={cn(
+            "p-1.5 rounded-sink-sm",
+            content ? "bg-sink-mint/10" : insufficientData ? "bg-sink-danger/10" : "bg-sink-cream"
           )}>
             {insufficientData ? (
-              <AlertTriangle className="h-3.5 w-3.5 text-destructive" />
+              <AlertTriangle className="h-3.5 w-3.5 text-sink-danger" />
             ) : (
-              <Sparkles className={cn("h-3.5 w-3.5", content ? "text-primary" : "text-muted-foreground")} />
+              <Sparkles className={cn("h-3.5 w-3.5", content ? "text-sink-mint" : "text-sink-ink/40")} />
             )}
           </div>
           <div>
-            <p className="text-xs font-semibold">{typeInfo.label}</p>
-            <p className="text-[10px] text-muted-foreground">{typeInfo.description}</p>
+            <p className="font-sans text-xs font-semibold text-sink-ink">{typeInfo.label}</p>
+            <p className="font-mono text-[10px] text-sink-ink/40">{typeInfo.description}</p>
           </div>
         </div>
         <div className="flex items-center gap-1.5">
           {coverage && content && (
-            <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+            <span className="font-mono text-[10px] text-sink-ink/50 bg-sink-cream px-2 py-0.5 rounded-sink-pill border border-sink-fog">
               Dossiê {coverage.percent}%
             </span>
           )}
           {content && (
-            <Button type="button" variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={generateInsight} disabled={loading}>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-7 font-mono text-[10px] gap-1 rounded-sink-md border border-sink-fog bg-transparent text-sink-ink/60 hover:bg-sink-cream"
+              onClick={generateInsight}
+              disabled={loading}
+            >
               <RefreshCw className={cn("h-3 w-3", loading && "animate-spin")} />
               Regerar
             </Button>
           )}
           {!content && (
-            <Button type="button" variant={insufficientData ? "outline" : "default"} size="sm" className="h-7 text-xs gap-1" onClick={generateInsight} disabled={loading}>
+            <Button
+              type="button"
+              variant={insufficientData ? "outline" : "default"}
+              size="sm"
+              className={cn(
+                "h-7 font-mono text-[10px] gap-1 rounded-sink-md",
+                insufficientData
+                  ? "border-sink-fog bg-transparent text-sink-ink/60 hover:bg-sink-cream"
+                  : "bg-sink-mint text-sink-deep hover:bg-sink-mint-2 border-0"
+              )}
+              onClick={generateInsight}
+              disabled={loading}
+            >
               {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
               {loading ? "Analisando dossiê..." : "Gerar Insight"}
             </Button>
           )}
           {content && (
-            <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => setExpanded(!expanded)}>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 rounded-sink-sm hover:bg-sink-cream text-sink-ink/40"
+              onClick={() => setExpanded(!expanded)}
+            >
               {expanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
             </Button>
           )}
@@ -151,26 +181,26 @@ export function AIInsightsPanel({
 
       {/* Insufficient data warning */}
       {insufficientData && !content && (
-        <div className="px-4 pb-4 border-t border-destructive/10">
+        <div className="px-4 pb-4 border-t border-sink-danger/10">
           <div className="pt-3 space-y-2">
             <div className="flex items-start gap-2">
-              <AlertTriangle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+              <AlertTriangle className="h-4 w-4 text-sink-danger mt-0.5 shrink-0" />
               <div>
-                <p className="text-xs font-medium text-destructive">Dados insuficientes no dossiê</p>
-                <p className="text-[11px] text-muted-foreground mt-1">
+                <p className="font-sans text-xs font-semibold text-sink-danger">Dados insuficientes no dossiê</p>
+                <p className="font-mono text-[10px] text-sink-ink/50 mt-1">
                   Preencha os seguintes campos obrigatórios antes de gerar esta análise:
                 </p>
                 <ul className="mt-1.5 space-y-1">
                   {insufficientData.missing.map((field, i) => (
-                    <li key={i} className="text-[11px] text-destructive/80 flex items-center gap-1.5">
-                      <span className="h-1 w-1 rounded-full bg-destructive/60" />
+                    <li key={i} className="font-mono text-[10px] text-sink-danger/70 flex items-center gap-1.5">
+                      <span className="h-1 w-1 rounded-full bg-sink-danger/50" />
                       {field}
                     </li>
                   ))}
                 </ul>
                 <div className="mt-2 flex items-center gap-1.5">
-                  <Info className="h-3 w-3 text-muted-foreground" />
-                  <span className="text-[10px] text-muted-foreground">
+                  <Info className="h-3 w-3 text-sink-ink/40" />
+                  <span className="font-mono text-[10px] text-sink-ink/40">
                     Dossiê preenchido: {insufficientData.filled}/{insufficientData.total} campos
                   </span>
                 </div>
@@ -181,8 +211,8 @@ export function AIInsightsPanel({
       )}
 
       {content && expanded && (
-        <div className="px-4 pb-4 border-t border-primary/10">
-          <div className="prose prose-sm dark:prose-invert max-w-none pt-3 text-sm leading-relaxed [&_h1]:text-base [&_h2]:text-sm [&_h3]:text-sm [&_p]:text-xs [&_li]:text-xs [&_strong]:text-foreground">
+        <div className="px-4 pb-4 border-t border-sink-mint/20">
+          <div className="prose prose-sm dark:prose-invert max-w-none pt-3 text-sm leading-relaxed [&_h1]:text-base [&_h2]:font-sans [&_h2]:text-sm [&_h3]:font-sans [&_h3]:text-sm [&_p]:font-sans [&_p]:text-xs [&_p]:text-sink-ink [&_li]:font-sans [&_li]:text-xs [&_strong]:font-semibold [&_strong]:text-sink-ink">
             <ReactMarkdown>{content}</ReactMarkdown>
           </div>
         </div>

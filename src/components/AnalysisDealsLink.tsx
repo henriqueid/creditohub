@@ -59,40 +59,50 @@ export function AnalysisDealsLink({ analysisId, clientId, clientName, limiteSuge
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <button className="shrink-0 flex items-center gap-2 px-2.5 py-1.5 rounded-md border border-border bg-background hover:bg-muted/50 transition-colors">
-          <Briefcase className="h-3.5 w-3.5 text-primary" />
+        <button className="shrink-0 flex items-center gap-2 px-2.5 py-1.5 rounded-sink-md border border-sink-fog bg-sink-paper hover:bg-sink-cream transition-colors">
+          <Briefcase className="h-3.5 w-3.5 text-sink-mint" />
           <div className="text-left">
-            <p className="text-[10px] text-muted-foreground leading-none">Pipeline</p>
-            <p className="text-xs font-semibold">{deals.length} {deals.length === 1 ? "deal" : "deals"}</p>
+            <p className="font-mono text-[10px] text-sink-ink/40 leading-none">Pipeline</p>
+            <p className="font-mono text-xs font-semibold text-sink-ink">{deals.length} {deals.length === 1 ? "deal" : "deals"}</p>
           </div>
         </button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-80 p-3">
-        <div className="flex items-center justify-between mb-2">
-          <p className="text-xs font-semibold">Oportunidades vinculadas</p>
-          <Button size="sm" variant="ghost" className="h-7 text-[11px]" onClick={() => createDeal.mutate()} disabled={createDeal.isPending}>
+      <PopoverContent align="end" className="w-80 p-3 bg-sink-paper border-sink-fog rounded-sink-lg shadow-sink-md">
+        <div className="flex items-center justify-between mb-3">
+          <p className="font-sans text-xs font-semibold text-sink-ink">Oportunidades vinculadas</p>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-7 font-mono text-[10px] rounded-sink-md border border-sink-fog bg-transparent text-sink-ink/60 hover:bg-sink-cream"
+            onClick={() => createDeal.mutate()}
+            disabled={createDeal.isPending}
+          >
             <Plus className="h-3 w-3 mr-1" /> Criar deal
           </Button>
         </div>
         {deals.length === 0 ? (
-          <p className="text-xs text-muted-foreground py-3 text-center">Sem oportunidades. Clique em "Criar deal" para iniciar o follow-up comercial.</p>
+          <p className="font-mono text-xs text-sink-ink/40 py-3 text-center">Sem oportunidades. Clique em "Criar deal" para iniciar o follow-up comercial.</p>
         ) : (
           <div className="space-y-1.5 max-h-64 overflow-y-auto">
             {deals.map((d: any) => (
-              <button key={d.id} onClick={() => navigate("/crm/pipeline")} className="w-full text-left p-2 rounded border border-border/50 hover:bg-muted/40 transition-colors group">
+              <button
+                key={d.id}
+                onClick={() => navigate("/crm/pipeline")}
+                className="w-full text-left p-2 rounded-sink-md border border-sink-fog hover:bg-sink-cream transition-colors group"
+              >
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs font-medium truncate">{d.title}</p>
+                    <p className="font-sans text-xs font-medium text-sink-ink truncate">{d.title}</p>
                     <div className="flex items-center gap-1.5 mt-0.5">
                       {d.deal_stages && (
-                        <span className="text-[9px] px-1.5 py-0.5 rounded font-medium" style={{ backgroundColor: d.deal_stages.color + "20", color: d.deal_stages.color }}>
+                        <span className="font-mono text-[9px] px-1.5 py-0.5 rounded-sink-pill font-semibold" style={{ backgroundColor: d.deal_stages.color + "20", color: d.deal_stages.color }}>
                           {d.deal_stages.name}
                         </span>
                       )}
-                      {d.value && <span className="text-[10px] tabular-nums font-semibold">{formatBRL(d.value)}</span>}
+                      {d.value && <span className="font-mono text-[10px] tabular-nums font-semibold text-sink-ink">{formatBRL(d.value)}</span>}
                     </div>
                   </div>
-                  <ExternalLink className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 shrink-0 mt-0.5" />
+                  <ExternalLink className="h-3 w-3 text-sink-ink/30 opacity-0 group-hover:opacity-100 shrink-0 mt-0.5" />
                 </div>
               </button>
             ))}

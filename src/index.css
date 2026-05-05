@@ -1,4 +1,8 @@
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
+/* ================================================================
+   Fontes — SINK Design System
+   Geist (sans) + JetBrains Mono (code/eyebrow)
+   ================================================================ */
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,90 +10,207 @@
 
 @layer base {
   :root {
-    /* Paleta — Off-white / Marinho / Esmeralda / Grafite / Cinza claro */
-    --background: 60 19% 98%;          /* Off-white #FAFAF7 */
-    --foreground: 223 16% 12%;         /* Grafite #1A1D24 */
+    /* ================================================================
+       SINK Design Tokens — variáveis brutas
+       (usadas diretamente em CSS e como base dos tokens shadcn abaixo)
+       ================================================================ */
 
-    --card: 0 0% 100%;
-    --card-foreground: 223 16% 12%;
+    /* Escala deep (teal escuro) */
+    --sink-deep:        #07232A;
+    --sink-deep-2:      #0B2A2E;
+    --sink-deep-3:      #103239;
+    --sink-deep-4:      #18404A;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 223 16% 12%;
+    /* Escala mint (verde menta) */
+    --sink-mint:        #2BD49C;
+    --sink-mint-2:      #5FE3B5;
+    --sink-mint-3:      #17A679;
+    --sink-mint-soft:   #D4F5E8;
 
-    --primary: 228 71% 13%;            /* Marinho #0A1538 */
-    --primary-foreground: 60 19% 98%;
+    /* Neutros quentes */
+    --sink-cream:       #F3EFE6;
+    --sink-cream-2:     #EAE4D5;
+    --sink-paper:       #FBF9F3;
+    --sink-ink:         #0A1F24;
+    --sink-ink-60:      #0A1F24A6;
+    --sink-ink-40:      #0A1F2466;
+    --sink-fog:         #D9E3DF;
 
-    --secondary: 220 13% 91%;          /* Cinza claro #E5E7EB */
-    --secondary-foreground: 223 16% 12%;
+    /* Semânticos */
+    --sink-warn:        #F3B84A;
+    --sink-danger:      #E26B5A;
 
-    --muted: 220 14% 94%;
-    --muted-foreground: 223 10% 42%;
+    /* Tipografia */
+    --font-sans: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
 
-    --accent: 162 100% 42%;            /* Esmeralda #00D49A */
-    --accent-foreground: 223 16% 12%;
+    /* Escala tipográfica */
+    --fs-12: 0.75rem;
+    --fs-14: 0.875rem;
+    --fs-16: 1rem;
+    --fs-18: 1.125rem;
+    --fs-20: 1.25rem;
+    --fs-24: 1.5rem;
+    --fs-32: 2rem;
+    --fs-40: 2.5rem;
+    --fs-56: 3.5rem;
+    --fs-72: 4.5rem;
+    --fs-96: 6rem;
 
-    --destructive: 0 65% 48%;
+    /* Espaçamento (escala 4pt) */
+    --sp-1: 4px;
+    --sp-2: 8px;
+    --sp-3: 12px;
+    --sp-4: 16px;
+    --sp-5: 24px;
+    --sp-6: 32px;
+    --sp-7: 48px;
+    --sp-8: 64px;
+    --sp-9: 96px;
+    --sp-10: 128px;
+
+    /* Raios */
+    --r-sm: 6px;
+    --r-md: 10px;
+    --r-lg: 16px;
+    --r-xl: 24px;
+    --r-pill: 999px;
+
+    /* Sombras */
+    --shadow-sm:   0 1px 2px rgba(7,35,42,0.06), 0 1px 3px rgba(7,35,42,0.04);
+    --shadow-md:   0 4px 12px rgba(7,35,42,0.08), 0 2px 4px rgba(7,35,42,0.04);
+    --shadow-lg:   0 12px 32px rgba(7,35,42,0.12), 0 4px 12px rgba(7,35,42,0.06);
+    --shadow-glow: 0 0 0 6px rgba(43,212,156,0.18);
+
+    /* Animação */
+    --ease:     cubic-bezier(0.2, 0.8, 0.2, 1);
+    --dur-fast: 150ms;
+    --dur-med:  280ms;
+    --dur-slow: 480ms;
+
+    /* ================================================================
+       shadcn / Tailwind tokens — mapeados para os tokens SINK
+       (HSL porque shadcn usa hsl(var(--token)))
+       ================================================================ */
+
+    /* sink-cream (#F3EFE6) → 42 33% 93% */
+    --background: 42 33% 93%;
+    /* sink-ink (#0A1F24) → 192 55% 9% */
+    --foreground: 192 55% 9%;
+
+    /* sink-paper (#FBF9F3) → 45 43% 96% */
+    --card: 45 43% 96%;
+    --card-foreground: 192 55% 9%;
+
+    --popover: 45 43% 96%;
+    --popover-foreground: 192 55% 9%;
+
+    /* sink-mint (#2BD49C) → 158 67% 50% */
+    --primary: 158 67% 50%;
+    /* sink-deep (#07232A) → 194 62% 9% */
+    --primary-foreground: 194 62% 9%;
+
+    /* sink-cream-2 (#EAE4D5) → 40 29% 87% */
+    --secondary: 40 29% 87%;
+    --secondary-foreground: 192 55% 9%;
+
+    /* sink-cream-2 como muted */
+    --muted: 40 29% 87%;
+    --muted-foreground: 192 30% 35%;
+
+    /* sink-mint-soft (#D4F5E8) → 152 68% 88% como accent */
+    --accent: 152 68% 88%;
+    --accent-foreground: 194 62% 9%;
+
+    /* sink-danger (#E26B5A) → 8 68% 61% */
+    --destructive: 8 68% 61%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 13% 88%;
-    --input: 220 13% 88%;
-    --ring: 228 71% 13%;
+    /* sink-fog (#D9E3DF) → 156 17% 86% */
+    --border: 156 17% 86%;
+    --input: 156 17% 86%;
+    /* sink-mint como ring */
+    --ring: 158 67% 50%;
 
-    --radius: 0.375rem;
+    --radius: 0.625rem;  /* ~10px — sink-md */
 
-    /* Status — alinhado à paleta (Esmeralda p/ aprovado) */
-    --status-draft: 223 8% 52%;
-    --status-committee: 38 80% 48%;
-    --status-approved: 162 100% 36%;   /* Esmeralda escurecida p/ contraste */
+    /* Status */
+    --status-draft:      192 20% 50%;
+    --status-committee:  38 88% 62%;
+    /* sink-mint-3 (#17A679) → 159 75% 37% */
+    --status-approved:   159 75% 37%;
     --status-restricted: 28 75% 50%;
-    --status-rejected: 0 70% 50%;
+    --status-rejected:   8 68% 50%;
 
-    /* Sidebar — Marinho */
-    --sidebar-background: 228 71% 13%;
-    --sidebar-foreground: 220 13% 88%;
-    --sidebar-primary: 162 100% 42%;
-    --sidebar-primary-foreground: 228 71% 13%;
-    --sidebar-accent: 228 50% 18%;
-    --sidebar-accent-foreground: 60 19% 98%;
-    --sidebar-border: 228 40% 20%;
-    --sidebar-ring: 162 100% 42%;
+    /* Sidebar — tons deep SINK */
+    /* sink-deep (#07232A) → 194 62% 9% */
+    --sidebar-background:            194 62% 9%;
+    /* sink-fog (#D9E3DF) → 156 17% 86% */
+    --sidebar-foreground:            156 17% 86%;
+    /* sink-mint (#2BD49C) → 158 67% 50% */
+    --sidebar-primary:               158 67% 50%;
+    --sidebar-primary-foreground:    194 62% 9%;
+    /* sink-deep-3 (#103239) → 191 56% 14% */
+    --sidebar-accent:                191 56% 14%;
+    --sidebar-accent-foreground:     42 33% 93%;
+    /* sink-deep-4 (#18404A) → 192 50% 19% */
+    --sidebar-border:                192 50% 19%;
+    --sidebar-ring:                  158 67% 50%;
 
-    /* Navbar — Grafite */
-    --navbar: 223 16% 12%;
-    --navbar-foreground: 60 19% 98%;
+    /* Navbar — deep SINK */
+    --navbar:            194 62% 9%;
+    --navbar-foreground: 42 33% 93%;
   }
 
   .dark {
-    --background: 222 20% 7%;
-    --foreground: 220 14% 92%;
-    --card: 222 18% 10%;
-    --card-foreground: 220 14% 92%;
-    --popover: 222 18% 10%;
-    --popover-foreground: 220 14% 92%;
-    --primary: 216 40% 56%;
-    --primary-foreground: 222 20% 7%;
-    --secondary: 222 14% 16%;
-    --secondary-foreground: 220 14% 92%;
-    --muted: 222 14% 14%;
-    --muted-foreground: 220 8% 52%;
-    --accent: 222 14% 16%;
-    --accent-foreground: 220 14% 92%;
-    --destructive: 0 55% 42%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 222 12% 18%;
-    --input: 222 12% 18%;
-    --ring: 216 40% 56%;
-    --sidebar-background: 222 22% 6%;
-    --sidebar-foreground: 220 10% 70%;
-    --sidebar-primary: 216 36% 50%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 222 16% 12%;
-    --sidebar-accent-foreground: 220 10% 82%;
-    --sidebar-border: 222 14% 12%;
-    --sidebar-ring: 216 36% 50%;
+    /* Modo escuro: fundos deep, texto cream, primary mint */
 
-    --navbar: 222 22% 8%;
-    --navbar-foreground: 220 10% 88%;
+    /* sink-deep (#07232A) → 194 62% 9% */
+    --background:  194 62% 9%;
+    /* sink-cream (#F3EFE6) → 42 33% 93% */
+    --foreground:  42 33% 93%;
+
+    /* sink-deep-3 (#103239) → 191 56% 14% */
+    --card:             191 56% 14%;
+    --card-foreground:  42 33% 93%;
+
+    --popover:             191 56% 14%;
+    --popover-foreground:  42 33% 93%;
+
+    /* sink-mint (#2BD49C) → 158 67% 50% */
+    --primary:            158 67% 50%;
+    --primary-foreground: 194 62% 9%;
+
+    /* sink-deep-4 (#18404A) → 192 50% 19% */
+    --secondary:            192 50% 19%;
+    --secondary-foreground: 42 33% 93%;
+
+    --muted:            192 50% 19%;
+    --muted-foreground: 156 17% 60%;
+
+    --accent:            192 50% 19%;
+    --accent-foreground: 42 33% 93%;
+
+    --destructive:            8 68% 45%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* sink-deep-4 como bordas no dark */
+    --border: 192 50% 19%;
+    --input:  192 50% 19%;
+    --ring:   158 67% 50%;
+
+    /* Sidebar dark */
+    --sidebar-background:            194 65% 6%;
+    --sidebar-foreground:            156 17% 70%;
+    --sidebar-primary:               158 67% 50%;
+    --sidebar-primary-foreground:    0 0% 100%;
+    --sidebar-accent:                191 56% 12%;
+    --sidebar-accent-foreground:     42 33% 82%;
+    --sidebar-border:                192 50% 14%;
+    --sidebar-ring:                  158 67% 50%;
+
+    --navbar:            194 65% 7%;
+    --navbar-foreground: 42 33% 88%;
   }
 }
 
@@ -100,20 +221,29 @@
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
-    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+    font-family: var(--font-sans);
     letter-spacing: -0.01em;
+  }
+
+  code, pre, kbd, samp {
+    font-family: var(--font-mono);
   }
 }
 
 @layer utilities {
   .tabular-nums {
     font-variant-numeric: tabular-nums;
+  }
+
+  /* SINK helpers */
+  .font-mono {
+    font-family: var(--font-mono);
+    letter-spacing: 0.01em;
   }
 }

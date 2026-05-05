@@ -21,7 +21,7 @@ export function ScoreGauge({ score, size = "md" }: ScoreGaugeProps) {
   return (
     <div className={cn("relative flex items-center justify-center", dims)}>
       <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 100 100">
-        <circle cx="50" cy="50" r="40" fill="none" strokeWidth="8" className="stroke-muted" />
+        <circle cx="50" cy="50" r="40" fill="none" strokeWidth="8" className="stroke-sink-fog" />
         <circle
           cx="50" cy="50" r="40" fill="none" strokeWidth="8"
           strokeDasharray={circumference}
@@ -29,16 +29,19 @@ export function ScoreGauge({ score, size = "md" }: ScoreGaugeProps) {
           strokeLinecap="round"
           className={cn(
             "transition-all duration-700 ease-out",
-            risk.level === "very_low" ? "stroke-emerald-500" :
-            risk.level === "low" ? "stroke-green-500" :
-            risk.level === "medium" ? "stroke-amber-500" :
-            risk.level === "high" ? "stroke-orange-500" : "stroke-red-500"
+            risk.level === "very_low" ? "stroke-sink-mint" :
+            risk.level === "low" ? "stroke-sink-mint-2" :
+            risk.level === "medium" ? "stroke-sink-warn" :
+            risk.level === "high" ? "stroke-amber-500" : "stroke-sink-danger"
           )}
         />
       </svg>
       <div className="flex flex-col items-center z-10">
-        <span className={cn("font-bold tabular-nums", textSize)}>{s}</span>
-        <span className={cn("font-semibold tracking-wider", gradeSize, risk.color)}>{grade}</span>
+        <span className={cn("font-mono font-bold tabular-nums text-sink-ink", textSize)}>{s}</span>
+        <span className={cn("font-mono font-semibold tracking-wider", gradeSize,
+          risk.level === "very_low" || risk.level === "low" ? "text-sink-mint" :
+          risk.level === "medium" ? "text-sink-warn" : "text-sink-danger"
+        )}>{grade}</span>
       </div>
     </div>
   );

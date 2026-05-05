@@ -181,19 +181,19 @@ export function SectionFileUpload({
             <div
               key={i}
               className={cn(
-                "flex items-center gap-2 px-3 py-2 rounded-lg border text-sm",
+                "flex items-center gap-2 px-3 py-2 rounded-sink-md border",
                 att.ai_extracted_data
-                  ? "border-primary/30 bg-primary/5"
-                  : "border-border bg-muted/30"
+                  ? "border-sink-mint/25 bg-sink-mint/5 border-l-[3px] border-l-sink-mint"
+                  : "border-sink-fog bg-sink-cream/50"
               )}
             >
-              <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
+              <FileText className="h-4 w-4 shrink-0 text-sink-ink/40" />
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{att.file_name}</p>
-                <p className="text-xs text-muted-foreground">
+                <p className="font-sans text-xs font-medium text-sink-ink truncate">{att.file_name}</p>
+                <p className="font-mono text-[10px] text-sink-ink/40">
                   {formatSize(att.file_size)}
                   {att.ai_extracted_data && (
-                    <span className="ml-2 text-primary font-medium">✓ Analisado pela IA</span>
+                    <span className="ml-2 text-sink-mint font-semibold">Analisado pela IA</span>
                   )}
                 </p>
               </div>
@@ -203,14 +203,14 @@ export function SectionFileUpload({
                     type="button"
                     variant="ghost"
                     size="sm"
-                    className="h-7 text-xs gap-1"
+                    className="h-7 font-mono text-[10px] gap-1 rounded-sink-md border border-sink-fog bg-transparent text-sink-ink/60 hover:bg-sink-cream"
                     onClick={() => handleAnalyze(i)}
                     disabled={analyzing}
                   >
                     {analyzing ? (
                       <Loader2 className="h-3 w-3 animate-spin" />
                     ) : (
-                      <Sparkles className="h-3 w-3" />
+                      <Sparkles className="h-3 w-3 text-sink-mint" />
                     )}
                     {att.ai_extracted_data ? "Reanalisar" : "Analisar IA"}
                   </Button>
@@ -218,10 +218,10 @@ export function SectionFileUpload({
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="h-7 w-7"
+                    className="h-7 w-7 rounded-sink-sm hover:bg-sink-danger/10"
                     onClick={() => handleRemove(i)}
                   >
-                    <X className="h-3 w-3 text-destructive" />
+                    <X className="h-3 w-3 text-sink-danger" />
                   </Button>
                 </div>
               )}
@@ -232,11 +232,11 @@ export function SectionFileUpload({
 
       {/* Extracted data preview */}
       {attachments.some(a => a.ai_extracted_data?.resumo_executivo) && (
-        <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
-          <p className="text-xs font-semibold text-primary mb-1 flex items-center gap-1">
+        <div className="rounded-sink-md border border-sink-mint/20 border-l-[3px] border-l-sink-mint bg-sink-mint/5 p-3">
+          <p className="font-mono text-[10px] uppercase tracking-wider font-semibold text-sink-mint mb-1.5 flex items-center gap-1">
             <Sparkles className="h-3 w-3" /> Resumo IA
           </p>
-          <p className="text-xs text-muted-foreground leading-relaxed">
+          <p className="font-sans text-xs text-sink-ink/70 leading-relaxed">
             {attachments.find(a => a.ai_extracted_data?.resumo_executivo)?.ai_extracted_data.resumo_executivo}
           </p>
         </div>
@@ -257,7 +257,7 @@ export function SectionFileUpload({
             type="button"
             variant="outline"
             size="sm"
-            className="h-8 text-xs gap-1.5 border-dashed"
+            className="h-8 font-mono text-[10px] gap-1.5 border-dashed border-sink-fog text-sink-ink/50 hover:bg-sink-cream hover:text-sink-ink rounded-sink-md bg-transparent"
             onClick={() => inputRef.current?.click()}
             disabled={uploading}
           >

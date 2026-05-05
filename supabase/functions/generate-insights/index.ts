@@ -67,8 +67,10 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+    // TODO: Configure AI_API_KEY in Supabase secrets (Anthropic, OpenAI, or Google)
+    // and update AI_API_URL + model below before deploying
+    const AI_API_KEY = Deno.env.get("AI_API_KEY");
+    if (!AI_API_KEY) throw new Error("AI_API_KEY is not configured");
 
     const { analysisData, clientData, insightType } = await req.json();
 
@@ -199,14 +201,17 @@ ${JSON.stringify(availableData, null, 2)}
 Dados do cliente:
 ${JSON.stringify(clientData || {}, null, 2)}`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    // TODO: Replace URL and model with chosen provider:
+    // OpenAI:   https://api.openai.com/v1/chat/completions  |  model: "gpt-4o"
+    // Google:   https://generativelanguage.googleapis.com/v1beta/...
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${AI_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "gpt-4o",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },

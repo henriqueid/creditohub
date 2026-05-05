@@ -158,7 +158,7 @@ export default function ClientForm() {
   const hasPrefill = !!prefill?.razao_social;
 
   return (
-    <div className="p-6 max-w-2xl">
+    <div className="p-5 max-w-3xl">
       <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="mb-4">
         <ArrowLeft className="h-4 w-4 mr-1" /> Voltar
       </Button>

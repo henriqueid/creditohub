@@ -13,7 +13,7 @@ interface RiskRadarChartProps {
 export function RiskRadarChart({ dimensions, className }: RiskRadarChartProps) {
   const overallScore = useMemo(() => calculateOverallRiskScore(dimensions), [dimensions]);
   const riskLabel = overallScore >= 70 ? "Baixo" : overallScore >= 40 ? "Médio" : "Alto";
-  const riskColor = overallScore >= 70 ? "text-emerald-600" : overallScore >= 40 ? "text-amber-600" : "text-red-600";
+  const riskColor = overallScore >= 70 ? "text-status-approved" : overallScore >= 40 ? "text-sink-warn" : "text-sink-danger";
   const RiskIcon = overallScore >= 70 ? ShieldCheck : overallScore >= 40 ? Shield : overallScore >= 25 ? ShieldAlert : ShieldX;
 
   const chartData = dimensions.map(d => ({
@@ -81,12 +81,12 @@ export function RiskRadarChart({ dimensions, className }: RiskRadarChartProps) {
             <div key={d.dimension} className="flex items-center gap-2">
               <div className={cn(
                 "h-2 w-2 rounded-full shrink-0",
-                d.status === "good" ? "bg-emerald-500" : d.status === "warning" ? "bg-amber-500" : "bg-red-500"
+                d.status === "good" ? "bg-status-approved" : d.status === "warning" ? "bg-sink-warn" : "bg-sink-danger"
               )} />
               <span className="text-[11px] text-muted-foreground truncate">{d.label}</span>
               <span className={cn(
                 "text-[11px] font-bold tabular-nums ml-auto",
-                d.status === "good" ? "text-emerald-600" : d.status === "warning" ? "text-amber-600" : "text-red-600"
+                d.status === "good" ? "text-status-approved" : d.status === "warning" ? "text-sink-warn" : "text-sink-danger"
               )}>{d.score}</span>
             </div>
           ))}

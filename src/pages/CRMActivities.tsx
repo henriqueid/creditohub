@@ -13,11 +13,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 
 const ACTIVITY_TYPES = [
-  { value: "call", label: "Ligação", icon: Phone, color: "text-blue-500" },
-  { value: "email", label: "Email", icon: Mail, color: "text-amber-500" },
-  { value: "meeting", label: "Reunião", icon: Users, color: "text-green-500" },
+  { value: "call", label: "Ligação", icon: Phone, color: "text-sink-mint-3" },
+  { value: "email", label: "Email", icon: Mail, color: "text-sink-warn" },
+  { value: "meeting", label: "Reunião", icon: Users, color: "text-status-approved" },
   { value: "note", label: "Nota", icon: FileText, color: "text-muted-foreground" },
-  { value: "message", label: "Mensagem", icon: MessageSquare, color: "text-purple-500" },
+  { value: "message", label: "Mensagem", icon: MessageSquare, color: "text-sink-mint" },
 ];
 
 const OWNER_FILTERS = [

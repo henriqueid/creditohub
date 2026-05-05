@@ -185,7 +185,8 @@ export async function insertSnapshotSocios(creditAnalysisId: string, snap: Consu
     cargo: s.cargo || null,
     participacao: s.participacao ?? null,
   }));
-  await supabase.from("credit_analysis_socios").insert(rows);
+  const { error } = await supabase.from("credit_analysis_socios").insert(rows);
+  if (error) throw error;
 }
 
 /** Mapeia o snapshot para o payload de `clients`. */

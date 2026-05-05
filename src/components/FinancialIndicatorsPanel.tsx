@@ -1,6 +1,5 @@
 import { useMemo } from "react";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, LineChart, Line, Area, AreaChart } from "recharts";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, Area, AreaChart } from "recharts";
 import { cn } from "@/lib/utils";
 import { formatBRL } from "@/lib/formatters";
 import {
@@ -9,9 +8,8 @@ import {
   suggestRate, parseRevenueData, calculateConcentration,
 } from "@/lib/credit-calculations";
 import { RiskRadarChart } from "@/components/RiskRadarChart";
-import { ScoreGauge } from "@/components/ScoreGauge";
 import {
-  TrendingUp, TrendingDown, DollarSign, Shield, Percent, Users, BarChart3,
+  TrendingUp, DollarSign, Shield, Percent, Users, BarChart3,
   Activity, ArrowUpRight, ArrowDownRight, Minus, AlertTriangle, CheckCircle2, XCircle
 } from "lucide-react";
 
@@ -46,45 +44,43 @@ function KPICard({ label, value, subtext, icon: Icon, trend, className }: {
   className?: string;
 }) {
   return (
-    <Card className={cn("relative overflow-hidden", className)}>
-      <CardContent className="p-4">
-        <div className="flex items-start justify-between">
-          <div className="space-y-1">
-            <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">{label}</p>
-            <p className="text-xl font-bold tabular-nums">{value}</p>
-            {subtext && <p className="text-[10px] text-muted-foreground">{subtext}</p>}
-          </div>
-          <div className="flex flex-col items-end gap-1">
-            <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
-              <Icon className="h-4 w-4 text-primary" />
-            </div>
-            {trend && (
-              <div className={cn("flex items-center gap-0.5 text-[10px] font-semibold",
-                trend === "up" ? "text-emerald-600" : trend === "down" ? "text-red-600" : "text-muted-foreground"
-              )}>
-                {trend === "up" ? <ArrowUpRight className="h-3 w-3" /> :
-                 trend === "down" ? <ArrowDownRight className="h-3 w-3" /> :
-                 <Minus className="h-3 w-3" />}
-              </div>
-            )}
-          </div>
+    <div className={cn("bg-sink-paper border border-sink-fog rounded-sink-lg p-4 shadow-sink-sm relative overflow-hidden", className)}>
+      <div className="flex items-start justify-between">
+        <div className="space-y-1">
+          <p className="font-mono text-[10px] uppercase tracking-wider text-sink-ink/50 font-semibold">{label}</p>
+          <p className="font-mono text-xl font-bold tabular-nums text-sink-ink">{value}</p>
+          {subtext && <p className="font-mono text-[10px] text-sink-ink/40">{subtext}</p>}
         </div>
-      </CardContent>
-    </Card>
+        <div className="flex flex-col items-end gap-1">
+          <div className="h-8 w-8 rounded-sink-md bg-sink-mint/10 flex items-center justify-center">
+            <Icon className="h-4 w-4 text-sink-mint" />
+          </div>
+          {trend && (
+            <div className={cn("flex items-center gap-0.5 font-mono text-[10px] font-semibold",
+              trend === "up" ? "text-sink-mint" : trend === "down" ? "text-sink-danger" : "text-sink-ink/40"
+            )}>
+              {trend === "up" ? <ArrowUpRight className="h-3 w-3" /> :
+               trend === "down" ? <ArrowDownRight className="h-3 w-3" /> :
+               <Minus className="h-3 w-3" />}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
 
 function TrafficLight({ label, status, detail }: { label: string; status: "good" | "warning" | "danger" | "neutral"; detail?: string }) {
   const Icon = status === "good" ? CheckCircle2 : status === "danger" ? XCircle : AlertTriangle;
-  const color = status === "good" ? "text-emerald-600" : status === "danger" ? "text-red-600" : status === "warning" ? "text-amber-600" : "text-muted-foreground";
-  const bg = status === "good" ? "bg-emerald-50 dark:bg-emerald-950" : status === "danger" ? "bg-red-50 dark:bg-red-950" : status === "warning" ? "bg-amber-50 dark:bg-amber-950" : "bg-muted/30";
+  const color = status === "good" ? "text-sink-mint" : status === "danger" ? "text-sink-danger" : status === "warning" ? "text-sink-warn" : "text-sink-ink/40";
+  const bg = status === "good" ? "bg-sink-mint/10 border-sink-mint/20" : status === "danger" ? "bg-sink-danger/10 border-sink-danger/20" : status === "warning" ? "bg-sink-warn/10 border-sink-warn/20" : "bg-sink-cream border-sink-fog";
 
   return (
-    <div className={cn("flex items-center gap-2.5 px-3 py-2 rounded-lg", bg)}>
+    <div className={cn("flex items-center gap-2.5 px-3 py-2 rounded-sink-md border", bg)}>
       <Icon className={cn("h-4 w-4 shrink-0", color)} />
       <div className="min-w-0">
-        <p className={cn("text-xs font-semibold", color)}>{label}</p>
-        {detail && <p className="text-[10px] text-muted-foreground truncate">{detail}</p>}
+        <p className={cn("font-sans text-xs font-semibold", color)}>{label}</p>
+        {detail && <p className="font-mono text-[10px] text-sink-ink/40 truncate">{detail}</p>}
       </div>
     </div>
   );
@@ -130,11 +126,11 @@ export function FinancialIndicatorsPanel(props: FinancialIndicatorsPanelProps) {
 
   // Comparative data for bar chart
   const comparisonData = useMemo(() => [
-    { name: "Faturamento", value: props.faturamentoMedio || 0, fill: "hsl(var(--primary))" },
-    { name: "Receita Líq.", value: props.receitaLiquida || 0, fill: "hsl(210, 60%, 50%)" },
-    { name: "Limite", value: props.limiteSugerido || 0, fill: "hsl(145, 60%, 40%)" },
-    { name: "Volume Est.", value: props.volumeEstimado || 0, fill: "hsl(35, 90%, 50%)" },
-    { name: "Capital Soc.", value: props.capitalSocial || 0, fill: "hsl(270, 50%, 50%)" },
+    { name: "Faturamento", value: props.faturamentoMedio || 0, fill: "#3DD68C" },
+    { name: "Receita Líq.", value: props.receitaLiquida || 0, fill: "#6EE7B7" },
+    { name: "Limite", value: props.limiteSugerido || 0, fill: "#34D399" },
+    { name: "Volume Est.", value: props.volumeEstimado || 0, fill: "#F3B84A" },
+    { name: "Capital Soc.", value: props.capitalSocial || 0, fill: "#94A3B8" },
   ].filter(d => d.value > 0), [props.faturamentoMedio, props.receitaLiquida, props.limiteSugerido, props.volumeEstimado, props.capitalSocial]);
 
   // Traffic lights
@@ -156,7 +152,7 @@ export function FinancialIndicatorsPanel(props: FinancialIndicatorsPanelProps) {
       value: s.percentual_faturamento!,
     })), [props.sacados]);
 
-  const COLORS = ["hsl(var(--primary))", "hsl(210, 60%, 50%)", "hsl(145, 60%, 40%)", "hsl(35, 90%, 50%)", "hsl(270, 50%, 50%)", "hsl(0, 70%, 50%)", "hsl(180, 50%, 40%)", "hsl(300, 40%, 50%)"];
+  const COLORS = ["#3DD68C", "#6EE7B7", "#34D399", "#F3B84A", "#94A3B8", "#F87171", "#38BDF8", "#A78BFA"];
 
   return (
     <div className="space-y-6">
@@ -194,29 +190,29 @@ export function FinancialIndicatorsPanel(props: FinancialIndicatorsPanelProps) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <RiskRadarChart dimensions={radarDimensions} />
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Semáforo de Restritivos</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
+        <div className="bg-sink-paper border border-sink-fog rounded-sink-lg shadow-sink-sm overflow-hidden">
+          <div className="px-5 py-3.5 border-b border-sink-fog bg-sink-cream/60">
+            <h3 className="font-sans font-semibold text-sm text-sink-ink">Semáforo de Restritivos</h3>
+          </div>
+          <div className="px-5 py-4 space-y-2">
             {trafficLights.map((t, i) => (
               <TrafficLight key={i} {...t} />
             ))}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
 
       {/* Row 3: Comparative Financial + Concentration Pie */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {comparisonData.length > 0 && (
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <BarChart3 className="h-4 w-4 text-primary" />
+          <div className="bg-sink-paper border border-sink-fog rounded-sink-lg shadow-sink-sm overflow-hidden">
+            <div className="px-5 py-3.5 border-b border-sink-fog bg-sink-cream/60">
+              <h3 className="font-sans font-semibold text-sm text-sink-ink flex items-center gap-2">
+                <BarChart3 className="h-4 w-4 text-sink-mint" />
                 Comparativo Financeiro
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
+              </h3>
+            </div>
+            <div className="px-5 py-4">
               <div className="h-[250px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={comparisonData} layout="vertical" margin={{ left: 10, right: 20 }}>
@@ -229,7 +225,7 @@ export function FinancialIndicatorsPanel(props: FinancialIndicatorsPanelProps) {
                     <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} width={85} />
                     <Tooltip
                       formatter={(value: number) => formatBRL(value)}
-                      contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "12px" }}
+                      contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "10px", fontSize: "12px" }}
                     />
                     <Bar dataKey="value" radius={[0, 4, 4, 0]}>
                       {comparisonData.map((entry, i) => (
@@ -239,19 +235,19 @@ export function FinancialIndicatorsPanel(props: FinancialIndicatorsPanelProps) {
                   </BarChart>
                 </ResponsiveContainer>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         )}
 
         {pieData.length > 0 && (
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <Activity className="h-4 w-4 text-primary" />
+          <div className="bg-sink-paper border border-sink-fog rounded-sink-lg shadow-sink-sm overflow-hidden">
+            <div className="px-5 py-3.5 border-b border-sink-fog bg-sink-cream/60">
+              <h3 className="font-sans font-semibold text-sm text-sink-ink flex items-center gap-2">
+                <Activity className="h-4 w-4 text-sink-mint" />
                 Concentração de Sacados
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
+              </h3>
+            </div>
+            <div className="px-5 py-4">
               <div className="h-[250px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
@@ -271,38 +267,38 @@ export function FinancialIndicatorsPanel(props: FinancialIndicatorsPanelProps) {
                     </Pie>
                     <Tooltip
                       formatter={(value: number) => `${value.toFixed(1)}%`}
-                      contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "12px" }}
+                      contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "10px", fontSize: "12px" }}
                     />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
-              <div className="flex items-center justify-center gap-1 mt-2 text-[10px] text-muted-foreground">
-                <span>HHI: <strong className="text-foreground">{concentration.hhi.toFixed(0)}</strong></span>
+              <div className="flex items-center justify-center gap-1 mt-2 font-mono text-[10px] text-sink-ink/50">
+                <span>HHI: <strong className="text-sink-ink">{concentration.hhi.toFixed(0)}</strong></span>
                 <span className="mx-1">•</span>
                 <span>{concentration.hhi < 1500 ? "Baixa concentração" : concentration.hhi < 2500 ? "Concentração moderada" : "Alta concentração"}</span>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         )}
       </div>
 
       {/* Row 4: Revenue Trend (if available) */}
       {revenueData.length > 0 && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-primary" />
+        <div className="bg-sink-paper border border-sink-fog rounded-sink-lg shadow-sink-sm overflow-hidden">
+          <div className="px-5 py-3.5 border-b border-sink-fog bg-sink-cream/60">
+            <h3 className="font-sans font-semibold text-sm text-sink-ink flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-sink-mint" />
               Evolução do Faturamento
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+            </h3>
+          </div>
+          <div className="px-5 py-4">
             <div className="h-[200px]">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={revenueData} margin={{ top: 5, right: 20, bottom: 5, left: 10 }}>
                   <defs>
                     <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                      <stop offset="5%" stopColor="hsl(var(--sink-mint))" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="hsl(var(--sink-mint))" stopOpacity={0} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -313,7 +309,7 @@ export function FinancialIndicatorsPanel(props: FinancialIndicatorsPanelProps) {
                   />
                   <Tooltip
                     formatter={(value: number) => formatBRL(value)}
-                    contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "12px" }}
+                    contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "10px", fontSize: "12px" }}
                   />
                   <Area
                     type="monotone"
@@ -326,16 +322,16 @@ export function FinancialIndicatorsPanel(props: FinancialIndicatorsPanelProps) {
                 </AreaChart>
               </ResponsiveContainer>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
 
       {/* Row 5: Financial Ratios Detail */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm">Indicadores Financeiros Calculados</CardTitle>
-        </CardHeader>
-        <CardContent>
+      <div className="bg-sink-paper border border-sink-fog rounded-sink-lg shadow-sink-sm overflow-hidden">
+        <div className="px-5 py-3.5 border-b border-sink-fog bg-sink-cream/60">
+          <h3 className="font-sans font-semibold text-sm text-sink-ink">Indicadores Financeiros Calculados</h3>
+        </div>
+        <div className="px-5 py-4">
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             <RatioItem label="Margem Líquida" value={ratios.margemLiquidaNum !== null ? `${ratios.margemLiquidaNum.toFixed(1)}%` : "—"} benchmark="≥ 8% ideal" status={ratios.margemLiquidaNum !== null ? (ratios.margemLiquidaNum >= 8 ? "good" : ratios.margemLiquidaNum >= 3 ? "warning" : "danger") : "neutral"} />
             <RatioItem label="Índice de Liquidez" value={ratios.indiceLiquidezNum !== null ? ratios.indiceLiquidezNum.toFixed(2) : "—"} benchmark="≥ 1.0 ideal" status={ratios.indiceLiquidezNum !== null ? (ratios.indiceLiquidezNum >= 1.0 ? "good" : ratios.indiceLiquidezNum >= 0.7 ? "warning" : "danger") : "neutral"} />
@@ -344,8 +340,8 @@ export function FinancialIndicatorsPanel(props: FinancialIndicatorsPanelProps) {
             <RatioItem label="Capital de Giro Líq." value={ratios.capitalGiroLiquido !== null ? formatBRL(ratios.capitalGiroLiquido) : "—"} benchmark="Positivo é ideal" status={ratios.capitalGiroLiquido !== null ? (ratios.capitalGiroLiquido > 0 ? "good" : "danger") : "neutral"} />
             <RatioItem label="Receita / Funcionário" value={ratios.receitaPorFuncionario !== null ? formatBRL(ratios.receitaPorFuncionario) : "—"} benchmark="Varia por setor" status="neutral" />
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }
@@ -353,11 +349,11 @@ export function FinancialIndicatorsPanel(props: FinancialIndicatorsPanelProps) {
 function RatioItem({ label, value, benchmark, status }: { label: string; value: string; benchmark: string; status: "good" | "warning" | "danger" | "neutral" }) {
   return (
     <div className="space-y-1">
-      <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">{label}</p>
-      <p className={cn("text-lg font-bold tabular-nums",
-        status === "good" ? "text-emerald-600" : status === "warning" ? "text-amber-600" : status === "danger" ? "text-red-600" : "text-foreground"
+      <p className="font-mono text-[10px] uppercase tracking-wider text-sink-ink/50 font-semibold">{label}</p>
+      <p className={cn("font-mono text-lg font-bold tabular-nums",
+        status === "good" ? "text-sink-mint" : status === "warning" ? "text-sink-warn" : status === "danger" ? "text-sink-danger" : "text-sink-ink"
       )}>{value}</p>
-      <p className="text-[9px] text-muted-foreground">{benchmark}</p>
+      <p className="font-mono text-[9px] text-sink-ink/40">{benchmark}</p>
     </div>
   );
 }

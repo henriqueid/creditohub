@@ -14,8 +14,8 @@ import { Textarea } from "@/components/ui/textarea";
 
 const PRIORITIES = [
   { value: "low", label: "Baixa", color: "text-muted-foreground bg-muted" },
-  { value: "medium", label: "Média", color: "text-amber-600 bg-amber-50" },
-  { value: "high", label: "Alta", color: "text-red-600 bg-red-50" },
+  { value: "medium", label: "Média", color: "text-sink-warn bg-sink-warn/10" },
+  { value: "high", label: "Alta", color: "text-sink-danger bg-sink-danger/10" },
 ];
 
 const STATUSES = [
@@ -166,7 +166,7 @@ export default function CRMTasks() {
           return (
             <div key={t.id} className={cn("flex items-center gap-3 p-3 rounded-lg border transition-colors", overdue ? "border-destructive/30 bg-destructive/5" : "border-border/50 hover:bg-muted/30")}>
               <button onClick={() => toggleStatus.mutate({ id: t.id, newStatus: nextStatus })} className="shrink-0">
-                <StatusIcon className={cn("h-5 w-5", t.status === "completed" ? "text-green-500" : overdue ? "text-destructive" : "text-muted-foreground")} />
+                <StatusIcon className={cn("h-5 w-5", t.status === "completed" ? "text-status-approved" : overdue ? "text-destructive" : "text-muted-foreground")} />
               </button>
               <div className="flex-1 min-w-0">
                 <p className={cn("text-sm font-medium", t.status === "completed" && "line-through text-muted-foreground")}>{t.title}</p>

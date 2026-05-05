@@ -9,7 +9,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import { formatBRL } from "@/lib/formatters";
 import {
@@ -64,9 +63,9 @@ type SectionAttachments = Record<string, FileAttachment[]>;
 function Field({ label, children, hint }: { label: string; children: React.ReactNode; hint?: string }) {
   return (
     <div className="space-y-1.5">
-      <label className="text-[11px] font-semibold text-muted-foreground">{label}</label>
+      <label className="font-mono text-[10px] uppercase tracking-wider text-sink-ink/60 font-medium">{label}</label>
       {children}
-      {hint && <p className="text-[10px] text-muted-foreground/70">{hint}</p>}
+      {hint && <p className="font-mono text-[10px] text-sink-ink/40">{hint}</p>}
     </div>
   );
 }
@@ -102,19 +101,19 @@ function SectionWrapper({ title, icon: Icon, children, section, analysisId, atta
       viewport={{ once: true, margin: "-20px" }}
       transition={{ duration: 0.3, ease: "easeOut" }}
     >
-      <Card className="overflow-hidden border-border/60 shadow-sm hover:shadow-md transition-shadow duration-300">
+      <div className="bg-sink-paper border border-sink-fog rounded-sink-lg shadow-sink-sm overflow-hidden hover:shadow-sink-md transition-shadow duration-300">
         <button
           type="button"
           onClick={() => setIsOpen(!isOpen)}
-          className="w-full flex items-center justify-between px-5 py-3.5 bg-muted/30 hover:bg-muted/50 transition-colors"
+          className="w-full flex items-center justify-between px-5 py-3.5 bg-sink-cream/60 hover:bg-sink-cream transition-colors"
         >
           <div className="flex items-center gap-2.5">
-            <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center">
-              <Icon className="h-3.5 w-3.5 text-primary" />
+            <div className="h-7 w-7 rounded-sink-md bg-sink-mint/10 flex items-center justify-center">
+              <Icon className="h-3.5 w-3.5 text-sink-mint" />
             </div>
-            <h2 className="text-sm font-semibold text-foreground">{title}</h2>
+            <h2 className="font-sans text-sm font-semibold text-sink-ink">{title}</h2>
             {attachCount > 0 && (
-              <span className="text-[10px] font-medium bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">
+              <span className="font-mono text-[10px] font-semibold bg-sink-mint/10 text-sink-deep px-1.5 py-0.5 rounded-sink-pill border border-sink-mint/20">
                 {attachCount} {attachCount === 1 ? 'anexo' : 'anexos'}
               </span>
             )}
@@ -123,7 +122,7 @@ function SectionWrapper({ title, icon: Icon, children, section, analysisId, atta
             animate={{ rotate: showContent ? 180 : 0 }}
             transition={{ duration: 0.2 }}
           >
-            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+            <ChevronDown className="h-4 w-4 text-sink-ink/40" />
           </motion.div>
         </button>
 
@@ -137,11 +136,11 @@ function SectionWrapper({ title, icon: Icon, children, section, analysisId, atta
               transition={{ duration: 0.2, ease: "easeInOut" }}
               className="overflow-hidden"
             >
-              <div className="px-5 py-2.5 bg-muted/10 border-t border-border/30">
+              <div className="px-5 py-2.5 bg-sink-cream/30 border-t border-sink-fog/40">
                 <div className="flex flex-wrap gap-x-4 gap-y-1">
                   {summary.map((item, i) => (
-                    <span key={i} className="text-[11px] text-muted-foreground">
-                      <span className="text-foreground font-medium">{item.split(": ")[0]}:</span>{" "}
+                    <span key={i} className="font-mono text-[11px] text-sink-ink/50">
+                      <span className="text-sink-ink font-semibold">{item.split(": ")[0]}:</span>{" "}
                       {item.split(": ").slice(1).join(": ") || "—"}
                     </span>
                   ))}
@@ -157,8 +156,8 @@ function SectionWrapper({ title, icon: Icon, children, section, analysisId, atta
               transition={{ duration: 0.2, ease: "easeInOut" }}
               className="overflow-hidden"
             >
-              <div className="px-5 py-2 bg-muted/10 border-t border-border/30">
-                <span className="text-[11px] text-muted-foreground italic">Nenhum dado preenchido</span>
+              <div className="px-5 py-2 bg-sink-cream/30 border-t border-sink-fog/40">
+                <span className="font-mono text-[11px] text-sink-ink/40 italic">Nenhum dado preenchido</span>
               </div>
             </motion.div>
           )}
@@ -173,10 +172,10 @@ function SectionWrapper({ title, icon: Icon, children, section, analysisId, atta
               transition={{ duration: 0.25, ease: "easeInOut" }}
               className="overflow-hidden"
             >
-              <CardContent className="px-5 py-4 space-y-4">
+              <div className="px-5 py-4 space-y-4">
                 {children}
 
-                <div className="pt-2 border-t border-border/40">
+                <div className="pt-2 border-t border-sink-fog/40">
                   <SectionFileUpload
                     analysisId={analysisId}
                     section={section}
@@ -187,11 +186,11 @@ function SectionWrapper({ title, icon: Icon, children, section, analysisId, atta
                     disabled={disabled}
                   />
                 </div>
-              </CardContent>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
-      </Card>
+      </div>
     </motion.div>
   );
 }
@@ -721,44 +720,59 @@ export default function CreditAnalysisForm() {
       {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top bar */}
-        <header className="shrink-0 flex items-center justify-between gap-3 px-6 py-3 border-b border-border bg-card">
+        <header className="shrink-0 flex items-center justify-between gap-3 px-6 py-3 border-b border-sink-fog bg-sink-paper shadow-sink-sm">
           <div className="flex items-center gap-3 min-w-0">
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate("/analises")}>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 rounded-sink-md text-sink-ink/60 hover:text-sink-ink hover:bg-sink-cream"
+              onClick={() => navigate("/analises")}
+            >
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <div className="min-w-0">
-              <h1 className="text-base font-semibold truncate">
+              <h1 className="font-sans font-bold text-base text-sink-ink truncate">
                 {isEditing ? (selectedClient?.razao_social || "Dossiê de Crédito") : "Novo Dossiê de Crédito"}
               </h1>
-              {isEditing && <p className="text-xs text-muted-foreground">Relatório inteligente de análise de crédito</p>}
+              {isEditing && <p className="font-mono text-[10px] uppercase tracking-wider text-sink-ink/40">Dossiê inteligente de análise de crédito</p>}
             </div>
             {isEditing && <StatusBadge status={status} />}
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
             {isEditing && (
-              <Button variant="outline" size="sm" className="text-xs" onClick={async () => {
-                try {
-                  const data = await fetchPrintData(id!);
-                  const html = generatePrintHtml(data);
-                  openPrintWindow(html);
-                } catch {
-                  toast({ title: "Erro ao gerar relatório", variant: "destructive" });
-                }
-              }}>
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-xs border-sink-fog bg-transparent text-sink-ink/70 hover:bg-sink-cream rounded-sink-md"
+                onClick={async () => {
+                  try {
+                    const data = await fetchPrintData(id!);
+                    const html = generatePrintHtml(data);
+                    openPrintWindow(html);
+                  } catch {
+                    toast({ title: "Erro ao gerar relatório", variant: "destructive" });
+                  }
+                }}
+              >
                 <Printer className="h-3.5 w-3.5 mr-1" /> PDF
               </Button>
             )}
             {!isReadOnly && (
               <>
-                <Button size="sm" className="text-xs" onClick={() => handleSubmit()} disabled={saveMutation.isPending}>
+                <Button
+                  size="sm"
+                  className="text-xs bg-sink-mint text-sink-deep hover:bg-sink-mint-2 rounded-sink-md font-semibold"
+                  onClick={() => handleSubmit()}
+                  disabled={saveMutation.isPending}
+                >
                   <Save className="h-3.5 w-3.5 mr-1" />
                   {saveMutation.isPending ? "Salvando..." : "Salvar"}
                 </Button>
                 {isEditing && (
                   <Button
                     size="sm"
-                    className="text-xs bg-status-committee hover:bg-status-committee/90"
+                    className="text-xs bg-sink-deep text-sink-cream hover:bg-sink-deep-2 rounded-sink-md font-semibold"
                     onClick={() => sendToCommittee.mutate()}
                     disabled={sendToCommittee.isPending || !recommendation}
                   >
@@ -772,7 +786,7 @@ export default function CreditAnalysisForm() {
 
         {/* KPI Strip */}
         <motion.div
-          className="shrink-0 border-b border-border bg-card/50 px-6 py-2.5"
+          className="shrink-0 border-b border-sink-fog bg-sink-cream/50 px-6 py-2.5"
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.15 }}
@@ -781,87 +795,87 @@ export default function CreditAnalysisForm() {
             <div className="flex items-center gap-2.5 shrink-0">
               <ScoreGauge score={scoreNum} size="sm" />
               <div>
-                <p className="text-[10px] text-muted-foreground">Risco</p>
+                <p className="font-mono text-[10px] uppercase tracking-wider text-sink-ink/40">Risco</p>
                 <RiskIndicator score={scoreNum} compact />
               </div>
             </div>
 
-            <div className="h-8 w-px bg-border/60 shrink-0" />
+            <div className="h-8 w-px bg-sink-fog shrink-0" />
 
             <div className="shrink-0">
-              <p className="text-[10px] text-muted-foreground">Limite Sugerido</p>
-              <p className="text-base font-bold tabular-nums">{limiteNum ? formatBRL(limiteNum) : "—"}</p>
+              <p className="font-mono text-[10px] uppercase tracking-wider text-sink-ink/40">Limite Sugerido</p>
+              <p className="font-mono text-base font-bold tabular-nums text-sink-ink">{limiteNum ? formatBRL(limiteNum) : "—"}</p>
               {autoLimit > 0 && !limiteNum && (
-                <button type="button" className="text-[10px] text-primary hover:underline" onClick={() => setLimiteSugerido(autoLimit.toString())}>
+                <button type="button" className="font-mono text-[10px] text-sink-mint hover:underline" onClick={() => setLimiteSugerido(autoLimit.toString())}>
                   <Zap className="h-2.5 w-2.5 inline mr-0.5" />Sugerir {formatBRL(autoLimit)}
                 </button>
               )}
             </div>
 
-            <div className="h-8 w-px bg-border/60 shrink-0" />
+            <div className="h-8 w-px bg-sink-fog shrink-0" />
 
             <div className="shrink-0">
-              <p className="text-[10px] text-muted-foreground">Utilização</p>
+              <p className="font-mono text-[10px] uppercase tracking-wider text-sink-ink/40">Utilização</p>
               <div className="flex items-center gap-2">
-                <div className="w-16 h-1.5 rounded-full bg-muted overflow-hidden">
+                <div className="w-16 h-1.5 rounded-full bg-sink-fog overflow-hidden">
                   <div
-                    className={cn("h-full rounded-full transition-all", limitUtil > 100 ? "bg-destructive" : limitUtil > 80 ? "bg-accent" : "bg-primary")}
+                    className={cn("h-full rounded-full transition-all", limitUtil > 100 ? "bg-sink-danger" : limitUtil > 80 ? "bg-sink-warn" : "bg-sink-mint")}
                     style={{ width: `${Math.min(limitUtil, 100)}%` }}
                   />
                 </div>
-                <span className="text-xs font-bold tabular-nums">{limitUtil.toFixed(0)}%</span>
+                <span className="font-mono text-xs font-bold tabular-nums text-sink-ink">{limitUtil.toFixed(0)}%</span>
               </div>
             </div>
 
-            <div className="h-8 w-px bg-border/60 shrink-0" />
+            <div className="h-8 w-px bg-sink-fog shrink-0" />
 
             <div className="shrink-0">
-              <p className="text-[10px] text-muted-foreground">Concentração</p>
-              <p className={cn("text-xs font-semibold tabular-nums", concentration.alerts.length > 0 ? "text-destructive" : "text-foreground")}>
+              <p className="font-mono text-[10px] uppercase tracking-wider text-sink-ink/40">Concentração</p>
+              <p className={cn("font-mono text-xs font-semibold tabular-nums", concentration.alerts.length > 0 ? "text-sink-danger" : "text-sink-ink")}>
                 Max: {concentration.maxSingleConcentration.toFixed(1)}%
               </p>
             </div>
 
-            <div className="h-8 w-px bg-border/60 shrink-0" />
+            <div className="h-8 w-px bg-sink-fog shrink-0" />
 
             <div className="shrink-0">
-              <p className="text-[10px] text-muted-foreground">Societária</p>
-              <p className={cn("text-xs font-semibold tabular-nums", !sociosTotal.isValid && socios.length > 0 ? "text-destructive" : "text-foreground")}>
+              <p className="font-mono text-[10px] uppercase tracking-wider text-sink-ink/40">Societária</p>
+              <p className={cn("font-mono text-xs font-semibold tabular-nums", !sociosTotal.isValid && socios.length > 0 ? "text-sink-danger" : "text-sink-ink")}>
                 {socios.length} sócios • {sociosTotal.totalParticipacao.toFixed(1)}%
               </p>
             </div>
 
-            <div className="h-8 w-px bg-border/60 shrink-0" />
+            <div className="h-8 w-px bg-sink-fog shrink-0" />
 
             <div className="shrink-0">
-              <p className="text-[10px] text-muted-foreground">Score Global</p>
-              <p className={cn("text-xs font-bold tabular-nums",
-                overallRiskScore >= 70 ? "text-emerald-600" : overallRiskScore >= 40 ? "text-amber-600" : "text-red-600"
+              <p className="font-mono text-[10px] uppercase tracking-wider text-sink-ink/40">Score Global</p>
+              <p className={cn("font-mono text-xs font-bold tabular-nums",
+                overallRiskScore >= 70 ? "text-sink-mint" : overallRiskScore >= 40 ? "text-sink-warn" : "text-sink-danger"
               )}>
                 {overallRiskScore}/100
               </p>
             </div>
 
-            <div className="h-8 w-px bg-border/60 shrink-0" />
+            <div className="h-8 w-px bg-sink-fog shrink-0" />
 
             <div className="shrink-0">
-              <p className="text-[10px] text-muted-foreground">Taxa IA</p>
-              <p className="text-xs font-semibold tabular-nums">{autoRate}% a.m.</p>
+              <p className="font-mono text-[10px] uppercase tracking-wider text-sink-ink/40">Taxa IA</p>
+              <p className="font-mono text-xs font-semibold tabular-nums text-sink-ink">{autoRate}% a.m.</p>
             </div>
 
-            <div className="h-8 w-px bg-border/60 shrink-0" />
+            <div className="h-8 w-px bg-sink-fog shrink-0" />
 
             <div className="shrink-0">
-              <p className="text-[10px] text-muted-foreground">Anexos</p>
-              <p className="text-xs font-semibold tabular-nums flex items-center gap-1">
-                <FileText className="h-3 w-3" />
+              <p className="font-mono text-[10px] uppercase tracking-wider text-sink-ink/40">Anexos</p>
+              <p className="font-mono text-xs font-semibold tabular-nums flex items-center gap-1 text-sink-ink">
+                <FileText className="h-3 w-3 text-sink-mint" />
                 {Object.values(sectionAttachments).flat().length}
               </p>
             </div>
 
             {isEditing && id && selectedClient && (
               <>
-                <div className="h-8 w-px bg-border/60 shrink-0" />
+                <div className="h-8 w-px bg-sink-fog shrink-0" />
                 <AnalysisDealsLink
                   analysisId={id}
                   clientId={selectedClient.id}
@@ -876,23 +890,28 @@ export default function CreditAnalysisForm() {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
-          <div className="shrink-0 px-6 pt-2 border-b border-border bg-card">
-            <TabsList className="h-9 bg-transparent gap-1 p-0">
-              <TabsTrigger value="dossie" className="text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-t-md rounded-b-none px-4 gap-1.5">
-                <FileCheck className="h-3.5 w-3.5" /> Dossiê
-              </TabsTrigger>
-              <TabsTrigger value="insights" className="text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-t-md rounded-b-none px-4 gap-1.5">
-                <Brain className="h-3.5 w-3.5" /> Insights IA
-              </TabsTrigger>
-              <TabsTrigger value="concentracao" className="text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-t-md rounded-b-none px-4 gap-1.5">
-                <Target className="h-3.5 w-3.5" /> Concentração
-              </TabsTrigger>
-              <TabsTrigger value="indicadores" className="text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-t-md rounded-b-none px-4 gap-1.5">
-                <Activity className="h-3.5 w-3.5" /> Indicadores
-              </TabsTrigger>
-              <TabsTrigger value="parecer" className="text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-t-md rounded-b-none px-4 gap-1.5">
-                <Gauge className="h-3.5 w-3.5" /> Parecer & Decisão
-              </TabsTrigger>
+          <div className="shrink-0 px-6 pt-2 border-b border-sink-fog bg-sink-paper">
+            <TabsList className="h-9 bg-transparent gap-0 p-0">
+              {[
+                { value: "dossie", icon: FileCheck, label: "Dossiê" },
+                { value: "insights", icon: Brain, label: "Insights IA" },
+                { value: "concentracao", icon: Target, label: "Concentração" },
+                { value: "indicadores", icon: Activity, label: "Indicadores" },
+                { value: "parecer", icon: Gauge, label: "Parecer & Decisão" },
+              ].map(({ value, icon: Icon, label }) => (
+                <TabsTrigger
+                  key={value}
+                  value={value}
+                  className={cn(
+                    "font-mono text-[11px] px-4 rounded-none border-b-2 gap-1.5 transition-all h-9",
+                    activeTab === value
+                      ? "border-sink-mint text-sink-mint bg-transparent font-semibold"
+                      : "border-transparent text-sink-ink/50 hover:text-sink-ink hover:border-sink-fog"
+                  )}
+                >
+                  <Icon className="h-3.5 w-3.5" /> {label}
+                </TabsTrigger>
+              ))}
             </TabsList>
           </div>
 
@@ -904,7 +923,7 @@ export default function CreditAnalysisForm() {
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.35, ease: "easeOut" }}
               onSubmit={handleSubmit}
-              className="max-w-5xl mx-auto px-6 py-6 space-y-5"
+              className="w-full px-5 py-5 space-y-5"
             >
 
               {/* Progress Stepper */}
@@ -912,32 +931,37 @@ export default function CreditAnalysisForm() {
                 initial={{ opacity: 0, y: -8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: 0.1 }}
-                className="rounded-xl border border-border/60 bg-card p-4 shadow-sm"
+                className="bg-sink-paper border border-sink-fog rounded-sink-lg p-4 shadow-sink-sm"
               >
                 <div className="flex items-center justify-between mb-3">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Progresso do Dossiê</p>
+                  <p className="font-mono text-[10px] uppercase tracking-wider text-sink-ink/50 font-semibold">Progresso do Dossiê</p>
                   <div className="flex items-center gap-2">
                     <Button
                       type="button"
                       variant={compactMode ? "default" : "outline"}
                       size="sm"
-                      className="h-6 text-[10px] gap-1 px-2"
+                      className={cn(
+                        "h-6 font-mono text-[10px] gap-1 px-2 rounded-sink-md",
+                        compactMode
+                          ? "bg-sink-mint text-sink-deep hover:bg-sink-mint-2 border-0"
+                          : "border-sink-fog bg-transparent text-sink-ink/60 hover:bg-sink-cream"
+                      )}
                       onClick={() => setCompactMode(!compactMode)}
                     >
                       {compactMode ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
                       {compactMode ? "Expandir" : "Compacto"}
                     </Button>
                     <span className={cn(
-                      "text-xs font-bold tabular-nums px-2 py-0.5 rounded-full",
-                      overallProgress === 100 ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
+                      "font-mono text-xs font-bold tabular-nums px-2 py-0.5 rounded-sink-pill",
+                      overallProgress === 100 ? "bg-sink-mint/10 text-sink-deep" : "bg-sink-fog/30 text-sink-ink/50"
                     )}>
                       {overallProgress}%
                     </span>
                   </div>
                 </div>
-                <div className="w-full h-1.5 rounded-full bg-muted overflow-hidden mb-4">
+                <div className="w-full h-1.5 rounded-sink-pill bg-sink-fog overflow-hidden mb-4">
                   <motion.div
-                    className="h-full rounded-full bg-primary"
+                    className="h-full rounded-sink-pill bg-sink-mint"
                     initial={{ width: 0 }}
                     animate={{ width: `${overallProgress}%` }}
                     transition={{ duration: 0.6, ease: "easeOut", delay: 0.2 }}
@@ -955,29 +979,29 @@ export default function CreditAnalysisForm() {
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ duration: 0.25, delay: 0.05 * i + 0.2 }}
                         className={cn(
-                          "flex flex-col items-center gap-1.5 p-2 rounded-lg text-center cursor-default transition-colors",
-                          isComplete ? "bg-primary/10" : hasContent ? "bg-accent/10" : "bg-muted/30"
+                          "flex flex-col items-center gap-1.5 p-2 rounded-sink-md text-center cursor-default transition-colors",
+                          isComplete ? "bg-sink-mint/10" : hasContent ? "bg-sink-cream" : "bg-sink-fog/20"
                         )}
                       >
                         <div className={cn(
-                          "h-7 w-7 rounded-full flex items-center justify-center transition-colors",
+                          "h-7 w-7 rounded-sink-pill flex items-center justify-center transition-colors",
                           isComplete
-                            ? "bg-primary text-primary-foreground"
+                            ? "bg-sink-mint text-sink-deep"
                             : hasContent
-                              ? "bg-accent/20 text-accent-foreground"
-                              : "bg-muted text-muted-foreground"
+                              ? "bg-sink-cream-2 text-sink-ink"
+                              : "bg-sink-fog/40 text-sink-ink/40"
                         )}>
                           {isComplete ? <Check className="h-3.5 w-3.5" /> : <Icon className="h-3.5 w-3.5" />}
                         </div>
                         <span className={cn(
-                          "text-[10px] font-medium leading-tight",
-                          isComplete ? "text-primary" : hasContent ? "text-foreground" : "text-muted-foreground"
+                          "font-mono text-[10px] font-medium leading-tight",
+                          isComplete ? "text-sink-deep" : hasContent ? "text-sink-ink" : "text-sink-ink/40"
                         )}>
                           {s.label}
                         </span>
                         <span className={cn(
-                          "text-[9px] tabular-nums",
-                          isComplete ? "text-primary/70" : "text-muted-foreground"
+                          "font-mono text-[9px] tabular-nums",
+                          isComplete ? "text-sink-mint" : "text-sink-ink/40"
                         )}>
                           {s.filled}/{s.total}
                         </span>
@@ -1067,39 +1091,45 @@ export default function CreditAnalysisForm() {
                 {/* Sacados table */}
                 <div className="pt-3">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Principais Sacados</span>
+                    <span className="font-mono text-[10px] uppercase tracking-wider text-sink-ink/50 font-semibold">Principais Sacados</span>
                     {!isReadOnly && (
-                      <Button type="button" variant="ghost" size="sm" className="h-7 text-xs" onClick={addSacado}>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 font-mono text-[10px] rounded-sink-md border border-sink-fog bg-transparent text-sink-ink/60 hover:bg-sink-cream hover:text-sink-ink"
+                        onClick={addSacado}
+                      >
                         <Plus className="h-3 w-3 mr-1" /> Sacado
                       </Button>
                     )}
                   </div>
                   {sacados.length > 0 && (
-                    <div className="rounded-md border border-border overflow-hidden">
+                    <div className="rounded-sink-md border border-sink-fog overflow-hidden">
                       <Table>
                         <TableHeader>
-                          <TableRow className="bg-muted/50">
-                            <TableHead className="text-xs h-8">Sacado</TableHead>
-                            <TableHead className="text-xs h-8 w-32">% Fat.</TableHead>
-                            <TableHead className="text-xs h-8 w-28">Prazo</TableHead>
+                          <TableRow className="bg-sink-cream/80 border-b border-sink-fog hover:bg-sink-cream">
+                            <TableHead className="font-mono text-[10px] uppercase tracking-wider text-sink-ink/50 h-8">Sacado</TableHead>
+                            <TableHead className="font-mono text-[10px] uppercase tracking-wider text-sink-ink/50 h-8 w-32">% Fat.</TableHead>
+                            <TableHead className="font-mono text-[10px] uppercase tracking-wider text-sink-ink/50 h-8 w-28">Prazo</TableHead>
                             {!isReadOnly && <TableHead className="w-10 h-8" />}
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                           {sacados.map((s, i) => (
-                            <TableRow key={i}>
+                            <TableRow key={i} className="border-b border-sink-fog/40 hover:bg-sink-cream/40">
                               <TableCell className="p-1.5">
-                                <Input value={s.sacado_nome} onChange={(e) => { const u = [...sacados]; u[i].sacado_nome = e.target.value; setSacados(u); }} disabled={isReadOnly} className="h-8 text-sm border-0 bg-transparent shadow-none focus-visible:ring-1" />
+                                <Input value={s.sacado_nome} onChange={(e) => { const u = [...sacados]; u[i].sacado_nome = e.target.value; setSacados(u); }} disabled={isReadOnly} className="h-8 text-sm border-0 bg-transparent shadow-none focus-visible:ring-1 focus-visible:ring-sink-mint" />
                               </TableCell>
                               <TableCell className="p-1.5">
-                                <Input type="number" step="0.1" value={s.percentual_faturamento ?? ""} onChange={(e) => { const u = [...sacados]; u[i].percentual_faturamento = e.target.value ? parseFloat(e.target.value) : null; setSacados(u); }} disabled={isReadOnly} className="h-8 text-sm tabular-nums border-0 bg-transparent shadow-none focus-visible:ring-1" />
+                                <Input type="number" step="0.1" value={s.percentual_faturamento ?? ""} onChange={(e) => { const u = [...sacados]; u[i].percentual_faturamento = e.target.value ? parseFloat(e.target.value) : null; setSacados(u); }} disabled={isReadOnly} className="h-8 text-sm tabular-nums border-0 bg-transparent shadow-none focus-visible:ring-1 focus-visible:ring-sink-mint" />
                               </TableCell>
                               <TableCell className="p-1.5">
-                                <Input type="number" value={s.prazo_medio ?? ""} onChange={(e) => { const u = [...sacados]; u[i].prazo_medio = e.target.value ? parseInt(e.target.value) : null; setSacados(u); }} disabled={isReadOnly} className="h-8 text-sm tabular-nums border-0 bg-transparent shadow-none focus-visible:ring-1" />
+                                <Input type="number" value={s.prazo_medio ?? ""} onChange={(e) => { const u = [...sacados]; u[i].prazo_medio = e.target.value ? parseInt(e.target.value) : null; setSacados(u); }} disabled={isReadOnly} className="h-8 text-sm tabular-nums border-0 bg-transparent shadow-none focus-visible:ring-1 focus-visible:ring-sink-mint" />
                               </TableCell>
                               {!isReadOnly && (
                                 <TableCell className="p-1.5">
-                                  <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => removeSacado(i)}><Trash2 className="h-3 w-3 text-destructive" /></Button>
+                                  <Button type="button" variant="ghost" size="icon" className="h-7 w-7 rounded-sink-sm hover:bg-sink-danger/10" onClick={() => removeSacado(i)}><Trash2 className="h-3 w-3 text-sink-danger" /></Button>
                                 </TableCell>
                               )}
                             </TableRow>
@@ -1119,50 +1149,56 @@ export default function CreditAnalysisForm() {
                 compactMode={compactMode} summary={sectionSummaries.societaria}
               >
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  <span className="font-mono text-[10px] uppercase tracking-wider text-sink-ink/50 font-semibold">
                     Quadro Societário
                     {socios.length > 0 && (
-                      <span className={cn("ml-2", sociosTotal.isValid ? "text-primary" : "text-destructive")}>
+                      <span className={cn("ml-2", sociosTotal.isValid ? "text-sink-mint" : "text-sink-danger")}>
                         ({sociosTotal.totalParticipacao.toFixed(1)}% total)
                       </span>
                     )}
                   </span>
                   {!isReadOnly && (
-                    <Button type="button" variant="ghost" size="sm" className="h-7 text-xs" onClick={addSocio}>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 font-mono text-[10px] rounded-sink-md border border-sink-fog bg-transparent text-sink-ink/60 hover:bg-sink-cream hover:text-sink-ink"
+                      onClick={addSocio}
+                    >
                       <Plus className="h-3 w-3 mr-1" /> Sócio
                     </Button>
                   )}
                 </div>
                 {socios.length > 0 && (
-                  <div className="rounded-md border border-border overflow-hidden">
+                  <div className="rounded-sink-md border border-sink-fog overflow-hidden">
                     <Table>
                       <TableHeader>
-                        <TableRow className="bg-muted/50">
-                          <TableHead className="text-xs h-8">Nome</TableHead>
-                          <TableHead className="text-xs h-8 w-36">CPF</TableHead>
-                          <TableHead className="text-xs h-8 w-24">Part. %</TableHead>
-                          <TableHead className="text-xs h-8 w-32">Cargo</TableHead>
+                        <TableRow className="bg-sink-cream/80 border-b border-sink-fog hover:bg-sink-cream">
+                          <TableHead className="font-mono text-[10px] uppercase tracking-wider text-sink-ink/50 h-8">Nome</TableHead>
+                          <TableHead className="font-mono text-[10px] uppercase tracking-wider text-sink-ink/50 h-8 w-36">CPF</TableHead>
+                          <TableHead className="font-mono text-[10px] uppercase tracking-wider text-sink-ink/50 h-8 w-24">Part. %</TableHead>
+                          <TableHead className="font-mono text-[10px] uppercase tracking-wider text-sink-ink/50 h-8 w-32">Cargo</TableHead>
                           {!isReadOnly && <TableHead className="w-10 h-8" />}
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {socios.map((s, i) => (
-                          <TableRow key={i}>
+                          <TableRow key={i} className="border-b border-sink-fog/40 hover:bg-sink-cream/40">
                             <TableCell className="p-1.5">
-                              <Input value={s.nome} onChange={(e) => { const u = [...socios]; u[i].nome = e.target.value; setSocios(u); }} disabled={isReadOnly} className="h-8 text-sm border-0 bg-transparent shadow-none focus-visible:ring-1" />
+                              <Input value={s.nome} onChange={(e) => { const u = [...socios]; u[i].nome = e.target.value; setSocios(u); }} disabled={isReadOnly} className="h-8 text-sm border-0 bg-transparent shadow-none focus-visible:ring-1 focus-visible:ring-sink-mint" />
                             </TableCell>
                             <TableCell className="p-1.5">
-                              <Input value={s.cpf} onChange={(e) => { const u = [...socios]; u[i].cpf = e.target.value; setSocios(u); }} disabled={isReadOnly} className="h-8 text-sm border-0 bg-transparent shadow-none focus-visible:ring-1" />
+                              <Input value={s.cpf} onChange={(e) => { const u = [...socios]; u[i].cpf = e.target.value; setSocios(u); }} disabled={isReadOnly} className="h-8 text-sm border-0 bg-transparent shadow-none focus-visible:ring-1 focus-visible:ring-sink-mint" />
                             </TableCell>
                             <TableCell className="p-1.5">
-                              <Input type="number" step="0.1" value={s.participacao ?? ""} onChange={(e) => { const u = [...socios]; u[i].participacao = e.target.value ? parseFloat(e.target.value) : null; setSocios(u); }} disabled={isReadOnly} className="h-8 text-sm tabular-nums border-0 bg-transparent shadow-none focus-visible:ring-1" />
+                              <Input type="number" step="0.1" value={s.participacao ?? ""} onChange={(e) => { const u = [...socios]; u[i].participacao = e.target.value ? parseFloat(e.target.value) : null; setSocios(u); }} disabled={isReadOnly} className="h-8 text-sm tabular-nums border-0 bg-transparent shadow-none focus-visible:ring-1 focus-visible:ring-sink-mint" />
                             </TableCell>
                             <TableCell className="p-1.5">
-                              <Input value={s.cargo} onChange={(e) => { const u = [...socios]; u[i].cargo = e.target.value; setSocios(u); }} disabled={isReadOnly} className="h-8 text-sm border-0 bg-transparent shadow-none focus-visible:ring-1" />
+                              <Input value={s.cargo} onChange={(e) => { const u = [...socios]; u[i].cargo = e.target.value; setSocios(u); }} disabled={isReadOnly} className="h-8 text-sm border-0 bg-transparent shadow-none focus-visible:ring-1 focus-visible:ring-sink-mint" />
                             </TableCell>
                             {!isReadOnly && (
                               <TableCell className="p-1.5">
-                                <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => removeSocio(i)}><Trash2 className="h-3 w-3 text-destructive" /></Button>
+                                <Button type="button" variant="ghost" size="icon" className="h-7 w-7 rounded-sink-sm hover:bg-sink-danger/10" onClick={() => removeSocio(i)}><Trash2 className="h-3 w-3 text-sink-danger" /></Button>
                               </TableCell>
                             )}
                           </TableRow>
@@ -1313,8 +1349,8 @@ export default function CreditAnalysisForm() {
                     <div className="space-y-1">
                       <Input type="number" step="0.01" value={limiteSugerido} onChange={(e) => setLimiteSugerido(e.target.value)} disabled={isReadOnly} className="h-9 text-sm tabular-nums font-semibold" placeholder="0,00" />
                       {autoLimit > 0 && (
-                        <p className="text-[10px] text-muted-foreground">
-                          <Sparkles className="h-2.5 w-2.5 inline mr-0.5" />
+                        <p className="font-mono text-[10px] text-sink-ink/40">
+                          <Sparkles className="h-2.5 w-2.5 inline mr-0.5 text-sink-mint" />
                           IA sugere: {formatBRL(autoLimit)} (baseado no faturamento e score)
                         </p>
                       )}
@@ -1346,12 +1382,14 @@ export default function CreditAnalysisForm() {
 
           {/* TAB: Insights IA */}
           <TabsContent value="insights" className="flex-1 overflow-y-auto mt-0 p-0">
-            <motion.div initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.35, ease: "easeOut" }} className="max-w-4xl mx-auto px-6 py-6 space-y-4">
-              <div className="flex items-center gap-2 mb-4">
-                <Brain className="h-5 w-5 text-primary" />
+            <motion.div initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.35, ease: "easeOut" }} className="w-full px-5 py-5 space-y-4">
+              <div className="flex items-center gap-3 mb-5">
+                <div className="h-9 w-9 rounded-sink-md bg-sink-mint/10 flex items-center justify-center">
+                  <Brain className="h-5 w-5 text-sink-mint" />
+                </div>
                 <div>
-                  <h2 className="text-base font-semibold">Insights Inteligentes</h2>
-                  <p className="text-xs text-muted-foreground">IA analisa os dados e gera insights profundos sobre o cedente</p>
+                  <h2 className="font-sans font-bold text-base text-sink-ink">Insights Inteligentes</h2>
+                  <p className="font-mono text-[10px] uppercase tracking-wider text-sink-ink/40">IA analisa os dados e gera insights profundos sobre o cedente</p>
                 </div>
               </div>
 
@@ -1365,77 +1403,69 @@ export default function CreditAnalysisForm() {
 
           {/* TAB: Concentração */}
           <TabsContent value="concentracao" className="flex-1 overflow-y-auto mt-0 p-0">
-            <motion.div initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.35, ease: "easeOut" }} className="max-w-4xl mx-auto px-6 py-6 space-y-6">
-              <div className="flex items-center gap-2 mb-2">
-                <Target className="h-5 w-5 text-primary" />
+            <motion.div initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.35, ease: "easeOut" }} className="w-full px-5 py-5 space-y-6">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="h-9 w-9 rounded-sink-md bg-sink-mint/10 flex items-center justify-center">
+                  <Target className="h-5 w-5 text-sink-mint" />
+                </div>
                 <div>
-                  <h2 className="text-base font-semibold">Análise de Concentração</h2>
-                  <p className="text-xs text-muted-foreground">Visualização da concentração de sacados e alertas automáticos</p>
+                  <h2 className="font-sans font-bold text-base text-sink-ink">Análise de Concentração</h2>
+                  <p className="font-mono text-[10px] uppercase tracking-wider text-sink-ink/40">Visualização da concentração de sacados e alertas automáticos</p>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm text-muted-foreground">Sacados Cadastrados</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-3xl font-bold tabular-nums">{sacados.length}</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm text-muted-foreground">Concentração Máxima</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className={cn("text-3xl font-bold tabular-nums", concentration.maxSingleConcentration > 30 ? "text-destructive" : "text-foreground")}>
-                      {concentration.maxSingleConcentration.toFixed(1)}%
-                    </p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm text-muted-foreground">Total Concentração</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-3xl font-bold tabular-nums">{concentration.totalConcentration.toFixed(1)}%</p>
-                  </CardContent>
-                </Card>
+                <div className="bg-sink-paper border border-sink-fog rounded-sink-lg p-5 shadow-sink-sm">
+                  <p className="font-mono text-[10px] uppercase tracking-wider text-sink-ink/50 mb-2">Sacados Cadastrados</p>
+                  <p className="font-sans text-3xl font-bold tabular-nums text-sink-ink">{sacados.length}</p>
+                </div>
+                <div className="bg-sink-paper border border-sink-fog rounded-sink-lg p-5 shadow-sink-sm">
+                  <p className="font-mono text-[10px] uppercase tracking-wider text-sink-ink/50 mb-2">Concentração Máxima</p>
+                  <p className={cn("font-sans text-3xl font-bold tabular-nums", concentration.maxSingleConcentration > 30 ? "text-sink-danger" : "text-sink-ink")}>
+                    {concentration.maxSingleConcentration.toFixed(1)}%
+                  </p>
+                </div>
+                <div className="bg-sink-paper border border-sink-fog rounded-sink-lg p-5 shadow-sink-sm">
+                  <p className="font-mono text-[10px] uppercase tracking-wider text-sink-ink/50 mb-2">Total Concentração</p>
+                  <p className="font-sans text-3xl font-bold tabular-nums text-sink-ink">{concentration.totalConcentration.toFixed(1)}%</p>
+                </div>
               </div>
 
               {concentration.alerts.length > 0 && (
-                <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4">
-                  <p className="text-sm font-semibold text-destructive mb-2">⚠ Alertas de Concentração</p>
+                <div className="rounded-sink-lg border border-sink-danger/30 bg-sink-danger/5 p-4 border-l-4 border-l-sink-danger">
+                  <p className="font-sans text-sm font-semibold text-sink-danger mb-2">Alertas de Concentração</p>
                   <ul className="space-y-1">
                     {concentration.alerts.map((a, i) => (
-                      <li key={i} className="text-xs text-destructive/80">• {a}</li>
+                      <li key={i} className="font-mono text-xs text-sink-danger/80">• {a}</li>
                     ))}
                   </ul>
                 </div>
               )}
 
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm">Distribuição por Sacado</CardTitle>
-                </CardHeader>
-                <CardContent>
+              <div className="bg-sink-paper border border-sink-fog rounded-sink-lg shadow-sink-sm overflow-hidden">
+                <div className="px-5 py-3.5 border-b border-sink-fog bg-sink-cream/60">
+                  <h3 className="font-sans font-semibold text-sm text-sink-ink">Distribuição por Sacado</h3>
+                </div>
+                <div className="p-5">
                   <ConcentrationChart
                     sacados={sacados}
                     maxConcentration={concentracaoMaxima ? parseFloat(concentracaoMaxima) : 30}
                   />
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             </motion.div>
           </TabsContent>
 
           {/* TAB: Indicadores */}
           <TabsContent value="indicadores" className="flex-1 overflow-y-auto mt-0 p-0">
-            <motion.div initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.35, ease: "easeOut" }} className="max-w-5xl mx-auto px-6 py-6">
-              <div className="flex items-center gap-2 mb-5">
-                <Activity className="h-5 w-5 text-primary" />
+            <motion.div initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.35, ease: "easeOut" }} className="w-full px-5 py-5">
+              <div className="flex items-center gap-3 mb-5">
+                <div className="h-9 w-9 rounded-sink-md bg-sink-mint/10 flex items-center justify-center">
+                  <Activity className="h-5 w-5 text-sink-mint" />
+                </div>
                 <div>
-                  <h2 className="text-base font-semibold">Indicadores & Gráficos</h2>
-                  <p className="text-xs text-muted-foreground">Dashboard completo de indicadores financeiros, radar de risco e análise comparativa</p>
+                  <h2 className="font-sans font-bold text-base text-sink-ink">Indicadores & Gráficos</h2>
+                  <p className="font-mono text-[10px] uppercase tracking-wider text-sink-ink/40">Dashboard completo de indicadores financeiros, radar de risco e análise comparativa</p>
                 </div>
               </div>
 
@@ -1464,55 +1494,52 @@ export default function CreditAnalysisForm() {
           </TabsContent>
 
           <TabsContent value="parecer" className="flex-1 overflow-y-auto mt-0 p-0">
-            <motion.div initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.35, ease: "easeOut" }} className="max-w-4xl mx-auto px-6 py-6 space-y-6">
-              <div className="flex items-center gap-2 mb-2">
-                <Gauge className="h-5 w-5 text-primary" />
+            <motion.div initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.35, ease: "easeOut" }} className="w-full px-5 py-5 space-y-6">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="h-9 w-9 rounded-sink-md bg-sink-mint/10 flex items-center justify-center">
+                  <Gauge className="h-5 w-5 text-sink-mint" />
+                </div>
                 <div>
-                  <h2 className="text-base font-semibold">Parecer & Decisão Final</h2>
-                  <p className="text-xs text-muted-foreground">Recomendação do analista com base no dossiê completo</p>
+                  <h2 className="font-sans font-bold text-base text-sink-ink">Parecer & Decisão Final</h2>
+                  <p className="font-mono text-[10px] uppercase tracking-wider text-sink-ink/40">Recomendação do analista com base no dossiê completo</p>
                 </div>
               </div>
 
               {/* Summary cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm">Classificação de Risco</CardTitle>
-                  </CardHeader>
-                  <CardContent className="flex items-center gap-4">
+                <div className="bg-sink-paper border border-sink-fog rounded-sink-lg shadow-sink-sm overflow-hidden">
+                  <div className="px-5 py-3.5 border-b border-sink-fog bg-sink-cream/60">
+                    <p className="font-mono text-[10px] uppercase tracking-wider text-sink-ink/50 font-semibold">Classificação de Risco</p>
+                  </div>
+                  <div className="px-5 py-4 flex items-center gap-4">
                     <ScoreGauge score={scoreNum} size="md" />
                     <div>
                       <RiskIndicator score={scoreNum} />
-                      <p className="text-xs text-muted-foreground mt-2">
-                        Grade: <span className="font-bold">{grade}</span>
+                      <p className="font-mono text-xs text-sink-ink/50 mt-2">
+                        Grade: <span className="font-bold text-sink-ink">{grade}</span>
                       </p>
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
 
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm">Operação Proposta</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Limite:</span>
-                      <span className="font-bold tabular-nums">{limiteNum ? formatBRL(limiteNum) : "—"}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Prazo:</span>
-                      <span className="font-bold tabular-nums">{prazoMedioPermitido || "—"} dias</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Conc. Máx:</span>
-                      <span className="font-bold tabular-nums">{concentracaoMaxima || "—"}%</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Utilização:</span>
-                      <span className={cn("font-bold tabular-nums", limitUtil > 100 ? "text-destructive" : "text-foreground")}>{limitUtil.toFixed(0)}%</span>
-                    </div>
-                  </CardContent>
-                </Card>
+                <div className="bg-sink-paper border border-sink-fog rounded-sink-lg shadow-sink-sm overflow-hidden">
+                  <div className="px-5 py-3.5 border-b border-sink-fog bg-sink-cream/60">
+                    <p className="font-mono text-[10px] uppercase tracking-wider text-sink-ink/50 font-semibold">Operação Proposta</p>
+                  </div>
+                  <div className="px-5 py-4 space-y-2.5">
+                    {[
+                      { label: "Limite", value: limiteNum ? formatBRL(limiteNum) : "—" },
+                      { label: "Prazo", value: prazoMedioPermitido ? `${prazoMedioPermitido} dias` : "—" },
+                      { label: "Conc. Máx", value: concentracaoMaxima ? `${concentracaoMaxima}%` : "—" },
+                      { label: "Utilização", value: `${limitUtil.toFixed(0)}%`, danger: limitUtil > 100 },
+                    ].map(({ label, value, danger }) => (
+                      <div key={label} className="flex justify-between items-center">
+                        <span className="font-mono text-xs text-sink-ink/50">{label}</span>
+                        <span className={cn("font-mono text-sm font-bold tabular-nums", danger ? "text-sink-danger" : "text-sink-ink")}>{value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
 
               {/* AI Executive Summary */}
@@ -1526,18 +1553,42 @@ export default function CreditAnalysisForm() {
               />
 
               {/* Parecer text */}
-              <Field label="Parecer do Analista">
-                <Textarea value={parecerAnalista} onChange={(e) => setParecerAnalista(e.target.value)} disabled={isReadOnly} rows={6} className="text-sm resize-none" placeholder="Escreva seu parecer aqui ou gere automaticamente com a IA acima..." />
-              </Field>
+              <div className="bg-sink-paper border border-sink-fog rounded-sink-lg p-5 shadow-sink-sm">
+                <Field label="Parecer do Analista">
+                  <Textarea
+                    value={parecerAnalista}
+                    onChange={(e) => setParecerAnalista(e.target.value)}
+                    disabled={isReadOnly}
+                    rows={6}
+                    className="text-sm resize-none border-sink-fog focus:ring-1 focus:ring-sink-mint focus:border-sink-mint"
+                    placeholder="Escreva seu parecer aqui ou gere automaticamente com a IA acima..."
+                  />
+                </Field>
+              </div>
 
               {/* Recommendation */}
-              <div className="pt-2">
+              <div className="bg-sink-paper border border-sink-fog rounded-sink-lg p-5 shadow-sink-sm">
                 <Field label="Recomendação Final">
-                    <div className="flex gap-3 pt-2">
+                  <div className="flex gap-3 pt-2">
                     {[
-                      { value: "approve", label: "Aprovar", icon: "✅", color: "border-status-approved bg-status-approved/10 text-status-approved" },
-                      { value: "restrict", label: "Aprovar c/ Restrição", icon: "⚠️", color: "border-status-restricted bg-status-restricted/10 text-status-restricted" },
-                      { value: "reject", label: "Reprovar", icon: "❌", color: "border-status-rejected bg-status-rejected/10 text-status-rejected" },
+                      {
+                        value: "approve",
+                        label: "Aprovar",
+                        activeClass: "border-sink-mint bg-sink-mint/10 text-sink-deep shadow-sink-glow",
+                        dot: "bg-sink-mint",
+                      },
+                      {
+                        value: "restrict",
+                        label: "Aprovar c/ Restrição",
+                        activeClass: "border-sink-warn bg-sink-warn/10 text-sink-warn",
+                        dot: "bg-sink-warn",
+                      },
+                      {
+                        value: "reject",
+                        label: "Reprovar",
+                        activeClass: "border-sink-danger bg-sink-danger/10 text-sink-danger",
+                        dot: "bg-sink-danger",
+                      },
                     ].map((opt) => (
                       <button
                         key={opt.value}
@@ -1545,13 +1596,13 @@ export default function CreditAnalysisForm() {
                         disabled={isReadOnly}
                         onClick={() => setRecommendation(opt.value)}
                         className={cn(
-                          "flex-1 px-4 py-3 rounded-xl text-sm font-semibold border-2 transition-all",
+                          "flex-1 px-4 py-3 rounded-sink-lg font-sans text-sm font-semibold border-2 transition-all",
                           recommendation === opt.value
-                            ? opt.color
-                            : "border-border text-muted-foreground hover:border-muted-foreground/50 bg-card"
+                            ? opt.activeClass
+                            : "border-sink-fog text-sink-ink/50 hover:border-sink-fog/80 hover:bg-sink-cream bg-sink-paper"
                         )}
                       >
-                        <span className="text-lg block mb-1">{opt.icon}</span>
+                        <span className={cn("block h-2 w-2 rounded-full mx-auto mb-2", recommendation === opt.value ? opt.dot : "bg-sink-fog")} />
                         {opt.label}
                       </button>
                     ))}

@@ -19,11 +19,11 @@ import { formatBRL } from "@/lib/formatters";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, LineChart, Line } from "recharts";
 
 const statusConfig: Record<string, { label: string; color: string; icon: any }> = {
-  pending: { label: "Pendente", color: "bg-yellow-100 text-yellow-800", icon: Clock },
-  valid: { label: "Válida", color: "bg-green-100 text-green-800", icon: CheckCircle2 },
-  invalid: { label: "Inválida", color: "bg-red-100 text-red-800", icon: XCircle },
-  cancelled: { label: "Cancelada", color: "bg-gray-100 text-gray-800", icon: XCircle },
-  not_found: { label: "Não Encontrada", color: "bg-orange-100 text-orange-800", icon: AlertTriangle },
+  pending: { label: "Pendente", color: "bg-sink-warn/10 text-sink-warn", icon: Clock },
+  valid: { label: "Válida", color: "bg-status-approved/10 text-status-approved", icon: CheckCircle2 },
+  invalid: { label: "Inválida", color: "bg-sink-danger/10 text-sink-danger", icon: XCircle },
+  cancelled: { label: "Cancelada", color: "bg-sink-fog/30 text-sink-ink/60", icon: XCircle },
+  not_found: { label: "Não Encontrada", color: "bg-status-restricted/10 text-status-restricted", icon: AlertTriangle },
 };
 
 const frequencyLabels: Record<string, string> = {
@@ -367,19 +367,19 @@ export default function InvoiceMonitoring() {
         </Card>
         <Card>
           <CardContent className="pt-4 pb-3 text-center">
-            <div className="text-2xl font-bold text-green-600">{stats.valid}</div>
+            <div className="text-2xl font-bold text-status-approved">{stats.valid}</div>
             <div className="text-xs text-muted-foreground">Válidas</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-4 pb-3 text-center">
-            <div className="text-2xl font-bold text-red-600">{stats.invalid}</div>
+            <div className="text-2xl font-bold text-sink-danger">{stats.invalid}</div>
             <div className="text-xs text-muted-foreground">Inválidas</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-4 pb-3 text-center">
-            <div className="text-2xl font-bold text-yellow-600">{stats.pending}</div>
+            <div className="text-2xl font-bold text-sink-warn">{stats.pending}</div>
             <div className="text-xs text-muted-foreground">Pendentes</div>
           </CardContent>
         </Card>
@@ -553,7 +553,7 @@ export default function InvoiceMonitoring() {
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-base flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-green-600" /> Match com Sacados
+                  <CheckCircle2 className="h-4 w-4 text-status-approved" /> Match com Sacados
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -574,7 +574,7 @@ export default function InvoiceMonitoring() {
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-base flex items-center gap-2">
-                  <AlertTriangle className="h-4 w-4 text-amber-600" /> Sem Match
+                  <AlertTriangle className="h-4 w-4 text-sink-warn" /> Sem Match
                 </CardTitle>
               </CardHeader>
               <CardContent>

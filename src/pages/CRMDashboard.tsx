@@ -247,7 +247,7 @@ export default function CRMDashboard() {
                           <span className="text-muted-foreground">{c.from}</span>
                           <ArrowRight className="h-3 w-3 text-muted-foreground" />
                           <span className="text-muted-foreground">{c.to}</span>
-                          <Badge variant="outline" className={cn("text-[10px] ml-1", c.rate >= 50 ? "text-green-600 border-green-500/30" : c.rate >= 25 ? "text-amber-600 border-amber-500/30" : "text-red-600 border-red-500/30")}>
+                          <Badge variant="outline" className={cn("text-[10px] ml-1", c.rate >= 50 ? "text-status-approved border-status-approved/30" : c.rate >= 25 ? "text-sink-warn border-sink-warn/30" : "text-sink-danger border-sink-danger/30")}>
                             {c.rate}%
                           </Badge>
                         </div>
@@ -366,7 +366,7 @@ export default function CRMDashboard() {
                 <div key={i} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/30 transition-colors">
                   <div className={cn(
                     "h-7 w-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0",
-                    i === 0 ? "bg-amber-500/20 text-amber-600" : i === 1 ? "bg-gray-300/30 text-gray-500" : i === 2 ? "bg-orange-400/20 text-orange-500" : "bg-muted text-muted-foreground"
+                    i === 0 ? "bg-sink-warn/20 text-sink-warn" : i === 1 ? "bg-sink-fog/30 text-sink-ink/50" : i === 2 ? "bg-status-restricted/15 text-status-restricted" : "bg-muted text-muted-foreground"
                   )}>
                     {i + 1}
                   </div>
@@ -375,7 +375,7 @@ export default function CRMDashboard() {
                     <p className="text-[10px] text-muted-foreground">{r.count} deal{r.count !== 1 ? "s" : ""} • {r.won} ganho{r.won !== 1 ? "s" : ""}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-semibold text-green-600">{BRL(r.wonValue)}</p>
+                    <p className="text-sm font-semibold text-status-approved">{BRL(r.wonValue)}</p>
                     <p className="text-[10px] text-muted-foreground">Pipeline: {BRL(r.total)}</p>
                   </div>
                 </div>
@@ -393,8 +393,8 @@ export default function CRMDashboard() {
 function KpiCard({ icon: Icon, label, value, accent, onClick }: { icon: React.ElementType; label: string; value: string; accent?: "primary" | "success" | "warning"; onClick?: () => void }) {
   const accentColors = {
     primary: "text-primary",
-    success: "text-green-600",
-    warning: "text-amber-600",
+    success: "text-status-approved",
+    warning: "text-sink-warn",
   };
   return (
     <button onClick={onClick} className={cn("text-left p-3 rounded-lg border border-border/50 bg-background hover:bg-muted/30 transition-colors", onClick && "cursor-pointer")}>

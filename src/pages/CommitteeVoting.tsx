@@ -366,7 +366,7 @@ export default function CommitteeVoting() {
                   )}
                   {analysis?.pontos_positivos && (
                     <div>
-                      <p className="text-xs font-semibold text-green-700 mb-1">Pontos Positivos</p>
+                      <p className="text-xs font-semibold text-status-approved mb-1">Pontos Positivos</p>
                       <p className="text-xs leading-relaxed">{analysis.pontos_positivos}</p>
                     </div>
                   )}
@@ -421,7 +421,7 @@ export default function CommitteeVoting() {
                 <CardContent className="pt-4 space-y-2">
                   {restrictions.length === 0 ? (
                     <div className="text-center py-6 text-muted-foreground text-sm">
-                      <CheckCircle className="h-8 w-8 mx-auto mb-2 text-green-500" />
+                      <CheckCircle className="h-8 w-8 mx-auto mb-2 text-status-approved" />
                       Nenhuma restrição identificada no dossiê
                     </div>
                   ) : (
@@ -472,7 +472,7 @@ export default function CommitteeVoting() {
                       {concentration.alerts.length > 0 && (
                         <div className="mb-3 space-y-1">
                           {concentration.alerts.map((a, i) => (
-                            <div key={i} className="text-[11px] text-amber-700 bg-amber-50 px-2 py-1 rounded flex items-center gap-1">
+                            <div key={i} className="text-[11px] text-sink-warn bg-sink-warn/10 px-2 py-1 rounded flex items-center gap-1">
                               <AlertTriangle className="h-3 w-3" /> {a}
                             </div>
                           ))}
@@ -559,9 +559,9 @@ export default function CommitteeVoting() {
                         {v.observation && <p className="text-xs text-muted-foreground mt-0.5 italic">"{v.observation}"</p>}
                       </div>
                       <Badge className={
-                        v.vote === "approve" ? "bg-green-100 text-green-800" :
-                        v.vote === "reject" ? "bg-red-100 text-red-800" :
-                        "bg-amber-100 text-amber-800"
+                        v.vote === "approve" ? "bg-status-approved/10 text-status-approved border-status-approved/20" :
+                        v.vote === "reject" ? "bg-sink-danger/10 text-sink-danger border-sink-danger/20" :
+                        "bg-sink-warn/10 text-sink-warn border-sink-warn/20"
                       }>
                         {voteLabels[v.vote]}
                       </Badge>
@@ -623,10 +623,10 @@ export default function CommitteeVoting() {
               )}
 
               {allVoted && (
-                <Card className="border-green-200">
+                <Card className="border-status-approved/30">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-base flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-green-600" /> Finalizar Decisão
+                      <CheckCircle className="h-4 w-4 text-status-approved" /> Finalizar Decisão
                     </CardTitle>
                     <CardDescription className="text-xs">
                       Resultado por maioria: <strong>{statusLabels[calculateResult()]}</strong>

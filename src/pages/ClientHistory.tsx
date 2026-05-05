@@ -244,7 +244,7 @@ export default function ClientHistory() {
   timeline.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   return (
-    <div className="p-6 space-y-6 max-w-4xl">
+    <div className="p-5 space-y-6 w-full">
       <Button variant="ghost" size="sm" onClick={() => navigate("/cedentes")} className="mb-2">
         <ArrowLeft className="h-4 w-4 mr-1" /> Voltar
       </Button>

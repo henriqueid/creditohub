@@ -14,17 +14,17 @@ import { toast } from "@/hooks/use-toast";
 import { Plus, Trash2, Edit, AlertTriangle, Scale, ShieldAlert, Search, Link2 } from "lucide-react";
 
 const typeConfig: Record<string, { label: string; color: string }> = {
-  falencia: { label: "Falência", color: "bg-red-100 text-red-800" },
-  recuperacao_judicial: { label: "Recuperação Judicial", color: "bg-orange-100 text-orange-800" },
-  recuperacao_extrajudicial: { label: "Recuperação Extrajudicial", color: "bg-yellow-100 text-yellow-800" },
-  liquidacao: { label: "Liquidação", color: "bg-gray-100 text-gray-800" },
+  falencia: { label: "Falência", color: "bg-sink-danger/10 text-sink-danger" },
+  recuperacao_judicial: { label: "Recuperação Judicial", color: "bg-status-restricted/10 text-status-restricted" },
+  recuperacao_extrajudicial: { label: "Recuperação Extrajudicial", color: "bg-sink-warn/10 text-sink-warn" },
+  liquidacao: { label: "Liquidação", color: "bg-sink-fog/30 text-sink-ink/60" },
 };
 
 const statusConfig: Record<string, { label: string; color: string }> = {
-  em_andamento: { label: "Em Andamento", color: "bg-blue-100 text-blue-800" },
-  deferido: { label: "Deferido", color: "bg-green-100 text-green-800" },
-  indeferido: { label: "Indeferido", color: "bg-gray-100 text-gray-800" },
-  encerrado: { label: "Encerrado", color: "bg-slate-100 text-slate-800" },
+  em_andamento: { label: "Em Andamento", color: "bg-sink-mint-3/10 text-sink-mint-3" },
+  deferido: { label: "Deferido", color: "bg-status-approved/10 text-status-approved" },
+  indeferido: { label: "Indeferido", color: "bg-sink-fog/30 text-sink-ink/60" },
+  encerrado: { label: "Encerrado", color: "bg-sink-fog/20 text-sink-ink/40" },
 };
 
 interface BankruptcyForm {
@@ -287,7 +287,7 @@ export default function BankruptcyReport() {
         </Card>
         <Card>
           <CardContent className="pt-4 pb-3 text-center">
-            <div className="text-2xl font-bold text-amber-600">{stats.active}</div>
+            <div className="text-2xl font-bold text-sink-warn">{stats.active}</div>
             <div className="text-xs text-muted-foreground">Em Andamento / Deferidos</div>
           </CardContent>
         </Card>

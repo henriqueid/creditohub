@@ -41,15 +41,15 @@ interface Prospect {
 }
 
 const STATUS_CFG: Record<string, { label: string; icon: React.ElementType; className: string }> = {
-  qualified: { label: "Qualificado", icon: CheckCircle2, className: "text-emerald-700 bg-emerald-50 border-emerald-200" },
-  not_qualified: { label: "Não Qualificado", icon: XCircle, className: "text-red-700 bg-red-50 border-red-200" },
-  pending: { label: "Pendente", icon: Clock, className: "text-amber-700 bg-amber-50 border-amber-200" },
+  qualified: { label: "Qualificado", icon: CheckCircle2, className: "text-status-approved bg-status-approved/10 border-status-approved/30" },
+  not_qualified: { label: "Não Qualificado", icon: XCircle, className: "text-sink-danger bg-sink-danger/10 border-sink-danger/30" },
+  pending: { label: "Pendente", icon: Clock, className: "text-sink-warn bg-sink-warn/10 border-sink-warn/30" },
 };
 
 const RISK_CFG: Record<string, { label: string; className: string }> = {
-  low: { label: "Baixo", className: "text-emerald-600" },
-  medium: { label: "Médio", className: "text-amber-600" },
-  high: { label: "Alto", className: "text-red-600" },
+  low: { label: "Baixo", className: "text-status-approved" },
+  medium: { label: "Médio", className: "text-sink-warn" },
+  high: { label: "Alto", className: "text-sink-danger" },
   unknown: { label: "—", className: "text-muted-foreground" },
 };
 
@@ -310,7 +310,7 @@ export default function Prospects() {
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground">
                         {p.expires_at ? (
-                          <span className={expired ? "text-red-500" : ""}>
+                          <span className={expired ? "text-sink-danger" : ""}>
                             {formatDate(p.expires_at)}
                           </span>
                         ) : "—"}
@@ -376,9 +376,9 @@ export default function Prospects() {
 
 function KpiCard({ label, value, icon: Icon, accent }: { label: string; value: number; icon: React.ElementType; accent?: string }) {
   const colorMap: Record<string, string> = {
-    emerald: "text-emerald-600",
-    red: "text-red-600",
-    amber: "text-amber-600",
+    emerald: "text-status-approved",
+    red: "text-sink-danger",
+    amber: "text-sink-warn",
     muted: "text-muted-foreground",
   };
   return (

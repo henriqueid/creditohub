@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Building2, FileText, CheckCircle, XCircle, Clock, TrendingUp,
@@ -207,27 +206,27 @@ export default function Dashboard() {
   const sparkInvoices = buildWeeklySparkline(fInvoices);
 
   const statusData = [
-    { label: "Rascunho", value: drafts, color: "bg-muted-foreground/40", dotColor: "bg-muted-foreground", pct: total > 0 ? (drafts / total) * 100 : 0 },
-    { label: "Em Comitê", value: inCommittee, color: "bg-status-committee", dotColor: "bg-status-committee", pct: total > 0 ? (inCommittee / total) * 100 : 0 },
-    { label: "Aprovados", value: approved - approvedRestricted, color: "bg-status-approved", dotColor: "bg-status-approved", pct: total > 0 ? ((approved - approvedRestricted) / total) * 100 : 0 },
-    { label: "Restrição", value: approvedRestricted, color: "bg-status-restricted", dotColor: "bg-status-restricted", pct: total > 0 ? (approvedRestricted / total) * 100 : 0 },
-    { label: "Reprovados", value: rejected, color: "bg-status-rejected", dotColor: "bg-status-rejected", pct: total > 0 ? (rejected / total) * 100 : 0 },
+    { label: "Rascunho", value: drafts, color: "bg-sink-ink/20", dotColor: "bg-sink-ink/40", pct: total > 0 ? (drafts / total) * 100 : 0 },
+    { label: "Em Comitê", value: inCommittee, color: "bg-sink-warn", dotColor: "bg-sink-warn", pct: total > 0 ? (inCommittee / total) * 100 : 0 },
+    { label: "Aprovados", value: approved - approvedRestricted, color: "bg-sink-mint", dotColor: "bg-sink-mint", pct: total > 0 ? ((approved - approvedRestricted) / total) * 100 : 0 },
+    { label: "Restrição", value: approvedRestricted, color: "bg-sink-mint-2", dotColor: "bg-sink-mint-2", pct: total > 0 ? (approvedRestricted / total) * 100 : 0 },
+    { label: "Reprovados", value: rejected, color: "bg-sink-danger", dotColor: "bg-sink-danger", pct: total > 0 ? (rejected / total) * 100 : 0 },
   ];
 
   const frequencyLabel: Record<string, string> = { daily: "Diário", weekly: "Semanal", monthly: "Mensal" };
 
   const scoreColor = (score: number | null) => {
-    if (!score) return "text-muted-foreground";
-    if (score >= 700) return "text-status-approved";
-    if (score >= 400) return "text-status-committee";
-    return "text-status-rejected";
+    if (!score) return "text-sink-ink/40";
+    if (score >= 700) return "text-sink-mint-3";
+    if (score >= 400) return "text-sink-warn";
+    return "text-sink-danger";
   };
 
   const scoreBg = (score: number | null) => {
-    if (!score) return "bg-muted";
-    if (score >= 700) return "bg-status-approved/8 border-status-approved/20";
-    if (score >= 400) return "bg-status-committee/8 border-status-committee/20";
-    return "bg-status-rejected/8 border-status-rejected/20";
+    if (!score) return "bg-sink-cream-2 border-sink-fog";
+    if (score >= 700) return "bg-sink-mint/10 border-sink-mint/20";
+    if (score >= 400) return "bg-sink-warn/10 border-sink-warn/20";
+    return "bg-sink-danger/10 border-sink-danger/20";
   };
 
   const creditHealth = inCommittee === 0 && drafts <= 2 ? "good" : inCommittee > 3 || drafts > 5 ? "danger" : "warning";
@@ -273,10 +272,10 @@ export default function Dashboard() {
 
   // Funil: Cedentes → Análises → Comitê → Aprovadas
   const funnelData = [
-    { label: "Cedentes", value: clientCount, color: "bg-muted-foreground/40" },
-    { label: "Análises", value: total, color: "bg-primary" },
-    { label: "Em Comitê", value: inCommittee + approved + rejected, color: "bg-status-committee" },
-    { label: "Aprovadas", value: approved, color: "bg-status-approved" },
+    { label: "Cedentes", value: clientCount, color: "bg-sink-ink/20" },
+    { label: "Análises", value: total, color: "bg-sink-deep-4" },
+    { label: "Em Comitê", value: inCommittee + approved + rejected, color: "bg-sink-warn" },
+    { label: "Aprovadas", value: approved, color: "bg-sink-mint" },
   ];
   const funnelMax = Math.max(...funnelData.map(d => d.value), 1);
 
@@ -307,313 +306,374 @@ export default function Dashboard() {
     },
   ];
 
-  const statusDots: Record<string, string> = { good: "bg-status-approved", warning: "bg-status-committee", danger: "bg-status-rejected" };
-  const statusLabels: Record<string, string> = { good: "Saudável", warning: "Atenção", danger: "Crítico" };
+  const statusDotsCls: Record<string, string> = {
+    good: "bg-sink-mint",
+    warning: "bg-sink-warn",
+    danger: "bg-sink-danger",
+  };
+  const statusLabelsMap: Record<string, string> = { good: "Saudável", warning: "Atenção", danger: "Crítico" };
 
   const [activeTab, setActiveTab] = useState<"overview" | "credit" | "crm" | "monitoring">("overview");
 
-  // Accent colors per área (semantic tokens via index.css)
+  // Accent colors per área — mapeados para tokens SINK
   const areaAccents = {
-    credit:     { bar: "bg-primary",            soft: "bg-primary/8",            text: "text-primary",            border: "border-primary/20",            label: "Esteira de Crédito" },
-    crm:        { bar: "bg-status-approved",    soft: "bg-status-approved/8",    text: "text-status-approved",    border: "border-status-approved/20",    label: "CRM Comercial" },
-    monitoring: { bar: "bg-status-committee",   soft: "bg-status-committee/8",   text: "text-status-committee",   border: "border-status-committee/20",   label: "Monitoramento" },
+    credit: {
+      bar: "bg-sink-mint",
+      soft: "bg-sink-mint/10",
+      text: "text-sink-mint-3",
+      border: "border-sink-mint/20",
+      label: "Esteira de Crédito",
+    },
+    crm: {
+      bar: "bg-sink-deep-4",
+      soft: "bg-sink-deep-4/10",
+      text: "text-sink-deep-4",
+      border: "border-sink-deep-4/20",
+      label: "CRM Comercial",
+    },
+    monitoring: {
+      bar: "bg-sink-warn",
+      soft: "bg-sink-warn/10",
+      text: "text-[#F3B84A]",
+      border: "border-sink-warn/20",
+      label: "Monitoramento",
+    },
   } as const;
 
   const monthLabel = now.toLocaleDateString("pt-BR", { month: "short", year: "numeric" }).toUpperCase().replace(".", "");
   const updatedLabel = "agora há pouco";
 
   return (
-    <div className="p-6 lg:p-10 space-y-8 overflow-auto max-w-[1440px] mx-auto">
-      {/* Header — refinado */}
-      <div className="flex items-end justify-between flex-wrap gap-6 pb-1">
-        <div className="space-y-1.5">
-          <h1 className="text-[22px] font-semibold text-foreground tracking-tight leading-none">Painel inicial</h1>
-          <p className="text-[11px] text-muted-foreground uppercase tracking-[0.14em] font-medium">
-            Atualizado {updatedLabel} · {monthLabel}
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          {/* Period selector inline */}
-          <div className="flex items-center gap-px bg-muted/60 rounded-md p-0.5">
-            {([
-              { label: "7d", days: 7 },
-              { label: "30d", days: 30 },
-              { label: "90d", days: 90 },
-              { label: "Tudo", days: null },
-            ] as const).map(opt => (
-              <button
-                key={opt.label}
-                onClick={() => setPeriodDays(opt.days)}
-                className={cn(
-                  "px-2.5 py-1 text-[11px] font-medium rounded transition-colors",
-                  periodDays === opt.days
-                    ? "bg-card text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                {opt.label}
-              </button>
-            ))}
+    <div className="bg-sink-cream min-h-screen">
+      <div className="p-5 lg:p-7 space-y-6 overflow-auto w-full">
+        {/* Header */}
+        <div className="flex items-end justify-between flex-wrap gap-6 pb-1">
+          <div className="space-y-1.5">
+            <h1 className="font-sans font-semibold text-[22px] text-sink-ink tracking-tight leading-none">
+              Painel inicial
+            </h1>
+            <p className="font-mono text-[11px] text-sink-ink/50 uppercase tracking-widest">
+              Atualizado {updatedLabel} · {monthLabel}
+            </p>
           </div>
-          <div className="h-5 w-px bg-border" />
-          <button
-            onClick={() => navigate("/analises/nova")}
-            className="px-3 py-1.5 text-[12px] font-medium rounded-md border border-border bg-card text-foreground hover:bg-muted transition-colors"
-          >
-            Exportar
-          </button>
-          <button
-            onClick={() => navigate("/analises/nova")}
-            className="px-3 py-1.5 text-[12px] font-semibold rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-          >
-            + Nova análise
-          </button>
-        </div>
-      </div>
-
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)} className="space-y-6">
-        <TabsList className="grid grid-cols-4 w-full max-w-2xl">
-          <TabsTrigger value="overview" className="text-xs">Visão Geral</TabsTrigger>
-          <TabsTrigger value="credit" className="text-xs data-[state=active]:text-primary">Crédito</TabsTrigger>
-          <TabsTrigger value="crm" className="text-xs data-[state=active]:text-status-approved">CRM</TabsTrigger>
-          <TabsTrigger value="monitoring" className="text-xs data-[state=active]:text-status-committee">Monitoramento</TabsTrigger>
-        </TabsList>
-
-        {/* ─────────── VISÃO GERAL — refinada ─────────── */}
-        <TabsContent value="overview" className="space-y-6 mt-0">
-          {/* Hero KPIs */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <HeroKpiClean
-              label="Exposição Total"
-              value={formatBRL(totalExposure)}
-              sub={`${total} operações ativas`}
-              trend={analysesTrend}
-              sparkline={sparkAnalyses}
-              variant="line"
-            />
-            <HeroKpiClean
-              label="Saúde da Carteira"
-              value={`${carteiraSaude}%`}
-              sub={`Inadimplência < ${(100 - carteiraSaude > 0 ? (100 - carteiraSaude) / 10 : 0.8).toFixed(1)}%`}
-              trend={0}
-              gaugeValue={carteiraSaude}
-              gaugeLabel={avgScore >= 700 ? "Tier AAA" : avgScore >= 600 ? "Tier AA" : "Tier A"}
-              gaugeMain={String(avgScore || "—")}
-              variant="gauge"
-            />
-            <HeroKpiClean
-              label="Score Médio"
-              value={String(avgScore || "—")}
-              sub={avgScore >= 700 ? "Tier AA" : avgScore >= 600 ? "Tier A" : avgScore > 0 ? "Tier B" : "—"}
-              trend={approvedTrend}
-              variant="bare"
-            />
-            <HeroKpiClean
-              label="Taxa de Aprovação"
-              value={`${approvalRate.toFixed(1)}%`}
-              sub="Últimos 90 dias"
-              trend={-Math.abs(invoicesTrend > 5 ? 2 : invoicesTrend)}
-              sparkline={sparkApproved}
-              variant="line"
-            />
-          </div>
-
-          {/* Funil + Tendências */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            {/* Funil — design refinado, claro com barras de proporção */}
-            <Card className="lg:col-span-2 border-border/70">
-              <CardHeader className="pb-4 flex-row items-center justify-between space-y-0">
-                <div>
-                  <CardTitle className="text-[13px] font-semibold text-foreground">Funil de conversão</CardTitle>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">Esteira de crédito · período atual</p>
-                </div>
-                <button onClick={() => navigate("/performance")} className="text-[11px] text-muted-foreground hover:text-foreground font-medium flex items-center gap-1">
-                  Ver detalhes <ArrowUpRight className="h-3 w-3" />
+          <div className="flex items-center gap-3">
+            {/* Period selector inline */}
+            <div className="flex items-center gap-px bg-sink-cream-2 rounded-sink-md p-0.5 border border-sink-fog">
+              {([
+                { label: "7d", days: 7 },
+                { label: "30d", days: 30 },
+                { label: "90d", days: 90 },
+                { label: "Tudo", days: null },
+              ] as const).map(opt => (
+                <button
+                  key={opt.label}
+                  onClick={() => setPeriodDays(opt.days)}
+                  className={cn(
+                    "px-2.5 py-1 font-mono text-[11px] rounded-sink-sm transition-colors",
+                    periodDays === opt.days
+                      ? "bg-sink-paper text-sink-ink shadow-sink-sm"
+                      : "text-sink-ink/50 hover:text-sink-ink"
+                  )}
+                >
+                  {opt.label}
                 </button>
-              </CardHeader>
-              <CardContent className="space-y-5">
-                <div className="grid grid-cols-4 gap-3">
-                  {(() => {
-                    const steps = [
-                      { label: "Cedentes", value: clientCount, pct: 100, accent: "neutral" as const },
-                      { label: "Análises", value: total, pct: clientCount > 0 ? Math.round((total / clientCount) * 100) : 0, accent: "primary" as const },
-                      { label: "Em Comitê", value: inCommittee + approved + rejected, pct: total > 0 ? Math.round(((inCommittee + approved + rejected) / total) * 100) : 0, accent: "warning" as const },
-                      { label: "Aprovadas", value: approved, pct: total > 0 ? Math.round((approved / total) * 100) : 0, accent: "success" as const },
-                    ];
-                    const accentMap = {
-                      neutral: { bar: "bg-muted-foreground/40", text: "text-muted-foreground", val: "text-foreground" },
-                      primary: { bar: "bg-primary", text: "text-primary", val: "text-foreground" },
-                      warning: { bar: "bg-status-committee", text: "text-status-committee", val: "text-foreground" },
-                      success: { bar: "bg-status-approved", text: "text-status-approved", val: "text-status-approved" },
-                    };
-                    return steps.map((step, i) => {
-                      const a = accentMap[step.accent];
-                      return (
-                        <div key={step.label} className="space-y-2.5">
-                          <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-medium tracking-wider uppercase text-muted-foreground">{step.label}</span>
-                            <span className="text-[10px] tabular-nums text-muted-foreground">{step.pct}%</span>
-                          </div>
-                          <p className={cn("text-[26px] font-semibold tabular-nums leading-none tracking-tight", a.val)}>{step.value}</p>
-                          <div className="h-[3px] rounded-full bg-muted overflow-hidden">
-                            <div className={cn("h-full rounded-full transition-all duration-700", a.bar)} style={{ width: `${Math.max(step.pct, 4)}%` }} />
-                          </div>
-                          {i < steps.length - 1 && (
-                            <p className="text-[10px] text-muted-foreground/70 tabular-nums">
-                              → {steps[i + 1].value > 0 && step.value > 0 ? Math.round((steps[i + 1].value / step.value) * 100) : 0}% conversão
-                            </p>
-                          )}
-                          {i === steps.length - 1 && <p className="text-[10px] text-muted-foreground/70">&nbsp;</p>}
-                        </div>
-                      );
-                    });
-                  })()}
-                </div>
-                <div className="flex items-center justify-between gap-4 text-[11px] pt-4 border-t border-border/70">
-                  <div className="flex items-center gap-1.5">
-                    <Clock className="h-3 w-3 text-muted-foreground" />
-                    <span className="text-muted-foreground">Tempo médio</span>
-                    <span className="font-semibold text-foreground tabular-nums">4,2 d</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <AlertTriangle className="h-3 w-3 text-status-committee" />
-                    <span className="text-muted-foreground">Gargalo</span>
-                    <span className="font-semibold text-foreground">Comitê <span className="text-muted-foreground tabular-nums">(2,1d)</span></span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <CircleDot className="h-3 w-3 text-status-rejected" />
-                    <span className="text-muted-foreground">Estagnadas &gt; 7d</span>
-                    <span className="font-semibold text-foreground tabular-nums">{drafts}</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Tendências — refinada */}
-            <Card className="border-border/70">
-              <CardHeader className="pb-4 flex-row items-center justify-between space-y-0">
-                <div>
-                  <CardTitle className="text-[13px] font-semibold text-foreground">Tendências</CardTitle>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">Evolução · 30 dias</p>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-1 -mx-2">
-                <TrendRow label="Análises iniciadas" value={total} trend={analysesTrend} sparkline={sparkAnalyses} />
-                <TrendRow label="Aprovações" value={approved} trend={approvedTrend} sparkline={sparkApproved} />
-                <TrendRow label="NFs monitoradas" value={fInvoices.length} trend={invoicesTrend} sparkline={sparkInvoices} />
-              </CardContent>
-            </Card>
+              ))}
+            </div>
+            <div className="h-5 w-px bg-sink-fog" />
+            <button
+              onClick={() => navigate("/analises/nova")}
+              className="px-3 py-1.5 font-mono text-[12px] rounded-sink-md border border-sink-fog bg-sink-paper text-sink-ink hover:bg-sink-cream-2 transition-colors"
+            >
+              Exportar
+            </button>
+            <button
+              onClick={() => navigate("/analises/nova")}
+              className="px-3 py-1.5 font-sans font-semibold text-[12px] rounded-sink-md bg-sink-mint text-sink-deep hover:bg-sink-mint-2 transition-colors shadow-sink-sm"
+            >
+              + Nova análise
+            </button>
           </div>
+        </div>
 
-          {/* Top 5 cedentes — refinada */}
-          <Card className="border-border/70">
-            <CardHeader className="pb-3 flex-row items-center justify-between space-y-0">
-              <div>
-                <CardTitle className="text-[13px] font-semibold text-foreground">Top cedentes</CardTitle>
-                <p className="text-[11px] text-muted-foreground mt-0.5">Por volume aprovado no período</p>
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)} className="space-y-6">
+          <TabsList className="grid grid-cols-4 w-full max-w-2xl bg-sink-cream-2 border border-sink-fog rounded-sink-md p-0.5">
+            <TabsTrigger
+              value="overview"
+              className="font-mono text-xs data-[state=active]:bg-sink-paper data-[state=active]:text-sink-ink data-[state=active]:shadow-sink-sm text-sink-ink/50 rounded-sink-sm"
+            >
+              Visão Geral
+            </TabsTrigger>
+            <TabsTrigger
+              value="credit"
+              className="font-mono text-xs data-[state=active]:bg-sink-paper data-[state=active]:text-sink-mint-3 data-[state=active]:shadow-sink-sm text-sink-ink/50 rounded-sink-sm"
+            >
+              Crédito
+            </TabsTrigger>
+            <TabsTrigger
+              value="crm"
+              className="font-mono text-xs data-[state=active]:bg-sink-paper data-[state=active]:text-sink-deep-4 data-[state=active]:shadow-sink-sm text-sink-ink/50 rounded-sink-sm"
+            >
+              CRM
+            </TabsTrigger>
+            <TabsTrigger
+              value="monitoring"
+              className="font-mono text-xs data-[state=active]:bg-sink-paper data-[state=active]:text-[#F3B84A] data-[state=active]:shadow-sink-sm text-sink-ink/50 rounded-sink-sm"
+            >
+              Monitoramento
+            </TabsTrigger>
+          </TabsList>
+
+          {/* ─────────── VISÃO GERAL ─────────── */}
+          <TabsContent value="overview" className="space-y-6 mt-0">
+            {/* Hero KPIs */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <HeroKpiClean
+                label="Exposição Total"
+                value={formatBRL(totalExposure)}
+                sub={`${total} operações ativas`}
+                trend={analysesTrend}
+                sparkline={sparkAnalyses}
+                variant="line"
+              />
+              <HeroKpiClean
+                label="Saúde da Carteira"
+                value={`${carteiraSaude}%`}
+                sub={`Inadimplência < ${(100 - carteiraSaude > 0 ? (100 - carteiraSaude) / 10 : 0.8).toFixed(1)}%`}
+                trend={0}
+                gaugeValue={carteiraSaude}
+                gaugeLabel={avgScore >= 700 ? "Tier AAA" : avgScore >= 600 ? "Tier AA" : "Tier A"}
+                gaugeMain={String(avgScore || "—")}
+                variant="gauge"
+              />
+              <HeroKpiClean
+                label="Score Médio"
+                value={String(avgScore || "—")}
+                sub={avgScore >= 700 ? "Tier AA" : avgScore >= 600 ? "Tier A" : avgScore > 0 ? "Tier B" : "—"}
+                trend={approvedTrend}
+                variant="bare"
+              />
+              <HeroKpiClean
+                label="Taxa de Aprovação"
+                value={`${approvalRate.toFixed(1)}%`}
+                sub="Últimos 90 dias"
+                trend={-Math.abs(invoicesTrend > 5 ? 2 : invoicesTrend)}
+                sparkline={sparkApproved}
+                variant="line"
+              />
+            </div>
+
+            {/* Funil + Tendências */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              {/* Funil */}
+              <SinkCard className="lg:col-span-2">
+                <div className="pb-4 flex-row flex items-center justify-between space-y-0">
+                  <div>
+                    <h3 className="font-sans font-semibold text-[13px] text-sink-ink">Funil de conversão</h3>
+                    <p className="font-mono text-[11px] text-sink-ink/50 mt-0.5">Esteira de crédito · período atual</p>
+                  </div>
+                  <button
+                    onClick={() => navigate("/performance")}
+                    className="font-mono text-[11px] text-sink-ink/50 hover:text-sink-ink font-medium flex items-center gap-1"
+                  >
+                    Ver detalhes <ArrowUpRight className="h-3 w-3" />
+                  </button>
+                </div>
+                <div className="space-y-5">
+                  <div className="grid grid-cols-4 gap-3">
+                    {(() => {
+                      const steps = [
+                        { label: "Cedentes", value: clientCount, pct: 100, accent: "neutral" as const },
+                        { label: "Análises", value: total, pct: clientCount > 0 ? Math.round((total / clientCount) * 100) : 0, accent: "primary" as const },
+                        { label: "Em Comitê", value: inCommittee + approved + rejected, pct: total > 0 ? Math.round(((inCommittee + approved + rejected) / total) * 100) : 0, accent: "warning" as const },
+                        { label: "Aprovadas", value: approved, pct: total > 0 ? Math.round((approved / total) * 100) : 0, accent: "success" as const },
+                      ];
+                      const accentMap = {
+                        neutral: { bar: "bg-sink-ink/20", text: "text-sink-ink/50", val: "text-sink-ink" },
+                        primary: { bar: "bg-sink-deep-4", text: "text-sink-deep-4", val: "text-sink-ink" },
+                        warning: { bar: "bg-sink-warn", text: "text-[#F3B84A]", val: "text-sink-ink" },
+                        success: { bar: "bg-sink-mint", text: "text-sink-mint-3", val: "text-sink-mint-3" },
+                      };
+                      return steps.map((step, i) => {
+                        const a = accentMap[step.accent];
+                        return (
+                          <div key={step.label} className="space-y-2.5">
+                            <div className="flex items-center justify-between">
+                              <span className="font-mono text-[10px] font-medium tracking-widest uppercase text-sink-ink/50">{step.label}</span>
+                              <span className="font-mono text-[10px] tabular-nums text-sink-ink/50">{step.pct}%</span>
+                            </div>
+                            <p className={cn("font-sans text-[26px] font-semibold tabular-nums leading-none tracking-tight", a.val)}>{step.value}</p>
+                            <div className="h-[3px] rounded-sink-pill bg-sink-fog overflow-hidden">
+                              <div className={cn("h-full rounded-sink-pill transition-all duration-700", a.bar)} style={{ width: `${Math.max(step.pct, 4)}%` }} />
+                            </div>
+                            {i < steps.length - 1 && (
+                              <p className="font-mono text-[10px] text-sink-ink/40 tabular-nums">
+                                → {steps[i + 1].value > 0 && step.value > 0 ? Math.round((steps[i + 1].value / step.value) * 100) : 0}% conversão
+                              </p>
+                            )}
+                            {i === steps.length - 1 && <p className="text-[10px] text-sink-ink/40">&nbsp;</p>}
+                          </div>
+                        );
+                      });
+                    })()}
+                  </div>
+                  <div className="flex items-center justify-between gap-4 font-mono text-[11px] pt-4 border-t border-sink-fog">
+                    <div className="flex items-center gap-1.5">
+                      <Clock className="h-3 w-3 text-sink-ink/40" />
+                      <span className="text-sink-ink/50">Tempo médio</span>
+                      <span className="font-semibold text-sink-ink tabular-nums">4,2 d</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <AlertTriangle className="h-3 w-3 text-sink-warn" />
+                      <span className="text-sink-ink/50">Gargalo</span>
+                      <span className="font-semibold text-sink-ink">Comitê <span className="text-sink-ink/50 tabular-nums">(2,1d)</span></span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <CircleDot className="h-3 w-3 text-sink-danger" />
+                      <span className="text-sink-ink/50">Estagnadas &gt; 7d</span>
+                      <span className="font-semibold text-sink-ink tabular-nums">{drafts}</span>
+                    </div>
+                  </div>
+                </div>
+              </SinkCard>
+
+              {/* Tendências */}
+              <SinkCard>
+                <div className="pb-4 flex items-center justify-between">
+                  <div>
+                    <h3 className="font-sans font-semibold text-[13px] text-sink-ink">Tendências</h3>
+                    <p className="font-mono text-[11px] text-sink-ink/50 mt-0.5">Evolução · 30 dias</p>
+                  </div>
+                </div>
+                <div className="space-y-1 -mx-2">
+                  <TrendRow label="Análises iniciadas" value={total} trend={analysesTrend} sparkline={sparkAnalyses} />
+                  <TrendRow label="Aprovações" value={approved} trend={approvedTrend} sparkline={sparkApproved} />
+                  <TrendRow label="NFs monitoradas" value={fInvoices.length} trend={invoicesTrend} sparkline={sparkInvoices} />
+                </div>
+              </SinkCard>
+            </div>
+
+            {/* Top 5 cedentes */}
+            <SinkCard>
+              <div className="pb-3 flex items-center justify-between">
+                <div>
+                  <h3 className="font-sans font-semibold text-[13px] text-sink-ink">Top cedentes</h3>
+                  <p className="font-mono text-[11px] text-sink-ink/50 mt-0.5">Por volume aprovado no período</p>
+                </div>
+                <button
+                  onClick={() => navigate("/cedentes")}
+                  className="font-mono text-[11px] text-sink-ink/50 hover:text-sink-ink font-medium flex items-center gap-1"
+                >
+                  Ver todos <ArrowUpRight className="h-3 w-3" />
+                </button>
               </div>
-              <button onClick={() => navigate("/cedentes")} className="text-[11px] text-muted-foreground hover:text-foreground font-medium flex items-center gap-1">
-                Ver todos <ArrowUpRight className="h-3 w-3" />
-              </button>
-            </CardHeader>
-            <CardContent className="px-0 pb-1">
-              {topClients.length === 0 ? (
-                <div className="px-6"><EmptyState message="Sem cedentes para ranquear no período" /></div>
-              ) : (
-                <table className="w-full">
-                  <thead>
-                    <tr className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground border-b border-border/70">
-                      <th className="text-left font-medium px-6 py-2.5 w-[8%]">#</th>
-                      <th className="text-left font-medium py-2.5">Cedente</th>
-                      <th className="text-left font-medium py-2.5">CNPJ</th>
-                      <th className="text-right font-medium py-2.5">Volume aprovado</th>
-                      <th className="text-right font-medium py-2.5">Score</th>
-                      <th className="text-right font-medium px-6 py-2.5">Tier</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {topClients.map((c, idx) => {
-                      const cedente = fAnalyses.find(a => (a.clients as any)?.razao_social === c.name);
-                      const cnpj = (cedente?.clients as any)?.cnpj_cpf || "—";
-                      const score = cedente?.credit_score || 0;
-                      const tier = score >= 800 ? "AAA" : score >= 700 ? "AA" : score >= 600 ? "A" : "B";
-                      const tierColor = score >= 700 ? "bg-status-approved/12 text-status-approved" : score >= 600 ? "bg-status-committee/15 text-status-committee" : "bg-muted text-muted-foreground";
-                      return (
-                        <tr key={c.name} className="border-b border-border/40 last:border-0 hover:bg-muted/30 cursor-pointer transition-colors group" onClick={() => navigate("/cedentes")}>
-                          <td className="px-6 py-3.5 text-[11px] text-muted-foreground tabular-nums font-medium">{String(idx + 1).padStart(2, "0")}</td>
-                          <td className="py-3.5 text-[13px] text-foreground font-medium">{c.name}</td>
-                          <td className="py-3.5 text-[12px] text-muted-foreground font-mono tabular-nums">{cnpj}</td>
-                          <td className="py-3.5 text-[13px] text-foreground tabular-nums text-right font-semibold">{formatBRL(c.total)}</td>
-                          <td className="py-3.5 text-[13px] text-foreground tabular-nums text-right">{score || "—"}</td>
-                          <td className="px-6 py-3.5 text-right">
-                            <span className={cn("inline-flex items-center justify-center px-2 py-0.5 rounded text-[10px] font-semibold tabular-nums", tierColor)}>
-                              {tier}
-                            </span>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
+              <div className="px-0 pb-1 -mx-6">
+                {topClients.length === 0 ? (
+                  <div className="px-6"><EmptyState message="Sem cedentes para ranquear no período" /></div>
+                ) : (
+                  <table className="w-full">
+                    <thead>
+                      <tr className="bg-sink-cream-2 border-y border-sink-fog">
+                        <th className="font-mono text-left text-[10px] uppercase tracking-widest text-sink-ink/50 font-medium px-6 py-2.5 w-[8%]">#</th>
+                        <th className="font-mono text-left text-[10px] uppercase tracking-widest text-sink-ink/50 font-medium py-2.5">Cedente</th>
+                        <th className="font-mono text-left text-[10px] uppercase tracking-widest text-sink-ink/50 font-medium py-2.5">CNPJ</th>
+                        <th className="font-mono text-right text-[10px] uppercase tracking-widest text-sink-ink/50 font-medium py-2.5">Volume aprovado</th>
+                        <th className="font-mono text-right text-[10px] uppercase tracking-widest text-sink-ink/50 font-medium py-2.5">Score</th>
+                        <th className="font-mono text-right text-[10px] uppercase tracking-widest text-sink-ink/50 font-medium px-6 py-2.5">Tier</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {topClients.map((c, idx) => {
+                        const cedente = fAnalyses.find(a => (a.clients as any)?.razao_social === c.name);
+                        const cnpj = (cedente?.clients as any)?.cnpj_cpf || "—";
+                        const score = cedente?.credit_score || 0;
+                        const tier = score >= 800 ? "AAA" : score >= 700 ? "AA" : score >= 600 ? "A" : "B";
+                        const tierColor = score >= 700
+                          ? "bg-sink-mint/10 text-sink-mint-3"
+                          : score >= 600
+                          ? "bg-sink-warn/10 text-[#F3B84A]"
+                          : "bg-sink-cream-2 text-sink-ink/50";
+                        return (
+                          <tr
+                            key={c.name}
+                            className="border-b border-sink-fog last:border-0 hover:bg-sink-cream cursor-pointer transition-colors group"
+                            onClick={() => navigate("/cedentes")}
+                          >
+                            <td className="px-6 py-3.5 font-mono text-[11px] text-sink-ink/50 tabular-nums">{String(idx + 1).padStart(2, "0")}</td>
+                            <td className="py-3.5 font-sans text-[13px] text-sink-ink font-medium">{c.name}</td>
+                            <td className="py-3.5 font-mono text-[12px] text-sink-ink/50 tabular-nums">{cnpj}</td>
+                            <td className="py-3.5 font-sans text-[13px] text-sink-ink tabular-nums text-right font-semibold">{formatBRL(c.total)}</td>
+                            <td className="py-3.5 font-mono text-[13px] text-sink-ink tabular-nums text-right">{score || "—"}</td>
+                            <td className="px-6 py-3.5 text-right">
+                              <span className={cn("inline-flex items-center justify-center px-2 py-0.5 rounded-sink-sm font-mono text-[10px] font-semibold tabular-nums", tierColor)}>
+                                {tier}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            </SinkCard>
+          </TabsContent>
 
-        {/* ─────────── CRÉDITO ─────────── */}
-        <TabsContent value="credit" className="space-y-5 mt-0">
-          <AreaHeader accent={areaAccents.credit} subtitle="Análises, comitê e aprovações" linkLabel="Ver análises" onLink={() => navigate("/analises")} />
+          {/* ─────────── CRÉDITO ─────────── */}
+          <TabsContent value="credit" className="space-y-5 mt-0">
+            <AreaHeader accent={areaAccents.credit} subtitle="Análises, comitê e aprovações" linkLabel="Ver análises" onLink={() => navigate("/analises")} />
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-            <KpiCard title="Cedentes" value={clientCount} icon={Building2} onClick={() => navigate("/cedentes")} />
-            <KpiCard title="Análises" value={total} icon={FileText} sparkline={sparkAnalyses} onClick={() => navigate("/analises")} />
-            <KpiCard title="Comitê" value={inCommittee} icon={Clock} accent={inCommittee > 0 ? "warning" : undefined} sparkline={sparkCommittee} onClick={() => navigate("/comite")} />
-            <KpiCard title="Aprovadas" value={approved} icon={CheckCircle} accent="success" sparkline={sparkApproved} onClick={() => navigate("/analises")} />
-            <KpiCard title="Reprovadas" value={rejected} icon={XCircle} accent={rejected > 0 ? "danger" : undefined} sparkline={sparkRejected} onClick={() => navigate("/analises")} />
-            <KpiCard title="Score Médio" value={avgScore || "N/A"} icon={Gauge} />
-          </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+              <KpiCard title="Cedentes" value={clientCount} icon={Building2} onClick={() => navigate("/cedentes")} />
+              <KpiCard title="Análises" value={total} icon={FileText} sparkline={sparkAnalyses} onClick={() => navigate("/analises")} />
+              <KpiCard title="Comitê" value={inCommittee} icon={Clock} accent={inCommittee > 0 ? "warning" : undefined} sparkline={sparkCommittee} onClick={() => navigate("/comite")} />
+              <KpiCard title="Aprovadas" value={approved} icon={CheckCircle} accent="success" sparkline={sparkApproved} onClick={() => navigate("/analises")} />
+              <KpiCard title="Reprovadas" value={rejected} icon={XCircle} accent={rejected > 0 ? "danger" : undefined} sparkline={sparkRejected} onClick={() => navigate("/analises")} />
+              <KpiCard title="Score Médio" value={avgScore || "N/A"} icon={Gauge} />
+            </div>
 
-          {/* Financeiro + Distribuição */}
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-            <Card className="lg:col-span-2">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <DollarSign className="h-4 w-4 text-muted-foreground" />
-                  Resumo Financeiro
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <MetricBlock label="Vol. Sugerido" value={formatBRL(totalLimiteSugerido)} />
-                  <MetricBlock label="Vol. Aprovado" value={formatBRL(totalLimiteAprovado)} valueClass="text-status-approved" />
-                </div>
-                <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-xs text-muted-foreground">Taxa de Aprovação</span>
-                    <span className="text-sm font-semibold tabular-nums text-foreground">{approvalRate.toFixed(0)}%</span>
+            {/* Financeiro + Distribuição */}
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+              <SinkCard className="lg:col-span-2">
+                <div className="pb-4 flex items-center gap-2">
+                  <div className="h-8 w-8 rounded-sink-md bg-sink-mint/10 flex items-center justify-center">
+                    <DollarSign className="h-4 w-4 text-sink-mint" />
                   </div>
-                  <div className="h-2 rounded-full bg-muted overflow-hidden">
-                    <div className="h-full rounded-full bg-status-approved transition-all duration-500" style={{ width: `${approvalRate}%` }} />
+                  <h3 className="font-sans font-semibold text-[13px] text-sink-ink">Resumo Financeiro</h3>
+                </div>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <MetricBlock label="Vol. Sugerido" value={formatBRL(totalLimiteSugerido)} />
+                    <MetricBlock label="Vol. Aprovado" value={formatBRL(totalLimiteAprovado)} valueClass="text-sink-mint-3" />
+                  </div>
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="font-mono text-[11px] text-sink-ink/50 uppercase tracking-widest">Taxa de Aprovação</span>
+                      <span className="font-sans text-sm font-semibold tabular-nums text-sink-ink">{approvalRate.toFixed(0)}%</span>
+                    </div>
+                    <div className="h-2 rounded-sink-pill bg-sink-fog overflow-hidden">
+                      <div
+                        className="h-full rounded-sink-pill bg-sink-mint transition-all duration-500"
+                        style={{ width: `${approvalRate}%` }}
+                      />
+                    </div>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+              </SinkCard>
 
-            <Card className="lg:col-span-3">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                  Distribuição por Status
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
+              <SinkCard className="lg:col-span-3">
+                <div className="pb-4 flex items-center gap-2">
+                  <div className="h-8 w-8 rounded-sink-md bg-sink-mint/10 flex items-center justify-center">
+                    <TrendingUp className="h-4 w-4 text-sink-mint" />
+                  </div>
+                  <h3 className="font-sans font-semibold text-[13px] text-sink-ink">Distribuição por Status</h3>
+                </div>
                 {total > 0 ? (
                   <>
-                    <div className="h-4 rounded-full bg-muted overflow-hidden flex mb-4">
+                    <div className="h-4 rounded-sink-pill bg-sink-fog overflow-hidden flex mb-4">
                       {statusData.filter(s => s.pct > 0).map((s) => (
                         <div
                           key={s.label}
-                          className={cn("h-full first:rounded-l-full last:rounded-r-full transition-all duration-500", s.color)}
+                          className={cn("h-full first:rounded-l-sink-pill last:rounded-r-sink-pill transition-all duration-500", s.color)}
                           style={{ width: `${s.pct}%` }}
                           title={`${s.label}: ${s.value}`}
                         />
@@ -622,10 +682,10 @@ export default function Dashboard() {
                     <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
                       {statusData.map((s) => (
                         <div key={s.label} className="flex items-center gap-2">
-                          <div className={cn("h-2.5 w-2.5 rounded-full shrink-0", s.dotColor)} />
+                          <div className={cn("h-2.5 w-2.5 rounded-sink-pill shrink-0", s.dotColor)} />
                           <div>
-                            <p className="text-[11px] text-muted-foreground leading-tight">{s.label}</p>
-                            <p className="text-sm font-semibold tabular-nums text-foreground">{s.value}</p>
+                            <p className="font-mono text-[11px] text-sink-ink/50">{s.label}</p>
+                            <p className="font-sans text-sm font-semibold tabular-nums text-sink-ink">{s.value}</p>
                           </div>
                         </div>
                       ))}
@@ -634,47 +694,48 @@ export default function Dashboard() {
                 ) : (
                   <EmptyState message="Nenhuma análise para exibir distribuição" />
                 )}
-              </CardContent>
-            </Card>
-          </div>
+              </SinkCard>
+            </div>
 
-          <RecentAnalysesCard
-            recentAnalyses={recentAnalyses}
-            now={now}
-            navigate={navigate}
-            scoreBg={scoreBg}
-            scoreColor={scoreColor}
-          />
-        </TabsContent>
+            <RecentAnalysesCard
+              recentAnalyses={recentAnalyses}
+              now={now}
+              navigate={navigate}
+              scoreBg={scoreBg}
+              scoreColor={scoreColor}
+            />
+          </TabsContent>
 
-        {/* ─────────── CRM ─────────── */}
-        <TabsContent value="crm" className="space-y-5 mt-0">
-          <AreaHeader accent={areaAccents.crm} subtitle="Pipeline, tarefas e atividades" linkLabel="Ver dashboard CRM" onLink={() => navigate("/crm/dashboard")} />
+          {/* ─────────── CRM ─────────── */}
+          <TabsContent value="crm" className="space-y-5 mt-0">
+            <AreaHeader accent={areaAccents.crm} subtitle="Pipeline, tarefas e atividades" linkLabel="Ver dashboard CRM" onLink={() => navigate("/crm/dashboard")} />
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            <CrmMetricCard
-              label="Pipeline" value={formatBRL(pipelineValue)} sub={`${activeDeals.length} oportunidade(s) ativa(s)`}
-              icon={Target} onClick={() => navigate("/crm/pipeline")}
-            />
-            <CrmMetricCard
-              label="Ganhos" value={formatBRL(wonValue)} sub={`${wonDeals.length} deal(s) fechado(s)`}
-              icon={CheckCircle} valueClass="text-status-approved"
-              onClick={() => navigate("/crm/dashboard")}
-            />
-            <CrmMetricCard
-              label="Tarefas" value={String(pendingTasks)} sub={overdueTasks > 0 ? `${overdueTasks} vencida(s)` : "pendente(s)"}
-              icon={CheckSquare}
-              valueClass={overdueTasks > 0 ? "text-status-rejected" : undefined}
-              onClick={() => navigate("/crm/tarefas")}
-            />
-            <Card className="cursor-pointer hover:shadow-sm transition-shadow group" onClick={() => navigate("/crm/atividades")}>
-              <CardContent className="p-4 space-y-2.5">
-                <div className="flex items-center gap-2">
-                  <div className="h-8 w-8 rounded-md bg-muted flex items-center justify-center">
-                    <MessageSquare className="h-4 w-4 text-muted-foreground" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <CrmMetricCard
+                label="Pipeline" value={formatBRL(pipelineValue)} sub={`${activeDeals.length} oportunidade(s) ativa(s)`}
+                icon={Target} onClick={() => navigate("/crm/pipeline")}
+              />
+              <CrmMetricCard
+                label="Ganhos" value={formatBRL(wonValue)} sub={`${wonDeals.length} deal(s) fechado(s)`}
+                icon={CheckCircle} valueClass="text-sink-mint-3"
+                onClick={() => navigate("/crm/dashboard")}
+              />
+              <CrmMetricCard
+                label="Tarefas" value={String(pendingTasks)} sub={overdueTasks > 0 ? `${overdueTasks} vencida(s)` : "pendente(s)"}
+                icon={CheckSquare}
+                valueClass={overdueTasks > 0 ? "text-sink-danger" : undefined}
+                onClick={() => navigate("/crm/tarefas")}
+              />
+              <SinkCard
+                className="cursor-pointer hover:shadow-sink-md transition-shadow group"
+                onClick={() => navigate("/crm/atividades")}
+              >
+                <div className="flex items-center gap-2 mb-2.5">
+                  <div className="h-8 w-8 rounded-sink-md bg-sink-mint/10 flex items-center justify-center">
+                    <MessageSquare className="h-4 w-4 text-sink-mint" />
                   </div>
-                  <span className="text-xs font-medium text-muted-foreground">Atividades</span>
-                  <ChevronRight className="h-3.5 w-3.5 text-transparent group-hover:text-muted-foreground transition-colors ml-auto" />
+                  <span className="font-mono text-[11px] text-sink-ink/50 uppercase tracking-widest">Atividades</span>
+                  <ChevronRight className="h-3.5 w-3.5 text-transparent group-hover:text-sink-ink/40 transition-colors ml-auto" />
                 </div>
                 {recentActivities.length > 0 ? (() => {
                   const userName = currentProfile?.full_name?.toLowerCase() || "";
@@ -684,22 +745,26 @@ export default function Dashboard() {
                     <div className="space-y-2">
                       {myActs.length > 0 && (
                         <div className="space-y-1">
-                          <span className="text-[10px] font-medium text-primary flex items-center gap-1"><User className="h-2.5 w-2.5" />Minhas ({myActs.length})</span>
+                          <span className="font-mono text-[10px] font-medium text-sink-mint-3 flex items-center gap-1 uppercase tracking-widest">
+                            <User className="h-2.5 w-2.5" />Minhas ({myActs.length})
+                          </span>
                           {myActs.slice(0, 2).map(act => (
                             <div key={act.id} className="flex items-center gap-2 min-w-0 pl-3">
-                              <span className="text-[10px] text-muted-foreground shrink-0 w-14 tabular-nums">{formatDate(act.activity_date)}</span>
-                              <span className="text-[11px] text-foreground truncate">{act.description}</span>
+                              <span className="font-mono text-[10px] text-sink-ink/50 shrink-0 w-14 tabular-nums">{formatDate(act.activity_date)}</span>
+                              <span className="font-sans text-[11px] text-sink-ink truncate">{act.description}</span>
                             </div>
                           ))}
                         </div>
                       )}
                       {othersActs.length > 0 && (
                         <div className="space-y-1">
-                          <span className="text-[10px] font-medium text-muted-foreground flex items-center gap-1"><Handshake className="h-2.5 w-2.5" />Equipe ({othersActs.length})</span>
+                          <span className="font-mono text-[10px] font-medium text-sink-ink/50 flex items-center gap-1 uppercase tracking-widest">
+                            <Handshake className="h-2.5 w-2.5" />Equipe ({othersActs.length})
+                          </span>
                           {othersActs.slice(0, 2).map(act => (
                             <div key={act.id} className="flex items-center gap-2 min-w-0 pl-3">
-                              <span className="text-[10px] text-muted-foreground shrink-0 w-14 tabular-nums">{formatDate(act.activity_date)}</span>
-                              <span className="text-[11px] text-foreground truncate">{act.description}</span>
+                              <span className="font-mono text-[10px] text-sink-ink/50 shrink-0 w-14 tabular-nums">{formatDate(act.activity_date)}</span>
+                              <span className="font-sans text-[11px] text-sink-ink truncate">{act.description}</span>
                             </div>
                           ))}
                         </div>
@@ -709,116 +774,145 @@ export default function Dashboard() {
                 })() : (
                   <EmptyState message="Nenhuma atividade recente" small />
                 )}
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
+              </SinkCard>
+            </div>
+          </TabsContent>
 
-        {/* ─────────── MONITORAMENTO ─────────── */}
-        <TabsContent value="monitoring" className="space-y-5 mt-0">
-          <AreaHeader accent={areaAccents.monitoring} subtitle="NFs, falimentar, blacklist e grupos" />
+          {/* ─────────── MONITORAMENTO ─────────── */}
+          <TabsContent value="monitoring" className="space-y-5 mt-0">
+            <AreaHeader accent={areaAccents.monitoring} subtitle="NFs, falimentar, blacklist e grupos" />
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            <MonitorCard
-              title="Monitoramento NFs" icon={Receipt}
-              mainValue={fInvoices.length} mainSuffix={formatBRL(invoiceTotalValue)}
-              onClick={() => navigate("/monitoramento-nfs")}
-              sparkline={sparkInvoices} sparkColor="hsl(var(--status-approved))"
-            >
-              <div className="flex gap-3 flex-wrap">
-                <StatusDot color="bg-status-approved" label={`${invoiceValid} válidas`} />
-                <StatusDot color="bg-status-rejected" label={`${invoiceInvalid} inválidas`} />
-                <StatusDot color="bg-muted-foreground" label={`${invoicePending} pendentes`} />
-              </div>
-            </MonitorCard>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <MonitorCard
+                title="Monitoramento NFs" icon={Receipt}
+                mainValue={fInvoices.length} mainSuffix={formatBRL(invoiceTotalValue)}
+                onClick={() => navigate("/monitoramento-nfs")}
+                sparkline={sparkInvoices} sparkColor="#2BD49C"
+              >
+                <div className="flex gap-3 flex-wrap">
+                  <StatusDot color="bg-sink-mint" label={`${invoiceValid} válidas`} />
+                  <StatusDot color="bg-sink-danger" label={`${invoiceInvalid} inválidas`} />
+                  <StatusDot color="bg-sink-ink/30" label={`${invoicePending} pendentes`} />
+                </div>
+              </MonitorCard>
 
-            <MonitorCard
-              title="Grupos de Monitoramento" icon={Layers}
-              mainValue={monitoringGroups.length} mainSuffix={`${activeGroups} ativo(s)`}
-              onClick={() => navigate("/monitoramento-nfs")}
-            >
-              {monitoringGroups.length > 0 ? (
-                <div className="space-y-2">
-                  {monitoringGroups.slice(0, 3).map(g => {
-                    const grpClients = (g as any).monitoring_group_clients?.length ?? 0;
-                    return (
-                      <div key={g.id} className="rounded-md border border-border p-2 space-y-1 bg-muted/30">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-1.5 min-w-0">
-                            <CircleDot className={cn("h-2.5 w-2.5 shrink-0", g.is_active ? "text-status-approved" : "text-muted-foreground/40")} />
-                            <span className="truncate text-[11px] font-medium text-foreground">{g.name}</span>
+              <MonitorCard
+                title="Grupos de Monitoramento" icon={Layers}
+                mainValue={monitoringGroups.length} mainSuffix={`${activeGroups} ativo(s)`}
+                onClick={() => navigate("/monitoramento-nfs")}
+              >
+                {monitoringGroups.length > 0 ? (
+                  <div className="space-y-2">
+                    {monitoringGroups.slice(0, 3).map(g => {
+                      const grpClients = (g as any).monitoring_group_clients?.length ?? 0;
+                      return (
+                        <div key={g.id} className="rounded-sink-md border border-sink-fog p-2 space-y-1 bg-sink-cream">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <CircleDot className={cn("h-2.5 w-2.5 shrink-0", g.is_active ? "text-sink-mint" : "text-sink-ink/20")} />
+                              <span className="truncate font-sans text-[11px] font-medium text-sink-ink">{g.name}</span>
+                            </div>
+                            <span className="font-mono text-[10px] text-sink-ink/50 shrink-0 ml-2">{frequencyLabel[g.frequency] || g.frequency}</span>
                           </div>
-                          <span className="text-[10px] text-muted-foreground shrink-0 ml-2">{frequencyLabel[g.frequency] || g.frequency}</span>
+                          <div className="flex items-center gap-2 font-mono text-[10px] text-sink-ink/50 flex-wrap">
+                            <span className="flex items-center gap-0.5"><Building2 className="h-2.5 w-2.5" />{grpClients} cedente(s)</span>
+                            {g.concentracao_maxima != null && <span>Conc. {g.concentracao_maxima}%</span>}
+                            {g.limiar_variacao != null && <span>Var. {g.limiar_variacao}%</span>}
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2 text-[10px] text-muted-foreground flex-wrap">
-                          <span className="flex items-center gap-0.5"><Building2 className="h-2.5 w-2.5" />{grpClients} cedente(s)</span>
-                          {g.concentracao_maxima != null && <span>Conc. {g.concentracao_maxima}%</span>}
-                          {g.limiar_variacao != null && <span>Var. {g.limiar_variacao}%</span>}
+                      );
+                    })}
+                    {monitoringGroups.length > 3 && (
+                      <p className="font-mono text-[10px] text-sink-ink/50">+{monitoringGroups.length - 3} grupo(s)</p>
+                    )}
+                  </div>
+                ) : (
+                  <EmptyState message="Nenhum grupo criado" small />
+                )}
+              </MonitorCard>
+
+              <MonitorCard
+                title="Informe Falimentar" icon={Scale}
+                mainValue={fBankruptcy.length} mainSuffix={`${bankruptcyActive} ativo(s)`}
+                onClick={() => navigate("/falimentar")}
+              >
+                {bankruptcyMatched > 0 ? (
+                  <div className="flex items-center gap-1.5 font-sans text-[11px] text-sink-danger font-medium">
+                    <AlertTriangle className="h-3 w-3 shrink-0" />
+                    {bankruptcyMatched} coincidência(s) na carteira
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1.5 font-sans text-[11px] text-sink-ink/50">
+                    <CheckCircle className="h-3 w-3 shrink-0 text-sink-mint" />
+                    Sem coincidências
+                  </div>
+                )}
+              </MonitorCard>
+
+              <MonitorCard
+                title="Blacklist" icon={ShieldBan}
+                mainValue={blacklistCount} mainSuffix="bloqueado(s)"
+                onClick={() => navigate("/blacklist")}
+                alert={newBlacklistCount > 0 ? `${newBlacklistCount} novo(s) em 7 dias` : undefined}
+                sparkline={sparkBlacklist} sparkColor="#E26B5A"
+              >
+                {fBlacklist.length > 0 ? (
+                  <div className="space-y-1.5">
+                    {fBlacklist.slice(0, 3).map(b => (
+                      <div key={b.id} className="rounded-sink-md border border-sink-fog px-2.5 py-1.5 bg-sink-cream">
+                        <div className="flex items-center justify-between mb-0.5">
+                          <span className="font-mono text-[11px] text-sink-ink truncate">{b.documento}</span>
+                          <span className={cn(
+                            "font-mono text-[9px] uppercase shrink-0 ml-2 font-semibold rounded-sink-sm px-1.5 py-0.5",
+                            b.tipo === "CNPJ"
+                              ? "bg-sink-danger/10 text-sink-danger"
+                              : "bg-sink-warn/10 text-[#F3B84A]"
+                          )}>{b.tipo}</span>
                         </div>
+                        {b.motivo && <p className="font-sans text-[10px] text-sink-ink/50 truncate">{b.motivo}</p>}
                       </div>
-                    );
-                  })}
-                  {monitoringGroups.length > 3 && <p className="text-[10px] text-muted-foreground">+{monitoringGroups.length - 3} grupo(s)</p>}
-                </div>
-              ) : (
-                <EmptyState message="Nenhum grupo criado" small />
-              )}
-            </MonitorCard>
-
-            <MonitorCard
-              title="Informe Falimentar" icon={Scale}
-              mainValue={fBankruptcy.length} mainSuffix={`${bankruptcyActive} ativo(s)`}
-              onClick={() => navigate("/falimentar")}
-            >
-              {bankruptcyMatched > 0 ? (
-                <div className="flex items-center gap-1.5 text-[11px] text-destructive font-medium">
-                  <AlertTriangle className="h-3 w-3 shrink-0" />
-                  {bankruptcyMatched} coincidência(s) na carteira
-                </div>
-              ) : (
-                <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                  <CheckCircle className="h-3 w-3 shrink-0 text-status-approved" />
-                  Sem coincidências
-                </div>
-              )}
-            </MonitorCard>
-
-            <MonitorCard
-              title="Blacklist" icon={ShieldBan}
-              mainValue={blacklistCount} mainSuffix="bloqueado(s)"
-              onClick={() => navigate("/blacklist")}
-              alert={newBlacklistCount > 0 ? `${newBlacklistCount} novo(s) em 7 dias` : undefined}
-              sparkline={sparkBlacklist} sparkColor="hsl(var(--status-rejected))"
-            >
-              {fBlacklist.length > 0 ? (
-                <div className="space-y-1.5">
-                  {fBlacklist.slice(0, 3).map(b => (
-                    <div key={b.id} className="rounded-md border border-border px-2.5 py-1.5 bg-muted/30">
-                      <div className="flex items-center justify-between mb-0.5">
-                        <span className="font-mono text-[11px] text-foreground truncate">{b.documento}</span>
-                        <span className={cn(
-                          "text-[9px] uppercase shrink-0 ml-2 font-semibold rounded px-1.5 py-0.5",
-                          b.tipo === "CNPJ" ? "bg-status-rejected/8 text-status-rejected" : "bg-status-committee/8 text-status-committee"
-                        )}>{b.tipo}</span>
-                      </div>
-                      {b.motivo && <p className="text-[10px] text-muted-foreground truncate">{b.motivo}</p>}
-                    </div>
-                  ))}
-                  {blacklistCount > 3 && <p className="text-[10px] text-muted-foreground text-center">+{blacklistCount - 3} registro(s)</p>}
-                </div>
-              ) : (
-                <EmptyState message="Nenhum registro" small />
-              )}
-            </MonitorCard>
-          </div>
-        </TabsContent>
-      </Tabs>
+                    ))}
+                    {blacklistCount > 3 && (
+                      <p className="font-mono text-[10px] text-sink-ink/50 text-center">+{blacklistCount - 3} registro(s)</p>
+                    )}
+                  </div>
+                ) : (
+                  <EmptyState message="Nenhum registro" small />
+                )}
+              </MonitorCard>
+            </div>
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   );
 }
 
-/* ──── Sub-components ──── */
+/* ──── SINK Card base ──── */
+function SinkCard({
+  children,
+  className,
+  onClick,
+}: {
+  children: React.ReactNode;
+  className?: string;
+  onClick?: () => void;
+}) {
+  return (
+    <div
+      className={cn(
+        "bg-sink-paper border border-sink-fog rounded-sink-lg p-6",
+        onClick && "cursor-pointer",
+        className
+      )}
+      onClick={onClick}
+    >
+      {children}
+    </div>
+  );
+}
 
+/* ──── AreaHeader ──── */
 function AreaHeader({
   accent, subtitle, linkLabel, onLink,
 }: {
@@ -826,16 +920,19 @@ function AreaHeader({
   subtitle: string; linkLabel?: string; onLink?: () => void;
 }) {
   return (
-    <div className={cn("flex items-center justify-between rounded-md border px-4 py-2.5", accent.border, accent.soft)}>
+    <div className={cn("flex items-center justify-between rounded-sink-md border px-4 py-2.5", accent.border, accent.soft)}>
       <div className="flex items-center gap-3">
-        <div className={cn("h-6 w-1 rounded-full", accent.bar)} />
+        <div className={cn("h-6 w-1 rounded-sink-pill", accent.bar)} />
         <div>
-          <h2 className={cn("text-sm font-semibold", accent.text)}>{accent.label}</h2>
-          <p className="text-[11px] text-muted-foreground">{subtitle}</p>
+          <h2 className={cn("font-sans font-semibold text-sm", accent.text)}>{accent.label}</h2>
+          <p className="font-mono text-[11px] text-sink-ink/50">{subtitle}</p>
         </div>
       </div>
       {linkLabel && onLink && (
-        <button onClick={onLink} className={cn("text-xs hover:underline flex items-center gap-0.5 font-medium", accent.text)}>
+        <button
+          onClick={onLink}
+          className={cn("font-mono text-xs hover:underline flex items-center gap-0.5 font-medium", accent.text)}
+        >
           {linkLabel} <ArrowUpRight className="h-3 w-3" />
         </button>
       )}
@@ -843,6 +940,7 @@ function AreaHeader({
   );
 }
 
+/* ──── RecentAnalysesCard ──── */
 function RecentAnalysesCard({
   recentAnalyses, now, navigate, scoreBg, scoreColor,
 }: {
@@ -852,142 +950,138 @@ function RecentAnalysesCard({
   scoreColor: (s: number | null) => string;
 }) {
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="h-4 w-4 text-muted-foreground" />
-            Análises Recentes
-          </CardTitle>
-          <button className="text-xs text-primary hover:underline flex items-center gap-0.5 font-medium" onClick={() => navigate("/analises")}>
-            Ver todas <ArrowUpRight className="h-3 w-3" />
-          </button>
-        </div>
-      </CardHeader>
-      <CardContent>
-        {recentAnalyses.length === 0 ? (
-          <EmptyState message="Nenhuma análise encontrada. Comece criando uma nova análise de crédito." />
-        ) : (
-          <div className="space-y-1">
-            {recentAnalyses.map((a) => {
-              const client = a.clients as any;
-              const daysAgo = Math.floor((now.getTime() - new Date(a.created_at).getTime()) / (1000 * 60 * 60 * 24));
-              const daysLabel = daysAgo === 0 ? "Hoje" : daysAgo === 1 ? "Ontem" : `${daysAgo}d atrás`;
-              const recLabel: Record<string, { text: string; cls: string }> = {
-                approve: { text: "Aprovar", cls: "text-status-approved" },
-                restrict: { text: "Restringir", cls: "text-status-committee" },
-                reject: { text: "Rejeitar", cls: "text-status-rejected" },
-              };
-              const rec = a.recommendation ? recLabel[a.recommendation] : null;
-
-              return (
-                <div
-                  key={a.id}
-                  className="flex items-center gap-3 py-3 px-3 rounded-md hover:bg-muted/50 cursor-pointer transition-colors group"
-                  onClick={() => navigate(`/analises/${a.id}`)}
-                >
-                  <div className="flex flex-col items-center gap-1 shrink-0">
-                    <div className={cn("h-10 w-10 rounded-md flex items-center justify-center text-xs font-semibold border", scoreBg(a.credit_score))}>
-                      <span className={scoreColor(a.credit_score)}>{a.credit_score || "—"}</span>
-                    </div>
-                    {a.credit_score && (
-                      <div className="w-10 h-1 rounded-full bg-muted overflow-hidden">
-                        <div
-                          className={cn("h-full rounded-full", a.credit_score >= 700 ? "bg-status-approved" : a.credit_score >= 400 ? "bg-status-committee" : "bg-status-rejected")}
-                          style={{ width: `${Math.min((a.credit_score / 1000) * 100, 100)}%` }}
-                        />
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-                      <p className="text-sm font-medium text-foreground truncate">{client?.razao_social || "—"}</p>
-                      <StatusBadge status={a.status} />
-                      {rec && <span className={cn("text-[10px] font-medium", rec.cls)}>• {rec.text}</span>}
-                    </div>
-                    <div className="flex items-center gap-3 text-[11px] text-muted-foreground flex-wrap">
-                      {client?.cnpj_cpf && <span className="flex items-center gap-0.5 font-mono"><Hash className="h-2.5 w-2.5" />{client.cnpj_cpf}</span>}
-                      {a.analista_credito && <span className="flex items-center gap-0.5"><User className="h-2.5 w-2.5" />{a.analista_credito}</span>}
-                      <span className="flex items-center gap-0.5"><Clock className="h-2.5 w-2.5" />{daysLabel}</span>
-                    </div>
-                  </div>
-                  <div className="text-right shrink-0 space-y-0.5">
-                    <p className="text-sm font-semibold tabular-nums text-foreground">{a.limite_sugerido ? formatBRL(a.limite_sugerido) : "—"}</p>
-                    {a.faturamento_medio && <p className="text-[10px] text-muted-foreground tabular-nums">Fat. {formatBRL(a.faturamento_medio)}</p>}
-                  </div>
-                  <ChevronRight className="h-4 w-4 text-transparent group-hover:text-muted-foreground transition-colors shrink-0" />
-                </div>
-              );
-            })}
+    <SinkCard>
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <div className="h-8 w-8 rounded-sink-md bg-sink-mint/10 flex items-center justify-center">
+            <FileText className="h-4 w-4 text-sink-mint" />
           </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
-/* ──── Sub-components ──── */
-
-function SectionWrapper({
-  title, subtitle, linkLabel, onLink, children,
-}: {
-  title: string; subtitle: string;
-  linkLabel?: string; onLink?: () => void; children: React.ReactNode;
-}) {
-  return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-sm font-semibold text-foreground">{title}</h2>
-          <p className="text-[11px] text-muted-foreground">{subtitle}</p>
+          <h3 className="font-sans font-semibold text-[13px] text-sink-ink">Análises Recentes</h3>
         </div>
-        {linkLabel && onLink && (
-          <button onClick={onLink} className="text-xs text-primary hover:underline flex items-center gap-0.5 font-medium">
-            {linkLabel} <ArrowUpRight className="h-3 w-3" />
-          </button>
-        )}
+        <button
+          className="font-mono text-[11px] text-sink-mint-3 hover:underline flex items-center gap-0.5 font-medium"
+          onClick={() => navigate("/analises")}
+        >
+          Ver todas <ArrowUpRight className="h-3 w-3" />
+        </button>
       </div>
-      {children}
-    </div>
+      {recentAnalyses.length === 0 ? (
+        <EmptyState message="Nenhuma análise encontrada. Comece criando uma nova análise de crédito." />
+      ) : (
+        <div className="space-y-1">
+          {recentAnalyses.map((a) => {
+            const client = a.clients as any;
+            const daysAgo = Math.floor((now.getTime() - new Date(a.created_at).getTime()) / (1000 * 60 * 60 * 24));
+            const daysLabel = daysAgo === 0 ? "Hoje" : daysAgo === 1 ? "Ontem" : `${daysAgo}d atrás`;
+            const recLabel: Record<string, { text: string; cls: string }> = {
+              approve: { text: "Aprovar", cls: "text-sink-mint-3" },
+              restrict: { text: "Restringir", cls: "text-[#F3B84A]" },
+              reject: { text: "Rejeitar", cls: "text-sink-danger" },
+            };
+            const rec = a.recommendation ? recLabel[a.recommendation] : null;
+
+            return (
+              <div
+                key={a.id}
+                className="flex items-center gap-3 py-3 px-3 rounded-sink-md hover:bg-sink-cream cursor-pointer transition-colors group border border-transparent hover:border-sink-fog"
+                onClick={() => navigate(`/analises/${a.id}`)}
+              >
+                <div className="flex flex-col items-center gap-1 shrink-0">
+                  <div className={cn("h-10 w-10 rounded-sink-md flex items-center justify-center font-mono text-xs font-semibold border", scoreBg(a.credit_score))}>
+                    <span className={scoreColor(a.credit_score)}>{a.credit_score || "—"}</span>
+                  </div>
+                  {a.credit_score && (
+                    <div className="w-10 h-1 rounded-sink-pill bg-sink-fog overflow-hidden">
+                      <div
+                        className={cn("h-full rounded-sink-pill", a.credit_score >= 700 ? "bg-sink-mint" : a.credit_score >= 400 ? "bg-sink-warn" : "bg-sink-danger")}
+                        style={{ width: `${Math.min((a.credit_score / 1000) * 100, 100)}%` }}
+                      />
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                    <p className="font-sans text-sm font-medium text-sink-ink truncate">{client?.razao_social || "—"}</p>
+                    <StatusBadge status={a.status} />
+                    {rec && <span className={cn("font-mono text-[10px] font-medium", rec.cls)}>• {rec.text}</span>}
+                  </div>
+                  <div className="flex items-center gap-3 font-mono text-[11px] text-sink-ink/50 flex-wrap">
+                    {client?.cnpj_cpf && (
+                      <span className="flex items-center gap-0.5">
+                        <Hash className="h-2.5 w-2.5" />{client.cnpj_cpf}
+                      </span>
+                    )}
+                    {a.analista_credito && (
+                      <span className="flex items-center gap-0.5">
+                        <User className="h-2.5 w-2.5" />{a.analista_credito}
+                      </span>
+                    )}
+                    <span className="flex items-center gap-0.5">
+                      <Clock className="h-2.5 w-2.5" />{daysLabel}
+                    </span>
+                  </div>
+                </div>
+                <div className="text-right shrink-0 space-y-0.5">
+                  <p className="font-sans text-sm font-semibold tabular-nums text-sink-ink">
+                    {a.limite_sugerido ? formatBRL(a.limite_sugerido) : "—"}
+                  </p>
+                  {a.faturamento_medio && (
+                    <p className="font-mono text-[10px] text-sink-ink/50 tabular-nums">Fat. {formatBRL(a.faturamento_medio)}</p>
+                  )}
+                </div>
+                <ChevronRight className="h-4 w-4 text-transparent group-hover:text-sink-ink/40 transition-colors shrink-0" />
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </SinkCard>
   );
 }
 
+/* ──── EmptyState ──── */
 function EmptyState({ message, small }: { message: string; small?: boolean }) {
   return (
     <div className={cn("flex flex-col items-center justify-center text-center", small ? "py-3" : "py-8")}>
-      <div className={cn("rounded-md bg-muted flex items-center justify-center mb-2", small ? "h-8 w-8" : "h-12 w-12")}>
-        <BarChart3 className={cn("text-muted-foreground/50", small ? "h-4 w-4" : "h-5 w-5")} />
+      <div className={cn("rounded-sink-md bg-sink-cream-2 flex items-center justify-center mb-2", small ? "h-8 w-8" : "h-12 w-12")}>
+        <BarChart3 className={cn("text-sink-ink/30", small ? "h-4 w-4" : "h-5 w-5")} />
       </div>
-      <p className={cn("text-muted-foreground", small ? "text-[11px]" : "text-sm")}>{message}</p>
+      <p className={cn("text-sink-ink/50 font-mono", small ? "text-[11px]" : "text-sm")}>{message}</p>
     </div>
   );
 }
 
+/* ──── KpiCard ──── */
 function KpiCard({
   title, value, icon: Icon, accent, onClick, sparkline,
 }: {
   title: string; value: number | string; icon: React.ElementType;
   accent?: "success" | "warning" | "danger"; onClick?: () => void; sparkline?: number[];
 }) {
-  const accentMap = { success: "text-status-approved", warning: "text-status-committee", danger: "text-status-rejected" };
-  const strokeMap: Record<string, string> = { success: "hsl(var(--status-approved))", warning: "hsl(var(--status-committee))", danger: "hsl(var(--status-rejected))" };
-  const color = accent ? accentMap[accent] : "text-foreground";
-  const strokeColor = accent ? strokeMap[accent] : "hsl(var(--primary))";
+  const accentMap = {
+    success: { text: "text-sink-mint-3", icon: "text-sink-mint", bg: "bg-sink-mint/10" },
+    warning: { text: "text-[#F3B84A]", icon: "text-sink-warn", bg: "bg-sink-warn/10" },
+    danger: { text: "text-sink-danger", icon: "text-sink-danger", bg: "bg-sink-danger/10" },
+  };
+  const a = accent ? accentMap[accent] : null;
+  const strokeColor = accent === "success" ? "#2BD49C" : accent === "warning" ? "#F3B84A" : accent === "danger" ? "#E26B5A" : "#2BD49C";
 
   return (
-    <Card className={cn("transition-shadow", onClick && "cursor-pointer hover:shadow-sm")} onClick={onClick}>
-      <CardContent className="p-4 flex flex-col items-center text-center gap-1">
-        <div className="h-8 w-8 rounded-md bg-muted flex items-center justify-center mb-0.5">
-          <Icon className={cn("h-4 w-4", accent ? accentMap[accent] : "text-muted-foreground")} />
-        </div>
-        <span className={cn("text-xl font-semibold tabular-nums leading-none", color)}>{value}</span>
-        <span className="text-[11px] text-muted-foreground font-medium">{title}</span>
-        {sparkline && sparkline.some(v => v > 0) && <Sparkline data={sparkline} color={strokeColor} />}
-      </CardContent>
-    </Card>
+    <SinkCard
+      className={cn("flex flex-col items-center text-center gap-1 !p-4 transition-shadow", onClick && "hover:shadow-sink-md")}
+      onClick={onClick}
+    >
+      <div className={cn("h-8 w-8 rounded-sink-md flex items-center justify-center mb-0.5", a ? a.bg : "bg-sink-mint/10")}>
+        <Icon className={cn("h-4 w-4", a ? a.icon : "text-sink-mint")} />
+      </div>
+      <span className={cn("font-sans text-xl font-bold tabular-nums leading-none", a ? a.text : "text-sink-ink")}>{value}</span>
+      <span className="font-mono text-[11px] text-sink-ink/50 uppercase tracking-widest">{title}</span>
+      {sparkline && sparkline.some(v => v > 0) && <Sparkline data={sparkline} color={strokeColor} />}
+    </SinkCard>
   );
 }
 
+/* ──── CrmMetricCard ──── */
 function CrmMetricCard({
   label, value, sub, icon: Icon, valueClass, onClick,
 }: {
@@ -995,26 +1089,26 @@ function CrmMetricCard({
   valueClass?: string; onClick?: () => void;
 }) {
   return (
-    <Card className="cursor-pointer hover:shadow-sm transition-shadow group" onClick={onClick}>
-      <CardContent className="p-4 space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-md bg-muted flex items-center justify-center">
-              <Icon className="h-4 w-4 text-muted-foreground" />
-            </div>
-            <span className="text-xs font-medium text-muted-foreground">{label}</span>
+    <SinkCard
+      className="cursor-pointer hover:shadow-sink-md transition-shadow group !p-4"
+      onClick={onClick}
+    >
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <div className="h-8 w-8 rounded-sink-md bg-sink-mint/10 flex items-center justify-center">
+            <Icon className="h-4 w-4 text-sink-mint" />
           </div>
-          <ChevronRight className="h-3.5 w-3.5 text-transparent group-hover:text-muted-foreground transition-colors" />
+          <span className="font-mono text-[11px] text-sink-ink/50 uppercase tracking-widest">{label}</span>
         </div>
-        <div>
-          <p className={cn("text-xl font-semibold tabular-nums text-foreground", valueClass)}>{value}</p>
-          <p className="text-[11px] text-muted-foreground">{sub}</p>
-        </div>
-      </CardContent>
-    </Card>
+        <ChevronRight className="h-3.5 w-3.5 text-transparent group-hover:text-sink-ink/40 transition-colors" />
+      </div>
+      <p className={cn("font-sans text-xl font-bold tabular-nums text-sink-ink", valueClass)}>{value}</p>
+      <p className="font-mono text-[11px] text-sink-ink/50">{sub}</p>
+    </SinkCard>
   );
 }
 
+/* ──── Sparkline ──── */
 function Sparkline({ data, color }: { data: number[]; color: string }) {
   const max = Math.max(...data, 1);
   const w = 72;
@@ -1024,22 +1118,24 @@ function Sparkline({ data, color }: { data: number[]; color: string }) {
   const fillPoints = `0,${h} ${points} ${w},${h}`;
 
   return (
-    <svg width={w} height={h} className="mt-1 opacity-50" viewBox={`0 0 ${w} ${h}`}>
-      <polygon points={fillPoints} fill={color} opacity="0.1" />
+    <svg width={w} height={h} className="mt-1 opacity-60" viewBox={`0 0 ${w} ${h}`}>
+      <polygon points={fillPoints} fill={color} opacity="0.12" />
       <polyline points={points} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
 
+/* ──── MetricBlock ──── */
 function MetricBlock({ label, value, valueClass }: { label: string; value: string; valueClass?: string }) {
   return (
     <div>
-      <p className="text-[11px] text-muted-foreground mb-0.5">{label}</p>
-      <p className={cn("text-lg font-semibold tabular-nums text-foreground", valueClass)}>{value}</p>
+      <p className="font-mono text-[11px] text-sink-ink/50 uppercase tracking-widest mb-0.5">{label}</p>
+      <p className={cn("font-sans text-lg font-bold tabular-nums text-sink-ink", valueClass)}>{value}</p>
     </div>
   );
 }
 
+/* ──── MonitorCard ──── */
 function MonitorCard({
   title, icon: Icon, mainValue, mainSuffix, onClick, alert, sparkline, sparkColor, children,
 }: {
@@ -1047,133 +1143,45 @@ function MonitorCard({
   onClick?: () => void; alert?: string; sparkline?: number[]; sparkColor?: string; children: React.ReactNode;
 }) {
   return (
-    <Card className={cn("transition-shadow", onClick && "cursor-pointer hover:shadow-sm")} onClick={onClick}>
-      <CardHeader className="pb-1.5 pt-4 px-4">
-        <CardTitle className="text-xs flex items-center gap-2 font-medium text-foreground">
-          <div className="h-6 w-6 rounded-md bg-muted flex items-center justify-center">
-            <Icon className="h-3.5 w-3.5 text-muted-foreground" />
-          </div>
-          {title}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="px-4 pb-4 space-y-2.5">
-        <div className="flex items-baseline justify-between">
-          <div className="flex items-center gap-3">
-            <span className="text-xl font-semibold tabular-nums text-foreground">{mainValue}</span>
-            {sparkline && sparkline.some(v => v > 0) && <Sparkline data={sparkline} color={sparkColor || "hsl(var(--primary))"} />}
-          </div>
-          {mainSuffix && <span className="text-[11px] text-muted-foreground">{mainSuffix}</span>}
+    <SinkCard
+      className={cn("transition-shadow", onClick && "cursor-pointer hover:shadow-sink-md")}
+      onClick={onClick}
+    >
+      <div className="flex items-center gap-2 mb-3">
+        <div className="h-6 w-6 rounded-sink-md bg-sink-mint/10 flex items-center justify-center">
+          <Icon className="h-3.5 w-3.5 text-sink-mint" />
         </div>
-        {alert && (
-          <div className="flex items-center gap-1.5 text-[11px] text-destructive font-medium">
-            <AlertTriangle className="h-3 w-3 shrink-0" />
-            {alert}
-          </div>
-        )}
-        {children}
-      </CardContent>
-    </Card>
+        <span className="font-mono text-[11px] text-sink-ink/50 uppercase tracking-widest">{title}</span>
+      </div>
+      <div className="flex items-baseline justify-between mb-2.5">
+        <div className="flex items-center gap-3">
+          <span className="font-sans text-xl font-bold tabular-nums text-sink-ink">{mainValue}</span>
+          {sparkline && sparkline.some(v => v > 0) && <Sparkline data={sparkline} color={sparkColor || "#2BD49C"} />}
+        </div>
+        {mainSuffix && <span className="font-mono text-[11px] text-sink-ink/50">{mainSuffix}</span>}
+      </div>
+      {alert && (
+        <div className="flex items-center gap-1.5 font-sans text-[11px] text-sink-danger font-medium mb-2">
+          <AlertTriangle className="h-3 w-3 shrink-0" />
+          {alert}
+        </div>
+      )}
+      {children}
+    </SinkCard>
   );
 }
 
-function HeroKpi({
-  label, value, sub, icon: Icon, accent = "neutral", gauge,
-}: {
-  label: string; value: string; sub: string; icon: React.ElementType;
-  accent?: "primary" | "success" | "warning" | "danger" | "neutral";
-  gauge?: number;
-}) {
-  const accentMap = {
-    primary: { text: "text-primary", bar: "bg-primary", soft: "bg-primary/10" },
-    success: { text: "text-status-approved", bar: "bg-status-approved", soft: "bg-status-approved/10" },
-    warning: { text: "text-status-committee", bar: "bg-status-committee", soft: "bg-status-committee/10" },
-    danger: { text: "text-status-rejected", bar: "bg-status-rejected", soft: "bg-status-rejected/10" },
-    neutral: { text: "text-foreground", bar: "bg-muted-foreground", soft: "bg-muted" },
-  };
-  const a = accentMap[accent];
-  return (
-    <Card className="overflow-hidden">
-      <div className={cn("h-1 w-full", a.bar)} />
-      <CardContent className="p-4 space-y-2.5">
-        <div className="flex items-center justify-between">
-          <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">{label}</span>
-          <div className={cn("h-7 w-7 rounded-md flex items-center justify-center", a.soft)}>
-            <Icon className={cn("h-3.5 w-3.5", a.text)} />
-          </div>
-        </div>
-        <div>
-          <p className={cn("text-2xl font-semibold tabular-nums leading-tight", a.text)}>{value}</p>
-          <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">{sub}</p>
-        </div>
-        {typeof gauge === "number" && (
-          <div className="h-1 rounded-full bg-muted overflow-hidden">
-            <div className={cn("h-full transition-all duration-700", a.bar)} style={{ width: `${Math.min(Math.max(gauge, 0), 100)}%` }} />
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
-function TrendCard({
-  title, icon: Icon, current, previous, trend, sparkline, color, positiveIsGood,
-}: {
-  title: string; icon: React.ElementType;
-  current: number; previous: number; trend: number;
-  sparkline: number[]; color: string; positiveIsGood?: boolean;
-}) {
-  const isUp = trend > 0;
-  const isFlat = trend === 0;
-  const goodTrend = positiveIsGood ? isUp : false;
-  const trendColor = isFlat
-    ? "text-muted-foreground"
-    : goodTrend || (positiveIsGood && isUp)
-      ? "text-status-approved"
-      : !positiveIsGood && !isUp
-        ? "text-muted-foreground"
-        : isUp
-          ? "text-status-approved"
-          : "text-status-rejected";
-  const TrendIcon = isFlat ? ArrowRight : isUp ? ArrowUp : ArrowDown;
-  return (
-    <Card>
-      <CardContent className="p-4 space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="h-7 w-7 rounded-md bg-muted flex items-center justify-center">
-              <Icon className="h-3.5 w-3.5 text-muted-foreground" />
-            </div>
-            <span className="text-xs font-medium text-foreground">{title}</span>
-          </div>
-          <div className={cn("flex items-center gap-0.5 text-[11px] font-semibold tabular-nums", trendColor)}>
-            <TrendIcon className="h-3 w-3" />
-            {Math.abs(trend)}%
-          </div>
-        </div>
-        <div className="flex items-end justify-between gap-3">
-          <div>
-            <p className="text-2xl font-semibold tabular-nums text-foreground leading-none">{current}</p>
-            <p className="text-[10px] text-muted-foreground mt-1">vs {previous} no período anterior</p>
-          </div>
-          <div className="shrink-0">
-            <Sparkline data={sparkline} color={color} />
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
+/* ──── StatusDot ──── */
 function StatusDot({ color, label }: { color: string; label: string }) {
   return (
-    <span className="inline-flex items-center gap-1.5 text-[11px] text-foreground">
-      <span className={cn("h-2 w-2 rounded-full shrink-0", color)} />
+    <span className="inline-flex items-center gap-1.5 font-sans text-[11px] text-sink-ink">
+      <span className={cn("h-2 w-2 rounded-sink-pill shrink-0", color)} />
       {label}
     </span>
   );
 }
 
-/* ──── Hero KPI estilo "Tracto" — limpo, com sparkline ou gauge ──── */
+/* ──── HeroKpiClean ──── */
 function HeroKpiClean({
   label, value, sub, trend, sparkline, gaugeValue, gaugeLabel, gaugeMain, variant = "line",
 }: {
@@ -1190,47 +1198,46 @@ function HeroKpiClean({
   const isUp = trend > 0;
   const isFlat = trend === 0;
   const TrendIcon = isFlat ? ArrowRight : isUp ? ArrowUp : ArrowDown;
-  const trendColor = isFlat ? "text-muted-foreground" : isUp ? "text-status-approved" : "text-status-rejected";
 
   return (
-    <Card className="border-border/70 hover:border-border transition-colors">
-      <CardContent className="p-5 space-y-4">
-        <div className="flex items-center justify-between">
-          <p className="text-[10px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">{label}</p>
-          {!isFlat && (
-            <div className={cn("flex items-center gap-0.5 text-[10px] font-medium tabular-nums px-1.5 py-0.5 rounded",
-              isUp ? "bg-status-approved/8 text-status-approved" : "bg-status-rejected/8 text-status-rejected"
-            )}>
-              <TrendIcon className="h-2.5 w-2.5" />
-              {Math.abs(trend)}%
-            </div>
-          )}
-        </div>
-        <div className="flex items-end justify-between gap-3 min-h-[58px]">
-          <div className="min-w-0 flex-1 space-y-1">
-            <p className="text-[28px] font-semibold tabular-nums text-foreground leading-none tracking-tight">{value}</p>
-            <p className="text-[11px] text-muted-foreground leading-snug">{sub}</p>
+    <div className="bg-sink-paper border border-sink-fog rounded-sink-lg p-5 space-y-4 hover:border-sink-ink/20 transition-colors">
+      <div className="flex items-center justify-between">
+        <p className="font-mono text-[10px] font-semibold tracking-widest text-sink-ink/50 uppercase">{label}</p>
+        {!isFlat && (
+          <div className={cn(
+            "flex items-center gap-0.5 font-mono text-[10px] font-medium tabular-nums px-1.5 py-0.5 rounded-sink-sm",
+            isUp ? "bg-sink-mint/10 text-sink-mint-3" : "bg-sink-danger/10 text-sink-danger"
+          )}>
+            <TrendIcon className="h-2.5 w-2.5" />
+            {Math.abs(trend)}%
           </div>
-          {variant === "line" && sparkline && (
-            <div className="shrink-0 self-end">
-              <SparklineLarge data={sparkline} positive={isUp || isFlat} />
-            </div>
-          )}
-          {variant === "gauge" && typeof gaugeValue === "number" && (
-            <div className="shrink-0 self-end relative">
-              <GaugeArc value={gaugeValue} />
-              <div className="absolute inset-x-0 bottom-0 flex flex-col items-center pb-0.5">
-                {gaugeMain && <span className="text-[12px] font-semibold text-foreground tabular-nums leading-none">{gaugeMain}</span>}
-                {gaugeLabel && <span className="text-[8px] uppercase tracking-[0.14em] text-muted-foreground mt-0.5">{gaugeLabel}</span>}
-              </div>
-            </div>
-          )}
+        )}
+      </div>
+      <div className="flex items-end justify-between gap-3 min-h-[58px]">
+        <div className="min-w-0 flex-1 space-y-1">
+          <p className="font-sans font-bold text-[28px] tabular-nums text-sink-ink leading-none tracking-tight">{value}</p>
+          <p className="font-mono text-[11px] text-sink-ink/50 leading-snug">{sub}</p>
         </div>
-      </CardContent>
-    </Card>
+        {variant === "line" && sparkline && (
+          <div className="shrink-0 self-end">
+            <SparklineLarge data={sparkline} positive={isUp || isFlat} />
+          </div>
+        )}
+        {variant === "gauge" && typeof gaugeValue === "number" && (
+          <div className="shrink-0 self-end relative">
+            <GaugeArc value={gaugeValue} />
+            <div className="absolute inset-x-0 bottom-0 flex flex-col items-center pb-0.5">
+              {gaugeMain && <span className="font-sans font-semibold text-[12px] text-sink-ink tabular-nums leading-none">{gaugeMain}</span>}
+              {gaugeLabel && <span className="font-mono text-[8px] uppercase tracking-widest text-sink-ink/50 mt-0.5">{gaugeLabel}</span>}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 
+/* ──── SparklineLarge ──── */
 function SparklineLarge({ data, positive = true }: { data: number[]; positive?: boolean }) {
   const max = Math.max(...data, 1);
   const min = Math.min(...data, 0);
@@ -1241,12 +1248,12 @@ function SparklineLarge({ data, positive = true }: { data: number[]; positive?: 
   const points = data.map((v, i) => `${i * step},${h - ((v - min) / range) * (h - 4) - 2}`);
   const polyline = points.join(" ");
   const areaPath = `M 0,${h} L ${points.join(" L ")} L ${w},${h} Z`;
-  const stroke = positive ? "hsl(var(--foreground))" : "hsl(var(--status-rejected))";
+  const stroke = positive ? "#07232A" : "#E26B5A";
   const lastPoint = points[points.length - 1]?.split(",").map(Number);
 
   return (
     <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} className="overflow-visible">
-      <path d={areaPath} fill={stroke} opacity="0.04" />
+      <path d={areaPath} fill={stroke} opacity="0.05" />
       <polyline
         points={polyline}
         fill="none"
@@ -1254,15 +1261,16 @@ function SparklineLarge({ data, positive = true }: { data: number[]; positive?: 
         strokeWidth="1.25"
         strokeLinecap="round"
         strokeLinejoin="round"
-        opacity="0.85"
+        opacity="0.7"
       />
       {lastPoint && (
-        <circle cx={lastPoint[0]} cy={lastPoint[1]} r="2" fill={stroke} />
+        <circle cx={lastPoint[0]} cy={lastPoint[1]} r="2" fill={stroke} opacity="0.7" />
       )}
     </svg>
   );
 }
 
+/* ──── GaugeArc ──── */
 function GaugeArc({ value }: { value: number }) {
   const pct = Math.min(Math.max(value, 0), 100) / 100;
   const r = 30;
@@ -1275,14 +1283,14 @@ function GaugeArc({ value }: { value: number }) {
       <path
         d={`M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`}
         fill="none"
-        stroke="hsl(var(--muted))"
+        stroke="#D9E3DF"
         strokeWidth="3.5"
         strokeLinecap="round"
       />
       <path
         d={`M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`}
         fill="none"
-        stroke="hsl(var(--status-approved))"
+        stroke="#2BD49C"
         strokeWidth="3.5"
         strokeLinecap="round"
         strokeDasharray={`${dash} ${circ}`}
@@ -1292,6 +1300,7 @@ function GaugeArc({ value }: { value: number }) {
   );
 }
 
+/* ──── TrendRow ──── */
 function TrendRow({
   label, value, trend, sparkline,
 }: {
@@ -1300,12 +1309,12 @@ function TrendRow({
   const isUp = trend > 0;
   const isFlat = trend === 0;
   const TrendIcon = isFlat ? ArrowRight : isUp ? ArrowUp : ArrowDown;
-  const trendColor = isFlat ? "text-muted-foreground" : isUp ? "text-status-approved" : "text-status-rejected";
+  const trendColor = isFlat ? "text-sink-ink/40" : isUp ? "text-sink-mint-3" : "text-sink-danger";
   return (
-    <div className="flex items-center gap-3 px-2 py-2.5 rounded-md hover:bg-muted/40 transition-colors">
+    <div className="flex items-center gap-3 px-2 py-2.5 rounded-sink-md hover:bg-sink-cream transition-colors">
       <div className="min-w-0 flex-1">
-        <p className="text-[12px] text-foreground font-medium leading-tight">{label}</p>
-        <div className={cn("flex items-center gap-0.5 text-[10px] font-medium tabular-nums mt-1", trendColor)}>
+        <p className="font-sans text-[12px] text-sink-ink font-medium leading-tight">{label}</p>
+        <div className={cn("flex items-center gap-0.5 font-mono text-[10px] font-medium tabular-nums mt-1", trendColor)}>
           <TrendIcon className="h-2.5 w-2.5" />
           {isFlat ? "estável" : `${Math.abs(trend)}%`}
         </div>
@@ -1313,7 +1322,7 @@ function TrendRow({
       <div className="shrink-0 opacity-80">
         <SparklineLarge data={sparkline} positive={isUp || isFlat} />
       </div>
-      <span className="text-[15px] font-semibold tabular-nums text-foreground w-14 text-right tracking-tight">{value}</span>
+      <span className="font-sans font-bold text-[15px] tabular-nums text-sink-ink w-14 text-right tracking-tight">{value}</span>
     </div>
   );
 }
