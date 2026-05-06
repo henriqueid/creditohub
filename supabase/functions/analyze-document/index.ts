@@ -1,19 +1,51 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Origin": Deno.env.get("ALLOWED_ORIGIN") || "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
+
+const MAX_FILE_CONTENT_BYTES = 5_000_000; // 5MB
+
+async function authenticateRequest(req: Request): Promise<{ userId: string; jwt: string }> {
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader?.startsWith("Bearer ")) {
+    throw new Response(JSON.stringify({ error: "Authorization header ausente" }), {
+      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+  const jwt = authHeader.slice("Bearer ".length);
+  const client = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, {
+    global: { headers: { Authorization: `Bearer ${jwt}` } },
+  });
+  const { data: { user }, error } = await client.auth.getUser(jwt);
+  if (error || !user) {
+    throw new Response(JSON.stringify({ error: "Token inválido" }), {
+      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+  return { userId: user.id, jwt };
+}
+
+async function fetchUserAnthropicKey(jwt: string): Promise<string | null> {
+  const client = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, {
+    global: { headers: { Authorization: `Bearer ${jwt}` } },
+  });
+  const { data } = await client.from("profiles").select("anthropic_api_key").single();
+  return data?.anthropic_api_key ?? null;
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const body = await req.json();
-    const { fileName, fileContent, section, analysisContext, anthropic_api_key: userApiKey } = body;
+    // 1. Auth
+    const { jwt } = await authenticateRequest(req);
 
-    // Use per-user key if provided, otherwise fall back to server secret
-    const apiKey = userApiKey || Deno.env.get("ANTHROPIC_API_KEY") || Deno.env.get("AI_API_KEY");
+    // 2. Key do DB
+    const userKey = await fetchUserAnthropicKey(jwt);
+    const apiKey = userKey || Deno.env.get("ANTHROPIC_API_KEY") || Deno.env.get("AI_API_KEY");
     if (!apiKey) {
       return new Response(JSON.stringify({
         error: "Chave de API da IA não configurada. Acesse Meu Perfil → Configurações de IA para adicionar sua chave Anthropic.",
@@ -21,7 +53,17 @@ serve(async (req) => {
       }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    if (!fileContent) throw new Error("fileContent is required");
+    // 3. Body validation
+    const body = await req.json();
+    const { fileName, fileContent, section, analysisContext } = body;
+    if (!fileContent || typeof fileContent !== "string") {
+      throw new Error("fileContent é obrigatório e deve ser string");
+    }
+    if (fileContent.length > MAX_FILE_CONTENT_BYTES) {
+      return new Response(JSON.stringify({
+        error: `Documento muito grande (${(fileContent.length / 1_000_000).toFixed(1)}MB). Máximo: ${MAX_FILE_CONTENT_BYTES / 1_000_000}MB.`,
+      }), { status: 413, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
 
     const systemPrompt = `Você é um analista de crédito sênior especializado em factoring, securitização e FIDC no Brasil.
 Analise o documento fornecido e extraia TODAS as informações relevantes para uma análise de crédito.
@@ -145,6 +187,7 @@ ${fileContent.substring(0, 50000)}`;
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
+    if (e instanceof Response) return e;
     console.error("analyze-document error:", e);
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Erro desconhecido" }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },

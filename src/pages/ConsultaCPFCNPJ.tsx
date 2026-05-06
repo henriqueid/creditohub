@@ -924,8 +924,8 @@ function ExternalDataDisplay({ sources }: { sources: ExternalSourceResult[] }) {
           {!data.endereco && !data.telefone_1 && !data.email && (
             <p className="text-muted-foreground text-center py-2">Sem dados de contato</p>
           )}
-          {/* Google Maps Embed */}
-          {data.endereco && (data.endereco.logradouro || data.endereco.cidade) && (() => {
+          {/* Google Maps Embed — requer VITE_GOOGLE_MAPS_API_KEY no .env.local com restrição de domínio */}
+          {data.endereco && (data.endereco.logradouro || data.endereco.cidade) && import.meta.env.VITE_GOOGLE_MAPS_API_KEY && (() => {
             const parts = [
               data.endereco!.tipo_logradouro,
               data.endereco!.logradouro,
@@ -936,6 +936,7 @@ function ExternalDataDisplay({ sources }: { sources: ExternalSourceResult[] }) {
               data.endereco!.cep,
             ].filter(Boolean).join(", ");
             const q = encodeURIComponent(parts);
+            const mapsKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
             return (
               <div className="mt-4 rounded-lg overflow-hidden border">
                 <iframe
@@ -945,7 +946,7 @@ function ExternalDataDisplay({ sources }: { sources: ExternalSourceResult[] }) {
                   style={{ border: 0 }}
                   loading="lazy"
                   referrerPolicy="no-referrer-when-downgrade"
-                  src={`https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=${q}`}
+                  src={`https://www.google.com/maps/embed/v1/place?key=${mapsKey}&q=${q}`}
                 />
               </div>
             );

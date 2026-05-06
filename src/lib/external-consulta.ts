@@ -122,7 +122,7 @@ export interface ExternalConsultaData {
  */
 export async function fetchExternalConsulta(document: string): Promise<ExternalSourceResult[]> {
   const results: ExternalSourceResult[] = [];
-  console.log("[fetchExternalConsulta] Starting for document:", document);
+  // Não logar o documento (PII)
   // --- Source 1: Your custom REST API ---
   try {
     const { data, error } = await supabase.functions.invoke("consulta-externa", {
@@ -169,7 +169,7 @@ export async function fetchExternalConsulta(document: string): Promise<ExternalS
   const cleanDoc = document.replace(/\D/g, "");
   if (cleanDoc.length === 14) {
     try {
-      console.log("[fetchExternalConsulta] Calling BrasilAPI for CNPJ:", cleanDoc);
+      // BrasilAPI call (CNPJ é dado público mas evitamos logar)
       const response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cleanDoc}`);
       if (response.ok) {
         const raw = await response.json();

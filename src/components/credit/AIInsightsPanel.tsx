@@ -5,6 +5,10 @@ import { toast } from "@/hooks/use-toast";
 import { Sparkles, Loader2, RefreshCw, ChevronDown, ChevronUp, AlertTriangle, Info, KeyRound } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
+
+// Whitelist de elementos seguros — bloqueia <script>, <iframe>, etc.
+// caso o LLM gere markdown malicioso (prompt injection).
+const SAFE_MD_ELEMENTS = ["p", "h1", "h2", "h3", "h4", "ul", "ol", "li", "strong", "em", "code", "pre", "blockquote", "hr", "br", "a"];
 import { useNavigate } from "react-router-dom";
 
 interface AIInsightsPanelProps {
@@ -25,34 +29,35 @@ const typeLabels: Record<string, { label: string; description: string }> = {
   summary: { label: "Parecer Executivo", description: "Parecer baseado exclusivamente no dossiê" },
 };
 
-// Module-level cache so all panels in the same form share one fetch
-let cachedApiKey: string | null | undefined = undefined;
-let fetchingApiKey = false;
-const apiKeyListeners: Array<(key: string | null) => void> = [];
+// Cache "user tem chave?" — não traz a key pro client.
+// A edge function autenticada é quem lê a key do DB via RLS.
+let cachedHasKey: boolean | undefined = undefined;
+let fetchingHasKey = false;
+const hasKeyListeners: Array<(has: boolean) => void> = [];
 
-async function getUserApiKey(): Promise<string | null> {
-  if (cachedApiKey !== undefined) return cachedApiKey;
-  if (fetchingApiKey) {
-    return new Promise((resolve) => { apiKeyListeners.push(resolve); });
+async function userHasApiKey(): Promise<boolean> {
+  if (cachedHasKey !== undefined) return cachedHasKey;
+  if (fetchingHasKey) {
+    return new Promise((resolve) => { hasKeyListeners.push(resolve); });
   }
-  fetchingApiKey = true;
+  fetchingHasKey = true;
   try {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { cachedApiKey = null; return null; }
+    if (!user) { cachedHasKey = false; return false; }
     const { data } = await supabase
       .from("profiles")
       .select("anthropic_api_key")
       .eq("user_id", user.id)
       .maybeSingle();
-    cachedApiKey = data?.anthropic_api_key || null;
+    cachedHasKey = !!data?.anthropic_api_key;
   } catch {
-    cachedApiKey = null;
+    cachedHasKey = false;
   } finally {
-    fetchingApiKey = false;
-    apiKeyListeners.forEach((fn) => fn(cachedApiKey!));
-    apiKeyListeners.length = 0;
+    fetchingHasKey = false;
+    hasKeyListeners.forEach((fn) => fn(cachedHasKey!));
+    hasKeyListeners.length = 0;
   }
-  return cachedApiKey!;
+  return cachedHasKey!;
 }
 
 export function AIInsightsPanel({
@@ -72,9 +77,9 @@ export function AIInsightsPanel({
   const [coverage, setCoverage] = useState<{ percent: number } | null>(null);
   const [noApiKey, setNoApiKey] = useState(false);
 
-  // Pre-fetch the API key on mount so the button responds instantly
+  // Pre-check se o user tem chave (UX: avisa antes de clicar)
   useEffect(() => {
-    getUserApiKey();
+    userHasApiKey().then(has => { if (!has) setNoApiKey(true); });
   }, []);
 
   const typeInfo = typeLabels[insightType] || typeLabels.summary;
@@ -84,10 +89,10 @@ export function AIInsightsPanel({
     setInsufficientData(null);
     setNoApiKey(false);
     try {
-      const anthropic_api_key = await getUserApiKey();
-
+      // Edge function busca a chave do user autenticado direto do DB.
+      // Não enviamos a chave no body (segurança).
       const { data, error } = await supabase.functions.invoke("generate-insights", {
-        body: { analysisData, clientData, insightType, anthropic_api_key },
+        body: { analysisData, clientData, insightType },
       });
 
       if (error) throw error;
@@ -294,7 +299,7 @@ export function AIInsightsPanel({
       {content && expanded && (
         <div className="px-4 pb-4 border-t border-sink-mint/20">
           <div className="prose prose-sm dark:prose-invert max-w-none pt-3 text-sm leading-relaxed [&_h1]:text-base [&_h2]:font-sans [&_h2]:text-sm [&_h3]:font-sans [&_h3]:text-sm [&_p]:font-sans [&_p]:text-xs [&_p]:text-sink-ink [&_li]:font-sans [&_li]:text-xs [&_strong]:font-semibold [&_strong]:text-sink-ink">
-            <ReactMarkdown>{content}</ReactMarkdown>
+            <ReactMarkdown allowedElements={SAFE_MD_ELEMENTS} unwrapDisallowed>{content}</ReactMarkdown>
           </div>
         </div>
       )}

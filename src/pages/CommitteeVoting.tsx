@@ -19,6 +19,8 @@ import { PageHeader } from "@/components/trilho/PageHeader";
 import { classifyRisk, getScoreGrade, suggestLimit, calculateConcentration } from "@/lib/credit-calculations";
 import { ScoreGauge } from "@/components/ScoreGauge";
 import ReactMarkdown from "react-markdown";
+
+const SAFE_MD_ELEMENTS = ["p", "h1", "h2", "h3", "h4", "ul", "ol", "li", "strong", "em", "code", "pre", "blockquote", "hr", "br", "a"];
 import {
   ArrowLeft, Vote, CheckCircle, Building2, User, MapPin, Calendar,
   TrendingUp, AlertTriangle, ShieldAlert, Scale, FileText, Sparkles,
@@ -535,7 +537,7 @@ export default function CommitteeVoting() {
                             <p className="text-xs font-semibold">Parecer Executivo (IA)</p>
                           </div>
                           <div className="prose prose-sm dark:prose-invert max-w-none text-xs leading-relaxed [&_h1]:text-sm [&_h2]:text-xs [&_h3]:text-xs [&_p]:text-xs [&_li]:text-xs">
-                            <ReactMarkdown>{summaryInsight.content}</ReactMarkdown>
+                            <ReactMarkdown allowedElements={SAFE_MD_ELEMENTS} unwrapDisallowed>{summaryInsight.content}</ReactMarkdown>
                           </div>
                         </div>
                       )}
@@ -546,7 +548,7 @@ export default function CommitteeVoting() {
                             <p className="text-xs font-semibold">Análise de Risco (IA)</p>
                           </div>
                           <div className="prose prose-sm dark:prose-invert max-w-none text-xs leading-relaxed [&_h1]:text-sm [&_h2]:text-xs [&_h3]:text-xs [&_p]:text-xs [&_li]:text-xs">
-                            <ReactMarkdown>{riskInsight.content}</ReactMarkdown>
+                            <ReactMarkdown allowedElements={SAFE_MD_ELEMENTS} unwrapDisallowed>{riskInsight.content}</ReactMarkdown>
                           </div>
                         </div>
                       )}
