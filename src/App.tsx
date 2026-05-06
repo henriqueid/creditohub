@@ -8,32 +8,37 @@ import { AppLayout } from "@/components/AppLayout";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import PageLoader from "@/components/PageLoader";
 
-const Dashboard = lazy(() => import("@/pages/Dashboard"));
-const Clients = lazy(() => import("@/pages/Clients"));
-const ClientForm = lazy(() => import("@/pages/ClientForm"));
-const CreditAnalysisList = lazy(() => import("@/pages/CreditAnalysisList"));
-const CreditAnalysisForm = lazy(() => import("@/pages/CreditAnalysisForm"));
-const CommitteeQueue = lazy(() => import("@/pages/CommitteeQueue"));
-const CommitteeVoting = lazy(() => import("@/pages/CommitteeVoting"));
-const ClientHistory = lazy(() => import("@/pages/ClientHistory"));
-const ConsultaCPFCNPJ = lazy(() => import("@/pages/ConsultaCPFCNPJ"));
-const Blacklist = lazy(() => import("@/pages/Blacklist"));
-const Settings = lazy(() => import("@/pages/Settings"));
-const Prospects = lazy(() => import("@/pages/Prospects"));
+// HOT paths — eager import for instant navigation (no Suspense flash)
+import Dashboard from "@/pages/Dashboard";
+import Clients from "@/pages/Clients";
+import ClientForm from "@/pages/ClientForm";
+import CreditAnalysisList from "@/pages/CreditAnalysisList";
+import CreditAnalysisForm from "@/pages/CreditAnalysisForm";
+import CommitteeQueue from "@/pages/CommitteeQueue";
+import CommitteeVoting from "@/pages/CommitteeVoting";
+import ClientHistory from "@/pages/ClientHistory";
+import ConsultaCPFCNPJ from "@/pages/ConsultaCPFCNPJ";
+import Blacklist from "@/pages/Blacklist";
+import Settings from "@/pages/Settings";
+import Prospects from "@/pages/Prospects";
+import Profile from "@/pages/Profile";
+import CRMPipeline from "@/pages/CRMPipeline";
+import CRMContacts from "@/pages/CRMContacts";
+import CRMActivities from "@/pages/CRMActivities";
+import CRMTasks from "@/pages/CRMTasks";
+import CRMDashboard from "@/pages/CRMDashboard";
+import CRMClientProfile from "@/pages/CRMClientProfile";
+
+// COLD paths — lazy (raros, OK ter um pequeno delay)
+const Auth = lazy(() => import("@/pages/Auth"));
+const ResetPassword = lazy(() => import("@/pages/ResetPassword"));
+const NotFound = lazy(() => import("@/pages/NotFound"));
 const InvoiceMonitoring = lazy(() => import("@/pages/InvoiceMonitoring"));
 const BankruptcyReport = lazy(() => import("@/pages/BankruptcyReport"));
 const CreditEngineSettings = lazy(() => import("@/pages/CreditEngineSettings"));
 const PipelineMetrics = lazy(() => import("@/pages/PipelineMetrics"));
+const PipelinePerformance = lazy(() => import("@/pages/PipelinePerformance"));
 const AuditLog = lazy(() => import("@/pages/AuditLog"));
-const Auth = lazy(() => import("@/pages/Auth"));
-const ResetPassword = lazy(() => import("@/pages/ResetPassword"));
-const NotFound = lazy(() => import("@/pages/NotFound"));
-const CRMPipeline = lazy(() => import("@/pages/CRMPipeline"));
-const CRMContacts = lazy(() => import("@/pages/CRMContacts"));
-const CRMActivities = lazy(() => import("@/pages/CRMActivities"));
-const CRMTasks = lazy(() => import("@/pages/CRMTasks"));
-const CRMDashboard = lazy(() => import("@/pages/CRMDashboard"));
-const CRMClientProfile = lazy(() => import("@/pages/CRMClientProfile"));
 const Integrations = lazy(() => import("@/pages/Integrations"));
 const PatrimonialReport = lazy(() => import("@/pages/PatrimonialReport"));
 const BureauSettings = lazy(() => import("@/pages/BureauSettings"));
@@ -70,10 +75,12 @@ const App = () => (
                 <Route path="/monitoramento-nfs" element={<InvoiceMonitoring />} />
                 <Route path="/falimentar" element={<BankruptcyReport />} />
                 <Route path="/blacklist" element={<Blacklist />} />
+                <Route path="/perfil" element={<Profile />} />
                 <Route path="/configuracoes" element={<Settings />} />
                 <Route path="/configuracoes/motor" element={<CreditEngineSettings />} />
                 <Route path="/configuracoes/bureaus" element={<BureauSettings />} />
                 <Route path="/performance" element={<PipelineMetrics />} />
+                <Route path="/monitoramento/performance" element={<PipelinePerformance />} />
                 <Route path="/audit-log" element={<AuditLog />} />
                 <Route path="/integracoes" element={<Integrations />} />
                 <Route path="/patrimonial" element={<PatrimonialReport />} />

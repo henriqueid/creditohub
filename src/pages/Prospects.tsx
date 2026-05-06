@@ -1,15 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   UserSearch, Search, CheckCircle2, XCircle, Clock, AlertTriangle,
-  RefreshCw, Trash2, ArrowRight, Shield, TrendingUp, Calendar, Loader2,
-  Building2,
+  RefreshCw, Trash2, Loader2, Briefcase, FileSearch, Building2,
+  MapPin, AlertOctagon, Shield,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { formatCNPJorCPF, formatDate } from "@/lib/formatters";
@@ -18,11 +12,15 @@ import { toast } from "sonner";
 import { useState } from "react";
 import { getQualificationValidityDays } from "@/lib/prospect-qualification";
 import {
-  snapshotToClient,
   snapshotToCreditAnalysis,
   insertSnapshotSocios,
+  ensureClientFromSnapshot,
   type ConsultaSnapshot,
 } from "@/lib/consulta-snapshot";
+import { ANALYSIS_STATUS } from "@/lib/analysis-status";
+import { T } from "@/lib/tokens";
+import { PageHeader } from "@/components/trilho/PageHeader";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 interface Prospect {
   id: string;
@@ -40,23 +38,24 @@ interface Prospect {
   updated_at: string;
 }
 
-const STATUS_CFG: Record<string, { label: string; icon: React.ElementType; className: string }> = {
-  qualified: { label: "Qualificado", icon: CheckCircle2, className: "text-status-approved bg-status-approved/10 border-status-approved/30" },
-  not_qualified: { label: "Não Qualificado", icon: XCircle, className: "text-sink-danger bg-sink-danger/10 border-sink-danger/30" },
-  pending: { label: "Pendente", icon: Clock, className: "text-sink-warn bg-sink-warn/10 border-sink-warn/30" },
+const STATUS_CFG: Record<string, { label: string; color: string }> = {
+  qualified:     { label: "Qualificado",     color: T.esmeralda },
+  not_qualified: { label: "Não qualificado", color: T.danger },
+  pending:       { label: "Pendente",        color: T.amber },
 };
 
-const RISK_CFG: Record<string, { label: string; className: string }> = {
-  low: { label: "Baixo", className: "text-status-approved" },
-  medium: { label: "Médio", className: "text-sink-warn" },
-  high: { label: "Alto", className: "text-sink-danger" },
-  unknown: { label: "—", className: "text-muted-foreground" },
+const RISK_CFG: Record<string, { label: string; color: string }> = {
+  low:     { label: "Risco Baixo",  color: T.esmeralda },
+  medium:  { label: "Risco Médio",  color: T.amber },
+  high:    { label: "Risco Alto",   color: T.danger },
+  unknown: { label: "Risco N/A",    color: T.textMute },
 };
 
 export default function Prospects() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
+  const [busyId, setBusyId] = useState<string | null>(null);
 
   const { data: prospects = [], isLoading } = useQuery({
     queryKey: ["prospects"],
@@ -74,113 +73,167 @@ export default function Prospects() {
     queryFn: getQualificationValidityDays,
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("prospects").delete().eq("id", id);
-      if (error) throw error;
+  // Garante client + grava client_id no prospect (vínculo)
+  async function ensureClient(prospect: Prospect): Promise<string> {
+    const snapshot = (prospect.qualification_data?.snapshot ?? null) as ConsultaSnapshot | null;
+    const clientId = await ensureClientFromSnapshot(prospect.documento, snapshot, {
+      razao_social: prospect.nome || undefined,
+    });
+    await supabase.from("prospects").update({ client_id: clientId }).eq("id", prospect.id);
+    return clientId;
+  }
+
+  // ── Mutations: 3 caminhos do prospect ──────────────────────────────
+
+  // 1. Mover para Pipeline → cria client + deal estágio inicial. NÃO cria análise.
+  const moveToPipeline = useMutation({
+    mutationFn: async (prospect: Prospect) => {
+      setBusyId(prospect.id);
+      const clientId = await ensureClient(prospect);
+
+      const { data: firstStage } = await supabase
+        .from("deal_stages").select("id")
+        .eq("is_active", true).eq("is_won", false).eq("is_lost", false)
+        .order("order").limit(1).single();
+      if (!firstStage) throw new Error("Nenhum estágio ativo no Pipeline");
+
+      const dealPayload: Record<string, any> = {
+        client_id: clientId,
+        stage_id: firstStage.id,
+        title: `Oportunidade — ${prospect.nome || prospect.documento}`,
+        notes: `Originado do prospect ${prospect.id} · score ${prospect.qualification_score ?? "—"} · ${RISK_CFG[prospect.risk_level]?.label || "risco N/A"}`,
+        prospect_id: prospect.id,
+      };
+      const { error } = await supabase.from("deals").insert(dealPayload as { client_id: string; stage_id: string; title: string });
+      if (error) {
+        // Se prospect_id ainda não existir na coluna, tenta sem
+        delete dealPayload.prospect_id;
+        const { error: retry } = await supabase.from("deals").insert(dealPayload as { client_id: string; stage_id: string; title: string });
+        if (retry) throw retry;
+      }
+      return { clientId };
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["prospects"] });
-      toast.success("Prospect removido");
-    },
-  });
-
-  const convertMutation = useMutation({
-    mutationFn: async (prospect: Prospect) => {
-      const docDigits = prospect.documento.replace(/\D/g, "");
-      const snapshot = (prospect.qualification_data?.snapshot ?? null) as ConsultaSnapshot | null;
-
-      // Cliente já existe? Apenas vincula.
-      const { data: existing } = await supabase
-        .from("clients")
-        .select("id")
-        .eq("cnpj_cpf", docDigits)
-        .maybeSingle();
-      if (existing) {
-        await supabase.from("prospects").update({ client_id: existing.id }).eq("id", prospect.id);
-        return { clientId: existing.id, qualified: false, hadSnapshot: !!snapshot };
-      }
-
-      // Monta payload do cliente — se houver snapshot, usa todos os campos cadastrais.
-      const clientPayload = snapshot
-        ? snapshotToClient(snapshot)
-        : {
-            cnpj_cpf: docDigits,
-            razao_social: prospect.nome || `Cedente ${prospect.documento}`,
-          };
-
-      const { data: newClient, error } = await supabase
-        .from("clients")
-        .insert(clientPayload as { cnpj_cpf: string; razao_social: string })
-        .select("id")
-        .single();
-      if (error) throw error;
-      await supabase.from("prospects").update({ client_id: newClient.id }).eq("id", prospect.id);
-
-      // Cria análise de crédito já pré-preenchida com os dados da consulta.
-      if (snapshot) {
-        try {
-          const analysisPayload = {
-            client_id: newClient.id,
-            ...snapshotToCreditAnalysis(snapshot),
-          };
-          const { data: analysis } = await supabase
-            .from("credit_analysis")
-            .insert(analysisPayload as { client_id: string } & Record<string, unknown>)
-            .select("id")
-            .single();
-          if (analysis) {
-            await insertSnapshotSocios(analysis.id, snapshot);
-          }
-        } catch (e) {
-          console.warn("Falha ao criar análise pré-preenchida:", e);
-        }
-      }
-
-      // Auto-criar deal no funil se prospect estiver qualificado
-      if (prospect.qualification_status === "qualified") {
-        try {
-          const { data: firstStage } = await supabase
-            .from("deal_stages")
-            .select("id")
-            .eq("is_active", true)
-            .eq("is_won", false)
-            .eq("is_lost", false)
-            .order("order")
-            .limit(1)
-            .single();
-          if (firstStage) {
-            await supabase.from("deals").insert({
-              client_id: newClient.id,
-              stage_id: firstStage.id,
-              title: `Oportunidade — ${prospect.nome || prospect.documento}`,
-              notes: `Originado de prospect qualificado (score ${prospect.qualification_score ?? "—"}, risco ${prospect.risk_level}).`,
-            });
-          }
-        } catch (e) {
-          console.warn("Falha ao criar deal automático:", e);
-        }
-      }
-
-      return {
-        clientId: newClient.id,
-        qualified: prospect.qualification_status === "qualified",
-        hadSnapshot: !!snapshot,
-      };
-    },
-    onSuccess: ({ clientId, qualified, hadSnapshot }) => {
-      qc.invalidateQueries({ queryKey: ["prospects"] });
       qc.invalidateQueries({ queryKey: ["clients"] });
       qc.invalidateQueries({ queryKey: ["deals"] });
-      const parts = ["Cedente criado"];
-      if (hadSnapshot) parts.push("análise pré-preenchida");
-      if (qualified) parts.push("oportunidade no pipeline");
-      toast.success(parts.join(" • "));
-      navigate(`/crm/cliente/${clientId}`);
+      toast.success("Movido para o Pipeline comercial");
+      navigate("/crm/pipeline");
     },
-    onError: () => toast.error("Erro ao converter prospect"),
+    onError: (e: any) => toast.error(e?.message || "Erro ao mover para Pipeline"),
+    onSettled: () => setBusyId(null),
   });
 
+  // 2. Iniciar análise direta → cria client + análise draft. NÃO cria deal.
+  // Se o cliente já tiver análise em andamento (draft/in_committee), reusa.
+  const startAnalysis = useMutation({
+    mutationFn: async (prospect: Prospect) => {
+      setBusyId(prospect.id);
+      const clientId = await ensureClient(prospect);
+      const snapshot = (prospect.qualification_data?.snapshot ?? null) as ConsultaSnapshot | null;
+
+      const { data: existing } = await supabase
+        .from("credit_analysis")
+        .select("id")
+        .eq("client_id", clientId)
+        .in("status", [ANALYSIS_STATUS.draft, ANALYSIS_STATUS.in_committee])
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (existing?.id) return { analysisId: existing.id, reused: true };
+
+      const basePayload = snapshot
+        ? { client_id: clientId, ...snapshotToCreditAnalysis(snapshot), status: ANALYSIS_STATUS.draft }
+        : { client_id: clientId, status: ANALYSIS_STATUS.draft };
+
+      const fullPayload: Record<string, unknown> = { ...basePayload, prospect_id: prospect.id };
+
+      let inserted = await supabase
+        .from("credit_analysis")
+        .insert(fullPayload as { client_id: string } & Record<string, unknown>)
+        .select("id").single();
+      if (inserted.error) {
+        // Coluna prospect_id ainda não existe — retry sem ela
+        delete fullPayload.prospect_id;
+        inserted = await supabase
+          .from("credit_analysis")
+          .insert(fullPayload as { client_id: string } & Record<string, unknown>)
+          .select("id").single();
+      }
+      if (inserted.error) throw inserted.error;
+      const analysis = inserted.data;
+      if (snapshot && analysis) await insertSnapshotSocios(analysis.id, snapshot);
+      return { analysisId: analysis.id, reused: false };
+    },
+    onSuccess: ({ analysisId, reused }) => {
+      qc.invalidateQueries({ queryKey: ["prospects"] });
+      qc.invalidateQueries({ queryKey: ["clients"] });
+      qc.invalidateQueries({ queryKey: ["all-analyses-for-kanban"] });
+      toast.success(reused ? "Análise existente aberta" : "Análise iniciada");
+      navigate(`/analises/${analysisId}`);
+    },
+    onError: (e: any) => toast.error(e?.message || "Erro ao iniciar análise"),
+    onSettled: () => setBusyId(null),
+  });
+
+  // 3. Descartar — remove prospect e (opcionalmente) cascateia pro cliente vinculado
+  const discard = useMutation({
+    mutationFn: async ({ prospect, cascade }: { prospect: Prospect; cascade: boolean }) => {
+      setBusyId(prospect.id);
+
+      if (cascade && prospect.client_id) {
+        // FKs ON DELETE CASCADE em deals/credit_analysis/contacts já cuidam do resto
+        const { error } = await supabase.from("clients").delete().eq("id", prospect.client_id);
+        if (error) throw error;
+      }
+      // Prospect tem client_id ON DELETE SET NULL, então o cascade do client não remove ele.
+      const { error } = await supabase.from("prospects").delete().eq("id", prospect.id);
+      if (error) throw error;
+    },
+    onSuccess: (_, vars) => {
+      // Invalida tudo que pode ter referência ao client deletado:
+      // prospects, clients (Portfólio), deals (Pipeline), análises (kanban + Portfólio)
+      qc.invalidateQueries({ queryKey: ["prospects"] });
+      qc.invalidateQueries({ queryKey: ["clients"] });
+      qc.invalidateQueries({ queryKey: ["clients-list"] });
+      qc.invalidateQueries({ queryKey: ["clients-list-min"] });
+      qc.invalidateQueries({ queryKey: ["deals"] });
+      qc.invalidateQueries({ queryKey: ["credit-analyses"] });
+      qc.invalidateQueries({ queryKey: ["all-analyses-for-kanban"] });
+      qc.invalidateQueries({ queryKey: ["credit-analyses-for-pipeline"] });
+      toast.success(vars.cascade ? "Prospect e cedente vinculado removidos" : "Prospect descartado");
+    },
+    onError: (e: any) => toast.error(e?.message || "Erro ao descartar"),
+    onSettled: () => setBusyId(null),
+  });
+
+  // Confirmação de descarte com cascade
+  const [confirmDiscard, setConfirmDiscard] = useState<{
+    prospect: Prospect;
+    relatedAnalyses: number;
+    relatedDeals: number;
+  } | null>(null);
+
+  async function requestDiscard(prospect: Prospect) {
+    if (!prospect.client_id) {
+      // Prospect ainda não promovido — só remove ele
+      discard.mutate({ prospect, cascade: false });
+      return;
+    }
+
+    // Promovido: pergunta se quer remover tudo vinculado
+    const [analysesRes, dealsRes] = await Promise.all([
+      supabase.from("credit_analysis").select("id", { count: "exact", head: true }).eq("client_id", prospect.client_id),
+      supabase.from("deals").select("id", { count: "exact", head: true }).eq("client_id", prospect.client_id),
+    ]);
+    setConfirmDiscard({
+      prospect,
+      relatedAnalyses: analysesRes.count ?? 0,
+      relatedDeals: dealsRes.count ?? 0,
+    });
+  }
+
+  // ── Filters ────────────────────────────────────────────────────────
   const filtered = prospects.filter(p => {
     if (!search) return true;
     const q = search.toLowerCase();
@@ -195,199 +248,393 @@ export default function Prospects() {
     expired: prospects.filter(p => p.expires_at && new Date(p.expires_at) < new Date()).length,
   };
 
-  function isExpired(p: Prospect) {
-    return p.expires_at && new Date(p.expires_at) < new Date();
-  }
-
   return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold">Prospects</h1>
-          <p className="text-sm text-muted-foreground">
-            Leads pré-qualificados automaticamente pelo motor de crédito
-            {validityDays && <span> · Validade: {validityDays} dias</span>}
-          </p>
-        </div>
-        <Button onClick={() => navigate("/consulta")} size="sm">
-          <UserSearch className="mr-1.5 h-4 w-4" /> Nova Consulta
-        </Button>
-      </div>
+    <div className="p-7 space-y-[14px]">
+      <PageHeader
+        title="Prospects"
+        subtitle={`INBOX DE LEADS PRÉ-QUALIFICADOS${validityDays ? ` · VALIDADE ${validityDays} DIAS` : ""}`}
+        actions={
+          <button
+            onClick={() => navigate("/consulta")}
+            className="flex items-center gap-2 px-[16px] py-[9px] rounded-[999px] text-[13px] font-medium text-white transition-opacity hover:opacity-90"
+            style={{ background: T.marinho }}
+          >
+            <UserSearch style={{ width: 14, height: 14 }} />
+            Nova consulta
+          </button>
+        }
+      />
 
       {/* KPI strip */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-        <KpiCard label="Total" value={stats.total} icon={UserSearch} />
-        <KpiCard label="Qualificados" value={stats.qualified} icon={CheckCircle2} accent="emerald" />
-        <KpiCard label="Não Qualificados" value={stats.notQualified} icon={XCircle} accent="red" />
-        <KpiCard label="Pendentes" value={stats.pending} icon={Clock} accent="amber" />
-        <KpiCard label="Expirados" value={stats.expired} icon={AlertTriangle} accent="muted" />
+        <Kpi label="Total"             value={stats.total}        color={T.text} />
+        <Kpi label="Qualificados"      value={stats.qualified}    color={T.esmeralda} />
+        <Kpi label="Não qualificados"  value={stats.notQualified} color={T.danger} />
+        <Kpi label="Pendentes"         value={stats.pending}      color={T.amber} />
+        <Kpi label="Expirados"         value={stats.expired}      color={T.textMute} />
       </div>
 
       {/* Search */}
-      <div className="relative max-w-sm">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
+      <div className="relative max-w-md">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: T.textFaint }} />
+        <input
           placeholder="Buscar por documento ou nome..."
           value={search}
           onChange={e => setSearch(e.target.value)}
-          className="pl-9"
+          className="w-full pl-9 pr-3 py-[9px] rounded-[10px] text-[14px] outline-none"
+          style={{
+            background: T.white,
+            border: `1px solid ${T.border}`,
+            color: T.text,
+            boxShadow: "var(--shadow-sm)",
+          }}
         />
       </div>
 
-      {/* Table */}
-      <Card>
-        <CardContent className="p-0">
-          {isLoading ? (
-            <div className="flex items-center justify-center py-12 text-muted-foreground">
-              <Loader2 className="h-5 w-5 animate-spin mr-2" /> Carregando...
-            </div>
-          ) : filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <UserSearch className="h-10 w-10 text-muted-foreground/50 mb-3" />
-              <p className="text-sm font-medium text-muted-foreground">Nenhum prospect encontrado</p>
-              <p className="text-xs text-muted-foreground mt-1">Consulte um CPF/CNPJ para gerar a qualificação automática</p>
-              <Button variant="outline" size="sm" className="mt-3" onClick={() => navigate("/consulta")}>
-                Consultar CPF/CNPJ
-              </Button>
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Documento</TableHead>
-                  <TableHead>Nome</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-center">Score</TableHead>
-                  <TableHead>Risco</TableHead>
-                  <TableHead>Validade</TableHead>
-                  <TableHead>Consultado em</TableHead>
-                  <TableHead className="w-[80px]"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filtered.map((p, i) => {
-                  const cfg = STATUS_CFG[p.qualification_status] || STATUS_CFG.pending;
-                  const risk = RISK_CFG[p.risk_level || "unknown"] || RISK_CFG.unknown;
-                  const expired = isExpired(p);
-                  const StatusIcon = cfg.icon;
+      {/* Cards */}
+      {isLoading ? (
+        <div className="flex items-center justify-center py-12" style={{ color: T.textMute }}>
+          <Loader2 className="h-5 w-5 animate-spin mr-2" /> Carregando...
+        </div>
+      ) : filtered.length === 0 ? (
+        <EmptyState onConsult={() => navigate("/consulta")} />
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+          {filtered.map((p, i) => (
+            <ProspectCard
+              key={p.id}
+              prospect={p}
+              index={i}
+              busy={busyId === p.id}
+              onMoveToPipeline={() => moveToPipeline.mutate(p)}
+              onStartAnalysis={() => startAnalysis.mutate(p)}
+              onDiscard={() => requestDiscard(p)}
+              onReconsult={() => navigate(`/consulta?doc=${p.documento}`)}
+              onSeeClient={p.client_id ? () => navigate(`/crm/cliente/${p.client_id}`) : undefined}
+            />
+          ))}
+        </div>
+      )}
 
-                  return (
-                    <motion.tr
-                      key={p.id}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: i * 0.02 }}
-                      className={`cursor-pointer hover:bg-muted/50 transition-colors ${expired ? "opacity-60" : ""}`}
-                      onClick={() => navigate(`/consulta?doc=${p.documento}`)}
-                    >
-                      <TableCell className="font-mono text-sm">{formatCNPJorCPF(p.documento)}</TableCell>
-                      <TableCell className="text-sm">{p.nome || "—"}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className={`text-[10px] gap-1 ${cfg.className}`}>
-                          <StatusIcon className="h-3 w-3" />
-                          {cfg.label}
-                          {expired && " (expirado)"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {p.qualification_score != null ? (
-                          <div className="flex items-center justify-center gap-1.5">
-                            <div className="w-12 h-1.5 rounded-full bg-muted overflow-hidden">
-                              <div
-                                className="h-full rounded-full"
-                                style={{
-                                  width: `${p.qualification_score}%`,
-                                  backgroundColor: p.qualification_score >= 60 ? '#10b981' : p.qualification_score >= 30 ? '#f59e0b' : '#ef4444',
-                                }}
-                              />
-                            </div>
-                            <span className="text-xs font-semibold">{p.qualification_score}</span>
-                          </div>
-                        ) : "—"}
-                      </TableCell>
-                      <TableCell>
-                        <span className={`text-xs font-medium ${risk.className}`}>{risk.label}</span>
-                      </TableCell>
-                      <TableCell className="text-xs text-muted-foreground">
-                        {p.expires_at ? (
-                          <span className={expired ? "text-sink-danger" : ""}>
-                            {formatDate(p.expires_at)}
-                          </span>
-                        ) : "—"}
-                      </TableCell>
-                      <TableCell className="text-xs text-muted-foreground">{formatDate(p.created_at)}</TableCell>
-                      <TableCell>
-                        <div className="flex gap-1" onClick={e => e.stopPropagation()}>
-                          {p.qualification_status === "qualified" && !p.client_id && (
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-7 w-7 text-primary"
-                                  onClick={() => convertMutation.mutate(p)}
-                                  disabled={convertMutation.isPending}
-                                >
-                                  <Building2 className="h-3.5 w-3.5" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>Converter em Cedente</TooltipContent>
-                            </Tooltip>
-                          )}
-                          {p.client_id && (
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-7 w-7 text-primary" onClick={() => navigate(`/crm/cliente/${p.client_id}`)}>
-                                  <ArrowRight className="h-3.5 w-3.5" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>Ver Cedente</TooltipContent>
-                            </Tooltip>
-                          )}
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => navigate(`/consulta?doc=${p.documento}`)}>
-                                <RefreshCw className="h-3.5 w-3.5" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>Reconsultar</TooltipContent>
-                          </Tooltip>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteMutation.mutate(p.id)}>
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>Remover</TooltipContent>
-                          </Tooltip>
-                        </div>
-                      </TableCell>
-                    </motion.tr>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+      <AlertDialog open={!!confirmDiscard} onOpenChange={(o) => !o && setConfirmDiscard(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Descartar prospect?</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-[13px]">
+                <p>
+                  Este prospect já foi promovido para cedente. O que você quer fazer?
+                </p>
+                {confirmDiscard && (confirmDiscard.relatedAnalyses > 0 || confirmDiscard.relatedDeals > 0) && (
+                  <div
+                    className="rounded-[8px] px-3 py-2 mt-2"
+                    style={{ background: "rgba(176,24,42,0.06)", border: "1px solid rgba(176,24,42,0.20)" }}
+                  >
+                    <p style={{ color: T.danger, fontSize: 12 }}>
+                      Apagar tudo vai remover também:
+                    </p>
+                    <ul className="ml-4 mt-1" style={{ fontSize: 12, listStyle: "disc", color: T.text }}>
+                      <li>O cedente vinculado</li>
+                      {confirmDiscard.relatedAnalyses > 0 && (
+                        <li>{confirmDiscard.relatedAnalyses} análise{confirmDiscard.relatedAnalyses > 1 ? "s" : ""} de crédito</li>
+                      )}
+                      {confirmDiscard.relatedDeals > 0 && (
+                        <li>{confirmDiscard.relatedDeals} deal{confirmDiscard.relatedDeals > 1 ? "s" : ""} no Pipeline</li>
+                      )}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2">
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <button
+              onClick={() => {
+                if (confirmDiscard) discard.mutate({ prospect: confirmDiscard.prospect, cascade: false });
+                setConfirmDiscard(null);
+              }}
+              className="px-4 py-2 rounded-[8px] text-[13px] font-medium transition-colors"
+              style={{ border: `1px solid ${T.borderStrong}`, background: T.white, color: T.text }}
+            >
+              Só o prospect
+            </button>
+            <AlertDialogAction
+              onClick={() => {
+                if (confirmDiscard) discard.mutate({ prospect: confirmDiscard.prospect, cascade: true });
+                setConfirmDiscard(null);
+              }}
+              style={{ background: T.danger, color: "#FAFAF7" }}
+            >
+              Apagar tudo
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
 
-function KpiCard({ label, value, icon: Icon, accent }: { label: string; value: number; icon: React.ElementType; accent?: string }) {
-  const colorMap: Record<string, string> = {
-    emerald: "text-status-approved",
-    red: "text-sink-danger",
-    amber: "text-sink-warn",
-    muted: "text-muted-foreground",
-  };
+// ── Components ───────────────────────────────────────────────────────
+
+function Kpi({ label, value, color }: { label: string; value: number; color: string }) {
   return (
-    <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg border border-border/50 bg-card/60">
-      <Icon className={`h-4 w-4 ${accent ? colorMap[accent] || "text-primary" : "text-primary"}`} />
-      <div>
-        <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{label}</p>
-        <p className={`text-lg font-bold ${accent ? colorMap[accent] || "" : ""}`}>{value}</p>
-      </div>
+    <div
+      className="rounded-[12px] px-4 py-3"
+      style={{ background: T.white, border: `1px solid ${T.border}`, boxShadow: "var(--shadow-sm)" }}
+    >
+      <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.10em", textTransform: "uppercase", color: T.textMute }}>{label}</p>
+      <p className="font-bold tabular-nums mt-0.5" style={{ fontSize: 24, color, lineHeight: 1.1 }}>{value}</p>
     </div>
+  );
+}
+
+function EmptyState({ onConsult }: { onConsult: () => void }) {
+  return (
+    <div
+      className="flex flex-col items-center justify-center py-16 rounded-[14px]"
+      style={{ background: T.white, border: `1px dashed ${T.borderMed}` }}
+    >
+      <UserSearch className="h-10 w-10 mb-3" style={{ color: T.textFaint }} />
+      <p style={{ fontSize: 14, fontWeight: 600, color: T.text }}>Nenhum prospect encontrado</p>
+      <p className="mt-1" style={{ fontSize: 12, color: T.textMute }}>
+        Faça uma consulta de CNPJ para gerar leads pré-qualificados.
+      </p>
+      <button
+        onClick={onConsult}
+        className="mt-4 px-5 py-[8px] rounded-[999px] text-[13px] font-medium text-white"
+        style={{ background: T.marinho }}
+      >
+        Nova consulta
+      </button>
+    </div>
+  );
+}
+
+function ProspectCard({
+  prospect: p,
+  index,
+  busy,
+  onMoveToPipeline,
+  onStartAnalysis,
+  onDiscard,
+  onReconsult,
+  onSeeClient,
+}: {
+  prospect: Prospect;
+  index: number;
+  busy: boolean;
+  onMoveToPipeline: () => void;
+  onStartAnalysis: () => void;
+  onDiscard: () => void;
+  onReconsult: () => void;
+  onSeeClient?: () => void;
+}) {
+  const status = STATUS_CFG[p.qualification_status] || STATUS_CFG.pending;
+  const risk = RISK_CFG[p.risk_level || "unknown"] || RISK_CFG.unknown;
+  const expired = !!(p.expires_at && new Date(p.expires_at) < new Date());
+
+  // Extrai dados do snapshot pra exibir
+  const snapshot = (p.qualification_data?.snapshot ?? null) as ConsultaSnapshot | null;
+  const cadastral = snapshot?.cadastral || null;
+  const restritivos = snapshot?.restritivos || null;
+
+  const cidade = cadastral?.cidade;
+  const uf = cadastral?.uf;
+  const segmento = cadastral?.cnae_descricao || cadastral?.segmento;
+  const fantasia = cadastral?.nome_fantasia;
+  const capitalSocial = cadastral?.capital_social;
+
+  const hasProtestos = !!restritivos?.protestos && restritivos.protestos !== "Nada consta";
+  const hasPendencias = !!restritivos?.pendencias && restritivos.pendencias !== "Nada consta";
+  const hasAcoes = !!restritivos?.acoes_judiciais && restritivos.acoes_judiciais !== "Nada consta";
+  const restritivosCount = [hasProtestos, hasPendencias, hasAcoes].filter(Boolean).length;
+
+  const promotedAlready = !!p.client_id;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.25, delay: Math.min(index * 0.03, 0.3) }}
+      className="rounded-[14px] flex flex-col"
+      style={{
+        background: T.white,
+        border: `1px solid ${expired ? T.borderMed : T.border}`,
+        boxShadow: "var(--shadow-sm)",
+        opacity: expired ? 0.78 : 1,
+      }}
+    >
+      {/* Header */}
+      <div className="px-5 pt-4 pb-3 flex items-start gap-3" style={{ borderBottom: `1px solid ${T.border}` }}>
+        <div
+          className="rounded-[10px] flex items-center justify-center flex-shrink-0"
+          style={{ width: 38, height: 38, background: `${status.color}15`, color: status.color }}
+        >
+          <Building2 style={{ width: 18, height: 18 }} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="truncate" style={{ fontSize: 15, fontWeight: 600, color: T.text, lineHeight: 1.2 }}>
+            {p.nome || cadastral?.razao_social || "—"}
+          </p>
+          {fantasia && (
+            <p className="truncate" style={{ fontSize: 12, color: T.textMute, marginTop: 1 }}>
+              {fantasia}
+            </p>
+          )}
+          <p style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: T.textMute, marginTop: 3, letterSpacing: "0.02em" }}>
+            {formatCNPJorCPF(p.documento)}
+          </p>
+        </div>
+        <div className="flex flex-col items-end gap-1 flex-shrink-0">
+          <Pill color={status.color}>{status.label}</Pill>
+          {expired && <Pill color={T.danger}>Expirado</Pill>}
+        </div>
+      </div>
+
+      {/* Body */}
+      <div className="px-5 py-4 flex-1 space-y-3">
+        {/* Metadata row */}
+        <div className="flex flex-wrap gap-x-4 gap-y-1" style={{ fontSize: 12, color: T.textMute }}>
+          {cidade && uf && (
+            <span className="inline-flex items-center gap-1">
+              <MapPin style={{ width: 11, height: 11 }} /> {cidade}/{uf}
+            </span>
+          )}
+          {segmento && (
+            <span className="inline-flex items-center gap-1 truncate max-w-[260px]" title={segmento}>
+              <Briefcase style={{ width: 11, height: 11 }} /> {segmento}
+            </span>
+          )}
+          {capitalSocial != null && capitalSocial > 0 && (
+            <span className="inline-flex items-center gap-1">
+              <Shield style={{ width: 11, height: 11 }} /> Cap. R$ {(capitalSocial / 1000).toFixed(0)}k
+            </span>
+          )}
+        </div>
+
+        {/* Score + Risk + Restritivos */}
+        <div className="grid grid-cols-3 gap-2">
+          <Metric label="Score" value={p.qualification_score != null ? String(p.qualification_score) : "—"} color={p.qualification_score != null ? (p.qualification_score >= 60 ? T.esmeralda : p.qualification_score >= 30 ? T.amber : T.danger) : T.textMute} />
+          <Metric label="Risco" value={risk.label.replace("Risco ", "")} color={risk.color} />
+          <Metric
+            label="Restritivos"
+            value={restritivosCount > 0 ? `${restritivosCount} apontamento${restritivosCount > 1 ? "s" : ""}` : "Limpo"}
+            color={restritivosCount > 0 ? T.danger : T.esmeralda}
+          />
+        </div>
+
+        {/* Dates */}
+        <div className="flex items-center gap-3" style={{ fontSize: 11, color: T.textFaint, fontFamily: "var(--font-mono)" }}>
+          <span>Consultado: {formatDate(p.created_at)}</span>
+          {p.expires_at && <span>Expira: {formatDate(p.expires_at)}</span>}
+        </div>
+      </div>
+
+      {/* Actions */}
+      <div className="px-5 py-3 flex items-center gap-2" style={{ borderTop: `1px solid ${T.border}`, background: T.paper }}>
+        {promotedAlready ? (
+          <>
+            <button
+              onClick={onSeeClient}
+              className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-[10px] text-[12.5px] font-medium transition-opacity hover:opacity-90"
+              style={{ background: T.marinho, color: "#FAFAF7" }}
+            >
+              <Building2 style={{ width: 13, height: 13 }} />
+              Ver cedente
+            </button>
+            <ActionIconButton onClick={onReconsult} title="Reconsultar">
+              <RefreshCw style={{ width: 13, height: 13 }} />
+            </ActionIconButton>
+            <ActionIconButton onClick={onDiscard} title="Descartar" danger>
+              <Trash2 style={{ width: 13, height: 13 }} />
+            </ActionIconButton>
+          </>
+        ) : (
+          <>
+            <button
+              onClick={onMoveToPipeline}
+              disabled={busy}
+              className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-[10px] text-[12.5px] font-medium transition-opacity hover:opacity-90 disabled:opacity-50"
+              style={{ background: T.marinho, color: "#FAFAF7" }}
+              title="Move o prospect para o Pipeline comercial — comercial vai começar a abordagem"
+            >
+              {busy ? <Loader2 className="animate-spin" style={{ width: 13, height: 13 }} /> : <Briefcase style={{ width: 13, height: 13 }} />}
+              Mover p/ Pipeline
+            </button>
+            <button
+              onClick={onStartAnalysis}
+              disabled={busy}
+              className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-[10px] text-[12.5px] font-medium transition-all hover:opacity-90 disabled:opacity-50"
+              style={{
+                background: "rgba(0,212,154,0.10)",
+                color: T.text,
+                border: `1px solid ${T.esmeralda}`,
+              }}
+              title="Pula o pipeline e cria análise direto — útil quando cliente já topou ou é indicação direta"
+            >
+              {busy ? <Loader2 className="animate-spin" style={{ width: 13, height: 13 }} /> : <FileSearch style={{ width: 13, height: 13 }} />}
+              Iniciar análise
+            </button>
+            <ActionIconButton onClick={onReconsult} title="Reconsultar">
+              <RefreshCw style={{ width: 13, height: 13 }} />
+            </ActionIconButton>
+            <ActionIconButton onClick={onDiscard} title="Descartar" danger>
+              <Trash2 style={{ width: 13, height: 13 }} />
+            </ActionIconButton>
+          </>
+        )}
+      </div>
+    </motion.div>
+  );
+}
+
+function Pill({ children, color }: { children: React.ReactNode; color: string }) {
+  return (
+    <span
+      style={{
+        fontSize: 10,
+        fontWeight: 600,
+        letterSpacing: "0.03em",
+        padding: "3px 8px",
+        borderRadius: 999,
+        background: `${color}15`,
+        color,
+        border: `1px solid ${color}30`,
+        whiteSpace: "nowrap",
+      }}
+    >
+      {children}
+    </span>
+  );
+}
+
+function Metric({ label, value, color }: { label: string; value: string; color: string }) {
+  return (
+    <div className="rounded-[8px] px-3 py-2" style={{ background: T.paper, border: `1px solid ${T.border}` }}>
+      <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.10em", textTransform: "uppercase", color: T.textFaint }}>{label}</p>
+      <p style={{ fontSize: 13, fontWeight: 600, color, marginTop: 1 }}>{value}</p>
+    </div>
+  );
+}
+
+function ActionIconButton({
+  onClick, title, children, danger,
+}: { onClick?: () => void; title: string; children: React.ReactNode; danger?: boolean }) {
+  return (
+    <button
+      onClick={onClick}
+      title={title}
+      className="p-2 rounded-[8px] transition-colors"
+      style={{
+        background: "transparent",
+        color: danger ? T.danger : T.textMute,
+        border: `1px solid ${T.border}`,
+      }}
+      onMouseEnter={e => { e.currentTarget.style.background = danger ? "rgba(176,24,42,0.06)" : T.cinza; }}
+      onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}
+    >
+      {children}
+    </button>
   );
 }

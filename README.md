@@ -1,73 +1,134 @@
-# Welcome to your Lovable project
+# CreditoHub · Trilho
 
-## Project info
+Plataforma SaaS B2B de análise de crédito e CRM para factoring, FIDC e securitização.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## O que faz
 
-## How can I edit this code?
+Funil completo do cedente, da prospecção ao portfólio:
 
-There are several ways of editing your application.
-
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+```
+Consulta CNPJ  →  Prospect  →  Pipeline (deal)  →  Análise (dossiê)  →  Comitê  →  Portfólio
+   BrasilAPI       qualificação    negociação        underwriting       votação      operação
 ```
 
-**Edit a file directly in GitHub**
+Cada etapa é uma decisão consciente do operador — nada se promove sozinho. Estados rastreáveis entre prospect, deal e análise.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Stack
 
-**Use GitHub Codespaces**
+| Camada | Tecnologia |
+|---|---|
+| Frontend | React 18 · TypeScript · Vite |
+| UI | Tailwind CSS · shadcn/ui · Trilho design system |
+| Estado servidor | TanStack Query v5 |
+| Animações | framer-motion |
+| Drag-and-drop | @hello-pangea/dnd |
+| Backend | Supabase (PostgreSQL + Auth + Storage + Edge Functions) |
+| AI | Anthropic Claude (Sonnet 4.6) — chave por usuário |
+| Bureau público | BrasilAPI (CNPJ via Receita Federal) |
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Setup local
 
-## What technologies are used for this project?
+Pré-requisito: Node.js 20+.
 
-This project is built with:
+```bash
+# 1. Clone e instale
+git clone <repo-url>
+cd creditohub
+npm install
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+# 2. Configure as variáveis de ambiente
+cp .env.local.example .env.local   # se houver template; senão crie .env.local com:
+# VITE_SUPABASE_URL=https://<seu-projeto>.supabase.co
+# VITE_SUPABASE_PUBLISHABLE_KEY=<anon-key>
+# VITE_SUPABASE_PROJECT_ID=<project-id>
 
-## How can I deploy this project?
+# 3. Rode o dev server
+npm run dev
+# → http://localhost:8080
+```
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+## Estrutura
 
-## Can I connect a custom domain to my Lovable project?
+```
+src/
+├── pages/               # 31 páginas (rotas)
+├── components/
+│   ├── ui/              # shadcn primitives (não modificar)
+│   ├── trilho/          # Design system (PageHeader, KPI, Card, etc.)
+│   ├── auth/            # Login (TrilhoHeroLoop, StatsCounter, MiniPipeline)
+│   ├── credit/          # Análise (AIInsights, ConcentrationChart, RiskRadar...)
+│   ├── crm/             # Comercial (NewDealDialog, ClientTagManager)
+│   └── *.tsx            # Shared layout (AppNavbar, AppLayout, StatusBadge)
+├── lib/                 # Lógica pura (cálculos, formatters, helpers)
+├── hooks/               # Hooks customizados (useCommitteeRequirements...)
+├── integrations/
+│   └── supabase/        # Cliente + types gerados
+└── test/                # Playwright
 
-Yes, you can!
+supabase/
+├── migrations/          # 28+ SQL migrations (rodadas no projeto remoto)
+└── functions/           # 6 edge functions (Deno)
+```
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## Módulos principais
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+| Rota | Função | Submenu |
+|---|---|---|
+| `/` | Painel inicial — alertas, KPIs, funil de crédito | — |
+| `/consulta` | Consulta CNPJ (BrasilAPI + bureau + base interna) | Comercial |
+| `/prospects` | Inbox de leads pré-qualificados | Comercial |
+| `/crm/pipeline` | Pipeline de deals (drag-and-drop) | Comercial |
+| `/crm/dashboard` | Painel comercial (funil, ranking) | Comercial |
+| `/analises` | Kanban de análises com sync ao Pipeline | Crédito |
+| `/analises/:id` | Dossiê de crédito (8 seções, IA, indicadores) | Crédito |
+| `/comite` | Pauta do comitê | Crédito |
+| `/comite/:id` | Tela de votação | Crédito |
+| `/cedentes` | Portfólio (em análise + decididos) | Crédito |
+| `/blacklist` | CNPJs bloqueados | Crédito |
+| `/configuracoes` | Empresa, políticas, requisitos do comitê, automações, integrações, acessos | — |
+| `/perfil` | Conta + chave Anthropic do usuário | — |
+
+## IA por usuário
+
+Cada usuário cadastra a própria chave Anthropic em **Meu Perfil → Configurações de IA**. A chave fica em `profiles.anthropic_api_key` (RLS isolada por usuário) e é passada nas chamadas das edge functions `generate-insights` e `analyze-document`.
+
+Não há chave compartilhada — seus créditos, seu controle.
+
+## Configurações por tenant
+
+Em `/configuracoes`:
+- **Políticas de crédito** — thresholds, limites, taxas
+- **Requisitos do comitê** — quais campos do dossiê são obrigatórios pra análise avançar (configurável por bloco)
+- **Automações** — verificação automática de blacklist, score, envio ao comitê
+- **Integrações** — bureau de crédito, APIs externas
+- **Acessos** — usuários e roles
+
+## Multi-tenancy + RLS
+
+Todas as tabelas têm `tenant_id` com policies RLS:
+```sql
+USING (tenant_id = public.get_user_tenant_id(auth.uid()))
+```
+
+Usuários de tenants diferentes nunca veem dados um do outro. Trigger `set_tenant_id_from_user()` preenche `tenant_id` automaticamente em INSERTs.
+
+## Comandos úteis
+
+```bash
+npm run dev              # Dev server (HMR)
+npm run build            # Build de produção
+npm run preview          # Preview do build
+npm run lint             # ESLint
+npm run test:e2e         # Playwright E2E
+```
+
+## Documentação adicional
+
+- [`CLAUDE.md`](./CLAUDE.md) — Contexto permanente do projeto (stack, design system, regras)
+- [`BUSINESS_RULES.md`](./BUSINESS_RULES.md) — Regras de negócio detalhadas por página
+- [`AGENTS.md`](./AGENTS.md) — Sistema de agentes especializados pra tarefas complexas
+- [`BACKEND_AUDIT.md`](./BACKEND_AUDIT.md) — Auditoria do estado das edge functions e integrações
+
+## Licença
+
+Privado — propriedade da Trilho. Não distribuir.

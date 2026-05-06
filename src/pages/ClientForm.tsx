@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "@/hooks/use-toast";
 import { formatCNPJorCPF, ESTADOS_BR } from "@/lib/formatters";
 import { ArrowLeft, Rocket } from "lucide-react";
-import { ClientTagManager } from "@/components/ClientTagManager";
+import { ClientTagManager } from "@/components/crm/ClientTagManager";
 import { snapshotToCreditAnalysis, insertSnapshotSocios, type ConsultaSnapshot } from "@/lib/consulta-snapshot";
 
 interface ClientFormData {

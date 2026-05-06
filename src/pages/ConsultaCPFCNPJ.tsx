@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -17,17 +17,14 @@ import {
   Hash, Receipt, Landmark, Sparkles,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { formatCNPJorCPF, formatBRL, formatDate, formatPercent, statusLabels, statusColors } from "@/lib/formatters";
+import { PageHeader } from "@/components/trilho/PageHeader";
+import { formatCNPJorCPF, formatBRL, formatDate, formatPercent, statusLabels, statusColors, cleanDocument } from "@/lib/formatters";
 import { motion, AnimatePresence } from "framer-motion";
 import { fetchExternalConsulta, type ExternalSourceResult, type ExternalConsultaData } from "@/lib/external-consulta";
 import { qualifyProspect, saveProspectQualification, type QualificationResult } from "@/lib/prospect-qualification";
-import { buildConsultaSnapshot, type ConsultaSnapshot } from "@/lib/consulta-snapshot";
+import { buildConsultaSnapshot, ensureClientFromSnapshot, type ConsultaSnapshot } from "@/lib/consulta-snapshot";
+import { ANALYSIS_STATUS } from "@/lib/analysis-status";
 import { toast } from "sonner";
-
-// --- Helpers ---
-function cleanDocument(value: string) {
-  return value.replace(/\D/g, "");
-}
 
 function formatInputDocument(value: string) {
   const digits = cleanDocument(value);
@@ -49,8 +46,8 @@ function formatInputDocument(value: string) {
 function RiskBadge({ level }: { level: "low" | "medium" | "high" | "unknown" }) {
   const config = {
     low: { label: "Baixo", className: "bg-status-approved/10 text-status-approved border-status-approved/30" },
-    medium: { label: "Médio", className: "bg-sink-warn/10 text-sink-warn border-sink-warn/30" },
-    high: { label: "Alto", className: "bg-sink-danger/10 text-sink-danger border-sink-danger/30" },
+    medium: { label: "Médio", className: "bg-status-restricted/10 text-status-restricted border-status-restricted/30" },
+    high: { label: "Alto", className: "bg-status-rejected/10 text-status-rejected border-status-rejected/30" },
     unknown: { label: "Indeterminado", className: "bg-muted text-muted-foreground border-border" },
   };
   const c = config[level];
@@ -200,56 +197,74 @@ export default function ConsultaCPFCNPJ() {
     ? buildConsultaSnapshot({ documento: digits, externalSources })
     : null;
 
-  // Auto-qualify prospect when data is loaded
+  // Compute qualification (sem auto-save — usuário decide via botão)
+  const qualificationInput = !hasSearched || isLoading || !digits || digits.length < 11 ? null : {
+    documento: digits,
+    nome: client?.razao_social || externalName || undefined,
+    tipo: (digits.length > 11 ? "cnpj" : "cpf") as "cpf" | "cnpj",
+    clientId: client?.id || undefined,
+    creditScore: latestAnalysis?.credit_score,
+    limiteAprovado: latestAnalysis?.limite_sugerido,
+    analysisStatus: latestAnalysis?.status,
+    hasProtestos: !!latestAnalysis?.protestos && latestAnalysis.protestos !== "Nada consta",
+    hasPendencias: !!latestAnalysis?.pendencias && latestAnalysis.pendencias !== "Nada consta",
+    hasAcoesJudiciais: !!latestAnalysis?.acoes_judiciais && latestAnalysis.acoes_judiciais !== "Nada consta",
+    hasBlacklist: !!blacklistEntry,
+    tempoAtividade: latestAnalysis?.tempo_atividade,
+    faturamentoMedio: latestAnalysis?.faturamento_medio ? Number(latestAnalysis.faturamento_medio) : undefined,
+    snapshot: consultaSnapshot ? (consultaSnapshot as unknown as Record<string, any>) : undefined,
+  };
+
   useEffect(() => {
-    if (!hasSearched || isLoading || qualifyingInProgress) return;
-    if (!digits || digits.length < 11) return;
-
-    const runQualification = async () => {
-      setQualifyingInProgress(true);
-      try {
-        const input = {
-          documento: digits,
-          nome: client?.razao_social || externalName || undefined,
-          tipo: (digits.length > 11 ? "cnpj" : "cpf") as "cpf" | "cnpj",
-          clientId: client?.id || undefined,
-          creditScore: latestAnalysis?.credit_score,
-          limiteAprovado: latestAnalysis?.limite_sugerido,
-          analysisStatus: latestAnalysis?.status,
-          hasProtestos: !!latestAnalysis?.protestos && latestAnalysis.protestos !== "Nada consta",
-          hasPendencias: !!latestAnalysis?.pendencias && latestAnalysis.pendencias !== "Nada consta",
-          hasAcoesJudiciais: !!latestAnalysis?.acoes_judiciais && latestAnalysis.acoes_judiciais !== "Nada consta",
-          hasBlacklist: !!blacklistEntry,
-          tempoAtividade: latestAnalysis?.tempo_atividade,
-          faturamentoMedio: latestAnalysis?.faturamento_medio ? Number(latestAnalysis.faturamento_medio) : undefined,
-          snapshot: consultaSnapshot ? (consultaSnapshot as unknown as Record<string, any>) : undefined,
-        };
-        const result = await qualifyProspect(input);
-        setQualification(result);
-        await saveProspectQualification(input, result);
-        queryClient.invalidateQueries({ queryKey: ["prospects"] });
-      } catch (err) {
-        console.error("Qualification error:", err);
-      } finally {
-        setQualifyingInProgress(false);
-      }
-    };
-
-    runQualification();
+    if (!qualificationInput) return;
+    let cancelled = false;
+    setQualifyingInProgress(true);
+    qualifyProspect(qualificationInput)
+      .then(result => { if (!cancelled) setQualification(result); })
+      .catch(err => console.error("Qualification error:", err))
+      .finally(() => { if (!cancelled) setQualifyingInProgress(false); });
+    return () => { cancelled = true; };
   }, [hasSearched, isLoading, digits]);
 
-  function handleCadastrarCedente() {
-    const prefill: Record<string, string> = { cnpj_cpf: digits };
-    if (brasilApiData) {
-      if (brasilApiData.razao_social) prefill.razao_social = brasilApiData.razao_social;
-      if (brasilApiData.nome_fantasia) prefill.nome_fantasia = brasilApiData.nome_fantasia;
-      if (brasilApiData.data_abertura) prefill.data_fundacao = brasilApiData.data_abertura;
-      if (brasilApiData.cnae_descricao) prefill.segmento = brasilApiData.cnae_descricao;
-      if (brasilApiData.endereco?.cidade) prefill.cidade = brasilApiData.endereco.cidade;
-      if (brasilApiData.endereco?.uf) prefill.estado = brasilApiData.endereco.uf;
-    }
-    navigate("/cedentes/novo", { state: { prefill, snapshot: consultaSnapshot } });
-  }
+  // Salvar como prospect
+  const createProspectMutation = useMutation({
+    mutationFn: async () => {
+      if (!qualificationInput || !qualification) throw new Error("Qualificação não disponível");
+      await saveProspectQualification(qualificationInput, qualification);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["prospects"] });
+      toast.success("Adicionado como prospect");
+      navigate("/prospects");
+    },
+    onError: (e: any) => toast.error(e?.message || "Erro ao criar prospect"),
+  });
+
+  // Adicionar direto à carteira (cedente + análise draft)
+  const addToPortfolioMutation = useMutation({
+    mutationFn: async () => {
+      if (!qualificationInput) throw new Error("Documento inválido");
+      const clientId = await ensureClientFromSnapshot(digits, consultaSnapshot, {
+        razao_social: brasilApiData?.razao_social || qualificationInput.nome,
+        nome_fantasia: brasilApiData?.nome_fantasia,
+        segmento: brasilApiData?.cnae_descricao,
+        cidade: brasilApiData?.endereco?.cidade,
+        estado: brasilApiData?.endereco?.uf,
+      });
+      await supabase.from("credit_analysis").insert({
+        client_id: clientId,
+        status: ANALYSIS_STATUS.draft,
+      } as { client_id: string; status: string });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["clients"] });
+      toast.success("Cedente adicionado à carteira");
+      navigate("/cedentes");
+    },
+    onError: (e: any) => toast.error(e?.message || "Erro ao adicionar cedente"),
+  });
+
+  const isCreating = createProspectMutation.isPending || addToPortfolioMutation.isPending;
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
@@ -260,12 +275,11 @@ export default function ConsultaCPFCNPJ() {
   }
 
   return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Consulta CPF / CNPJ</h1>
-        <p className="text-muted-foreground">Visão 360° — base interna e fontes externas</p>
-      </div>
+    <div className="p-7 space-y-[14px]">
+      <PageHeader
+        title="Consulta CPF / CNPJ"
+        subtitle="VISÃO 360° · BASE INTERNA E FONTES EXTERNAS"
+      />
 
       {/* Search Bar */}
       <Card>
@@ -384,22 +398,22 @@ export default function ConsultaCPFCNPJ() {
               <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
                 <Card className={`border ${
                   qualification.status === "qualified" ? "border-status-approved/30 bg-status-approved/5" :
-                  qualification.status === "not_qualified" ? "border-sink-danger/30 bg-sink-danger/5" :
-                  "border-sink-warn/30 bg-sink-warn/5"
+                  qualification.status === "not_qualified" ? "border-status-rejected/30 bg-status-rejected/5" :
+                  "border-status-restricted/30 bg-status-restricted/5"
                 }`}>
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex items-center gap-3">
                         <div className={`p-2 rounded-full ${
                           qualification.status === "qualified" ? "bg-status-approved/15" :
-                          qualification.status === "not_qualified" ? "bg-sink-danger/15" : "bg-sink-warn/15"
+                          qualification.status === "not_qualified" ? "bg-status-rejected/15" : "bg-status-restricted/15"
                         }`}>
                           {qualification.status === "qualified" ? (
                             <CheckCircle2 className="h-5 w-5 text-status-approved" />
                           ) : qualification.status === "not_qualified" ? (
-                            <XCircle className="h-5 w-5 text-sink-danger" />
+                            <XCircle className="h-5 w-5 text-status-rejected" />
                           ) : (
-                            <Clock className="h-5 w-5 text-sink-warn" />
+                            <Clock className="h-5 w-5 text-status-restricted" />
                           )}
                         </div>
                         <div>
@@ -443,7 +457,7 @@ export default function ConsultaCPFCNPJ() {
                         {qualification.reasons.length > 0 && (
                           <div className="space-y-1">
                             {qualification.reasons.map((r, i) => (
-                              <div key={i} className="flex items-center gap-1.5 text-xs text-sink-danger">
+                              <div key={i} className="flex items-center gap-1.5 text-xs text-status-rejected">
                                 <AlertTriangle className="h-3 w-3 shrink-0" /> {r}
                               </div>
                             ))}
@@ -603,14 +617,45 @@ export default function ConsultaCPFCNPJ() {
                           </div>
                         )}
                         <Separator />
-                        <div>
-                          <p className="text-sm text-muted-foreground mb-3">
-                            Deseja cadastrar como cedente e iniciar a esteira de crédito?
+                        <div className="space-y-3">
+                          <p className="text-sm text-muted-foreground">
+                            Como deseja seguir com este {isPJ ? "CNPJ" : "CPF"}?
                           </p>
-                          <Button onClick={handleCadastrarCedente} className="gap-2">
-                            <User className="h-4 w-4" />
-                            Cadastrar Cedente {brasilApiData ? "(dados pré-preenchidos)" : ""}
-                          </Button>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left">
+                            <button
+                              onClick={() => createProspectMutation.mutate()}
+                              disabled={!qualification || isCreating}
+                              className="flex flex-col gap-2 p-4 rounded-[12px] border bg-card hover:bg-muted/40 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-left"
+                              style={{ borderColor: "rgba(10,21,56,0.10)" }}
+                            >
+                              <div className="flex items-center gap-2">
+                                <Sparkles className="h-4 w-4 text-sink-mint-3" />
+                                <span className="font-semibold text-sm">Adicionar como prospect</span>
+                                {createProspectMutation.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin ml-auto" />}
+                              </div>
+                              <p className="text-[12px] text-muted-foreground leading-snug">
+                                Vai pro funil de prospecção. Ideal para leads que ainda precisam ser qualificados/abordados pelo comercial.
+                              </p>
+                            </button>
+                            <button
+                              onClick={() => addToPortfolioMutation.mutate()}
+                              disabled={isCreating}
+                              className="flex flex-col gap-2 p-4 rounded-[12px] border transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-left"
+                              style={{
+                                borderColor: "rgba(0,212,154,0.30)",
+                                background: "rgba(0,212,154,0.05)",
+                              }}
+                            >
+                              <div className="flex items-center gap-2">
+                                <Building2 className="h-4 w-4 text-status-approved" />
+                                <span className="font-semibold text-sm">Adicionar à carteira</span>
+                                {addToPortfolioMutation.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin ml-auto" />}
+                              </div>
+                              <p className="text-[12px] text-muted-foreground leading-snug">
+                                Vira cedente direto no Portfólio com análise pré-aberta. Pula o prospect — use quando já tem decisão de incluir.
+                              </p>
+                            </button>
+                          </div>
                         </div>
                       </CardContent>
                     </Card>
@@ -669,8 +714,8 @@ export default function ConsultaCPFCNPJ() {
                                   {a.recommendation ? (
                                     <Badge variant="outline" className={
                                       a.recommendation === "approve" ? "bg-status-approved/10 text-status-approved" :
-                                      a.recommendation === "restrict" ? "bg-sink-warn/10 text-sink-warn" :
-                                      "bg-sink-danger/10 text-sink-danger"
+                                      a.recommendation === "restrict" ? "bg-status-restricted/10 text-status-restricted" :
+                                      "bg-status-rejected/10 text-status-rejected"
                                     }>
                                       {a.recommendation === "approve" ? "Aprovar" : a.recommendation === "restrict" ? "Restringir" : "Reprovar"}
                                     </Badge>

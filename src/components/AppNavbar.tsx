@@ -1,211 +1,236 @@
-import { useState, useRef, useEffect } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { NotificationBell } from "@/components/NotificationBell";
-import { GlobalSearch } from "@/components/GlobalSearch";
-import { UserAvatar } from "@/components/UserAvatar";
-import {
-  LayoutDashboard,
-  SearchCheck,
-  UserSearch,
-  Building2,
-  FileText,
-  Users,
-  FileBarChart,
-  Scale,
-  ShieldBan,
-  Settings,
-  Menu,
-  ChevronDown,
-  CreditCard,
-  TrendingUp,
-  Handshake,
-  Contact,
-  MessageSquare,
-  CheckSquare,
-  Receipt,
-  Gauge,
-  Filter,
-  Eye,
-  Plug,
-  Landmark,
-} from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import type { User } from "@supabase/supabase-js";
 import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { useIsMobile } from "@/hooks/use-mobile";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+  LogOut, User as UserIcon, Settings, Bell, ChevronDown,
+  LayoutGrid, Workflow, Users, Activity, CheckSquare,
+  BarChart3, Scale, Building2, Search, Ban, Sparkles,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
-/* ── Tipos ───────────────────────────────────────────────────────── */
+/* ── Logo SVG ───────────────────────────────────────────────────── */
 
-interface NavItem {
-  title: string;
-  url: string;
-  icon: React.ElementType;
-  description?: string;
+function Logo() {
+  return (
+    <span className="inline-flex items-center gap-2 select-none">
+      <svg width="22" height="22" viewBox="0 0 64 64" style={{ display: "block", flexShrink: 0 }}>
+        <rect x="6" y="20" width="52" height="6" rx="3" fill="#FAFAF7" />
+        <rect x="6" y="38" width="52" height="6" rx="3" fill="#FAFAF7" />
+        <circle cx="46" cy="32" r="7" fill="#00D49A" />
+      </svg>
+      <span
+        className="font-medium text-[15px] text-[#FAFAF7]"
+        style={{ letterSpacing: "-0.03em" }}
+      >
+        Trilho<span style={{ color: "#00D49A" }}>.</span>
+      </span>
+    </span>
+  );
 }
 
-interface NavGroup {
-  title: string;
-  icon: React.ElementType;
-  items: NavItem[];
-}
+/* ── Módulos ────────────────────────────────────────────────────── */
 
-/* ── Dados de navegação ──────────────────────────────────────────── */
+const MODULES = [
+  { label: "Painel",        path: "/" },
+  { label: "Comercial",     path: "/crm/dashboard" },
+  { label: "Crédito",       path: "/analises" },
+  { label: "Monitoramento", path: "/monitoramento-nfs" },
+] as const;
 
-const directLinks: NavItem[] = [
-  { title: "Painel Inicial", url: "/", icon: LayoutDashboard },
+type SubNavItem = { label: string; path: string; icon: LucideIcon };
+
+const CRM_SUBNAV: SubNavItem[] = [
+  { label: "Dashboard",   path: "/crm/dashboard",  icon: LayoutGrid },
+  { label: "Consulta",    path: "/consulta",       icon: Search },
+  { label: "Prospects",   path: "/prospects",      icon: Sparkles },
+  { label: "Pipeline",    path: "/crm/pipeline",   icon: Workflow },
+  { label: "Contatos",    path: "/crm/contatos",   icon: Users },
+  { label: "Atividades",  path: "/crm/atividades", icon: Activity },
+  { label: "Tarefas",     path: "/crm/tarefas",    icon: CheckSquare },
 ];
 
-const crmGroup: NavGroup = {
-  title: "Comercial",
-  icon: Handshake,
-  items: [
-    { title: "Dashboard CRM", url: "/crm/dashboard", icon: TrendingUp, description: "Métricas e forecast de vendas" },
-    { title: "Pipeline", url: "/crm/pipeline", icon: Filter, description: "Funil de oportunidades" },
-    { title: "Prospects", url: "/prospects", icon: UserSearch, description: "Captação e qualificação de leads" },
-    { title: "Contatos", url: "/crm/contatos", icon: Contact, description: "Gestão de contatos" },
-    { title: "Atividades", url: "/crm/atividades", icon: MessageSquare, description: "Histórico de interações" },
-    { title: "Tarefas", url: "/crm/tarefas", icon: CheckSquare, description: "Follow-ups e pendências" },
-  ],
-};
+const CREDITO_SUBNAV: SubNavItem[] = [
+  { label: "Análises",    path: "/analises",  icon: BarChart3 },
+  { label: "Comitê",      path: "/comite",    icon: Scale },
+  { label: "Portfólio",   path: "/cedentes",  icon: Building2 },
+  { label: "Blacklist",   path: "/blacklist", icon: Ban },
+];
 
-const esteiraGroup: NavGroup = {
-  title: "Crédito",
-  icon: CreditCard,
-  items: [
-    { title: "Cedentes", url: "/cedentes", icon: Building2, description: "Cadastro e esteira dos cedentes" },
-    { title: "Análises de Crédito", url: "/analises", icon: FileText, description: "Dossiês e pareceres" },
-    { title: "Comitê de Crédito", url: "/comite", icon: Users, description: "Votação e deliberação" },
-    { title: "Patrimonial", url: "/patrimonial", icon: Landmark, description: "Bens e garantias dos cedentes" },
-    { title: "Performance", url: "/performance", icon: Gauge, description: "Métricas e gargalos da esteira" },
-  ],
-};
+function getActiveModule(pathname: string): string {
+  if (pathname === "/") return "Painel";
+  if (
+    pathname.startsWith("/crm") ||
+    pathname.startsWith("/consulta") ||
+    pathname.startsWith("/prospects")
+  ) return "Comercial";
+  if (
+    pathname.startsWith("/analises") ||
+    pathname.startsWith("/comite") ||
+    pathname.startsWith("/cedentes") ||
+    pathname.startsWith("/blacklist") ||
+    pathname.startsWith("/falimentar")
+  ) return "Crédito";
+  if (
+    pathname.startsWith("/monitoramento") ||
+    pathname.startsWith("/performance")
+  ) return "Monitoramento";
+  return "";
+}
 
-const monitorGroup: NavGroup = {
-  title: "Monitoramento",
-  icon: Eye,
-  items: [
-    { title: "Notas Fiscais", url: "/monitoramento-nfs", icon: Receipt, description: "Acompanhamento e validação de NFs" },
-    { title: "Informe Falimentar", url: "/falimentar", icon: Scale, description: "Recuperações judiciais e falências" },
-    { title: "Blacklist", url: "/blacklist", icon: ShieldBan, description: "Restrições e bloqueios" },
-    { title: "Integrações", url: "/integracoes", icon: Plug, description: "APIs e fontes de dados externas" },
-  ],
-};
+/* ── SubNav ─────────────────────────────────────────────────────── */
 
-const groups: NavGroup[] = [crmGroup, esteiraGroup, monitorGroup];
-
-/* ── MegaMenu dropdown ───────────────────────────────────────────── */
-
-function MegaMenuDropdown({
-  group,
-  isOpen,
-  onMouseEnter,
-  onMouseLeave,
+function SubNav({
+  items,
+  pathname,
+  navigate,
 }: {
-  group: NavGroup;
-  isOpen: boolean;
-  onMouseEnter: () => void;
-  onMouseLeave: () => void;
+  items: SubNavItem[];
+  pathname: string;
+  navigate: (path: string) => void;
 }) {
-  const location = useLocation();
-  const isGroupActive = group.items.some((item) =>
-    item.url === "/" ? location.pathname === "/" : location.pathname.startsWith(item.url)
-  );
-
   return (
     <div
-      className="relative"
-      onMouseEnter={onMouseEnter}
-      onMouseLeave={onMouseLeave}
+      className="flex items-center px-6 flex-shrink-0"
+      style={{
+        height: 44,
+        background: "rgba(8,17,46,0.96)",
+        borderBottom: "1px solid rgba(0,212,154,0.10)",
+        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.04)",
+        fontFamily: "var(--font-sans)",
+      }}
     >
+      <nav className="flex items-center gap-1 relative">
+        {items.map(({ label, path, icon: Icon }) => {
+          const isActive = pathname === path || (path !== "/" && pathname.startsWith(path));
+          return (
+            <button
+              key={path}
+              onClick={() => navigate(path)}
+              className={cn(
+                "relative flex items-center gap-1.5 px-3 py-[7px] rounded-[8px] text-[12.5px] transition-colors duration-150 whitespace-nowrap z-10",
+                isActive
+                  ? "text-[#0A1538] font-semibold"
+                  : "text-[rgba(250,250,247,0.78)] hover:text-[#FAFAF7] hover:bg-[rgba(255,255,255,0.08)]"
+              )}
+              style={{ letterSpacing: "-0.005em" }}
+            >
+              {isActive && (
+                <motion.span
+                  layoutId="subnav-active-pill"
+                  className="absolute inset-0 rounded-[8px] -z-10"
+                  style={{
+                    background: "#00D49A",
+                    boxShadow: "0 4px 14px -4px rgba(0,212,154,0.55), 0 0 0 1px rgba(0,212,154,0.85) inset",
+                  }}
+                  transition={{ type: "spring", stiffness: 700, damping: 38 }}
+                />
+              )}
+              <Icon style={{ width: 13.5, height: 13.5, flexShrink: 0 }} strokeWidth={2.2} />
+              {label}
+            </button>
+          );
+        })}
+      </nav>
+    </div>
+  );
+}
+
+/* ── Notifications Dropdown ─────────────────────────────────────── */
+
+const MOCK_NOTIFICATIONS = [
+  { id: "1", title: "Análise aprovada", body: "Empresa XYZ aprovada com limite R$ 50k", time: "há 5min", unread: true },
+  { id: "2", title: "Comitê pendente",  body: "3 análises aguardam votação no comitê",  time: "há 1h",  unread: true },
+  { id: "3", title: "Deal criado",      body: "Novo deal criado para Empresa ABC",       time: "há 2h",  unread: false },
+];
+
+function NotificationsDropdown() {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const unreadCount = MOCK_NOTIFICATIONS.filter(n => n.unread).length;
+
+  useEffect(() => {
+    function onClickOutside(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
+  }, []);
+
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
       <button
-        className={cn(
-          "flex items-center gap-1.5 px-3 py-2 text-[13px] font-medium rounded-sink-sm transition-colors duration-150",
-          isGroupActive
-            ? "text-white bg-white/10"
-            : "text-sink-cream/70 hover:text-sink-cream hover:bg-white/8"
-        )}
+        onClick={() => setOpen(!open)}
+        className="relative p-2 rounded-[8px] transition-colors hover:bg-[rgba(255,255,255,0.08)]"
+        style={{ color: "rgba(250,250,247,0.7)" }}
       >
-        <group.icon className="h-4 w-4" />
-        <span>{group.title}</span>
-        <ChevronDown
-          className={cn(
-            "h-3.5 w-3.5 transition-transform duration-200",
-            isOpen && "rotate-180"
-          )}
-        />
+        <Bell style={{ width: 18, height: 18 }} />
+        {unreadCount > 0 && (
+          <span
+            className="absolute top-[5px] right-[5px] flex items-center justify-center rounded-full text-[9px] font-bold"
+            style={{
+              width: 15, height: 15,
+              background: "#00D49A",
+              color: "#0A1538",
+            }}
+          >
+            {unreadCount}
+          </span>
+        )}
       </button>
 
-      {isOpen && (
-        <div className="absolute top-full left-0 mt-1.5 z-50 min-w-[440px]">
-          {/* Seta */}
-          <div className="absolute -top-1 left-6 h-2 w-2 rotate-45 bg-sink-paper border-l border-t border-sink-fog/60" />
+      {open && (
+        <div
+          style={{
+            position: "absolute", top: "calc(100% + 8px)", right: 0,
+            width: 320, background: "#FBFBF7",
+            border: "1px solid rgba(10,21,56,0.12)",
+            borderRadius: 14, boxShadow: "var(--shadow-lg)",
+            zIndex: 100, overflow: "hidden",
+          }}
+        >
           <div
-            className={cn(
-              "bg-sink-paper border border-sink-fog/60 shadow-sink-lg rounded-sink-md p-2",
-              "grid grid-cols-2 gap-0.5"
-            )}
+            className="flex items-center justify-between px-4 py-3"
+            style={{ borderBottom: "1px solid rgba(10,21,56,0.08)" }}
           >
-            {group.items.map((item) => {
-              const isActive =
-                item.url === "/"
-                  ? location.pathname === "/"
-                  : location.pathname.startsWith(item.url);
-
-              return (
-                <Link
-                  key={item.url}
-                  to={item.url}
-                  className={cn(
-                    "flex items-start gap-3 p-3 rounded-sink-sm transition-colors group/item",
-                    isActive
-                      ? "bg-sink-mint-soft"
-                      : "hover:bg-sink-cream-2"
-                  )}
-                >
-                  <div
-                    className={cn(
-                      "mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-sink-sm border",
-                      isActive
-                        ? "bg-sink-mint/20 border-sink-mint/40"
-                        : "bg-sink-cream border-sink-fog group-hover/item:bg-sink-mint/10 group-hover/item:border-sink-mint/30"
-                    )}
-                  >
-                    <item.icon
-                      className={cn(
-                        "h-4 w-4",
-                        isActive
-                          ? "text-sink-mint-3"
-                          : "text-sink-ink/50 group-hover/item:text-sink-mint-3"
-                      )}
-                    />
-                  </div>
-                  <div className="flex flex-col">
-                    <span
-                      className={cn(
-                        "text-[13px] font-medium leading-tight",
-                        isActive ? "text-sink-mint-3" : "text-sink-ink"
-                      )}
-                    >
-                      {item.title}
-                    </span>
-                    {item.description && (
-                      <span className="text-[11px] text-sink-ink/50 mt-0.5 leading-snug">
-                        {item.description}
-                      </span>
-                    )}
-                  </div>
-                </Link>
-              );
-            })}
+            <span style={{ fontSize: 13, fontWeight: 600, color: "#0A1538" }}>Notificações</span>
+            {unreadCount > 0 && (
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "#00D49A" }}>
+                {unreadCount} não lidas
+              </span>
+            )}
+          </div>
+          <div>
+            {MOCK_NOTIFICATIONS.map(n => (
+              <div
+                key={n.id}
+                className="flex gap-3 px-4 py-3 cursor-pointer transition-colors hover:bg-[rgba(10,21,56,0.03)]"
+                style={{ borderBottom: "1px solid rgba(10,21,56,0.05)" }}
+              >
+                <div
+                  style={{
+                    width: 8, height: 8, borderRadius: "50%", flexShrink: 0, marginTop: 5,
+                    background: n.unread ? "#00D49A" : "rgba(10,21,56,0.15)",
+                  }}
+                />
+                <div className="min-w-0">
+                  <p style={{ fontSize: 13, fontWeight: n.unread ? 600 : 400, color: "#0A1538", marginBottom: 1 }}>
+                    {n.title}
+                  </p>
+                  <p style={{ fontSize: 12, color: "rgba(10,21,56,0.55)", lineHeight: 1.4 }}>{n.body}</p>
+                  <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "rgba(10,21,56,0.35)", marginTop: 4 }}>{n.time}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="px-4 py-2.5" style={{ borderTop: "1px solid rgba(10,21,56,0.06)" }}>
+            <button
+              style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "#00D49A", background: "none", border: "none", cursor: "pointer" }}
+            >
+              Marcar todas como lidas
+            </button>
           </div>
         </div>
       )}
@@ -213,291 +238,205 @@ function MegaMenuDropdown({
   );
 }
 
-/* ── Mobile nav (Sheet) ──────────────────────────────────────────── */
+/* ── User Dropdown ───────────────────────────────────────────────── */
 
-function MobileNav({
-  open,
-  onOpenChange,
-}: {
-  open: boolean;
-  onOpenChange: (v: boolean) => void;
-}) {
-  const location = useLocation();
+function UserDropdown({ user, navigate }: { user: User | null; navigate: (path: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  const initials = user?.email?.slice(0, 2).toUpperCase() ?? "??";
+  const email = user?.email ?? "";
+  const name = user?.user_metadata?.full_name || user?.user_metadata?.name || email.split("@")[0];
+
+  useEffect(() => {
+    function onClickOutside(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
+  }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate("/auth");
+  };
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="left" className="w-[300px] p-0 bg-sink-deep border-sink-deep-4">
-        <SheetHeader className="p-4 border-b border-sink-deep-4/60">
-          <SheetTitle className="flex items-center gap-2">
-            <img src="/logo.svg" alt="CreditoHub" className="h-7 w-7" />
-            <span className="text-base font-bold text-white">
-              Credito<span className="text-sink-mint">Hub</span>
-            </span>
-          </SheetTitle>
-        </SheetHeader>
+    <div ref={ref} style={{ position: "relative" }}>
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-2 rounded-[8px] px-2 py-1 transition-colors hover:bg-[rgba(255,255,255,0.08)]"
+      >
+        <div
+          className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-semibold flex-shrink-0"
+          style={{ background: "rgba(0,212,154,0.25)", color: "#FAFAF7" }}
+        >
+          {initials}
+        </div>
+        <ChevronDown
+          style={{
+            width: 13, height: 13,
+            color: "rgba(250,250,247,0.5)",
+            transform: open ? "rotate(180deg)" : "none",
+            transition: "transform 150ms",
+          }}
+        />
+      </button>
 
-        <nav className="flex flex-col p-2 overflow-y-auto">
-          {/* CTA Consulta */}
-          <Link
-            to="/consulta"
-            onClick={() => onOpenChange(false)}
-            className={cn(
-              "flex items-center gap-2.5 px-3 py-2.5 text-[13px] font-semibold rounded-sink-sm transition-colors mb-2 border",
-              location.pathname.startsWith("/consulta")
-                ? "bg-sink-mint text-sink-deep border-sink-mint"
-                : "bg-sink-mint/15 text-sink-cream border-sink-mint/40 hover:bg-sink-mint/25"
-            )}
-          >
-            <SearchCheck className="h-4 w-4" />
-            Nova Consulta CPF/CNPJ
-          </Link>
-
-          {/* Direct links */}
-          {directLinks.map((item) => {
-            const isActive =
-              item.url === "/"
-                ? location.pathname === "/"
-                : location.pathname.startsWith(item.url);
-            return (
-              <Link
-                key={item.url}
-                to={item.url}
-                onClick={() => onOpenChange(false)}
-                className={cn(
-                  "flex items-center gap-2.5 px-3 py-2.5 text-[13px] rounded-sink-sm transition-colors",
-                  isActive
-                    ? "bg-sink-deep-3 text-white border-l-2 border-sink-mint pl-[10px]"
-                    : "text-sink-cream/70 hover:text-sink-cream hover:bg-sink-deep-3"
-                )}
-              >
-                <item.icon className="h-4 w-4" />
-                {item.title}
-              </Link>
-            );
-          })}
-
-          {/* Groups */}
-          {groups.map((group) => (
-            <div key={group.title} className="mt-3">
-              <div className="px-3 py-1 text-[10px] font-semibold text-sink-fog/40 uppercase tracking-widest flex items-center gap-1.5">
-                <group.icon className="h-3.5 w-3.5" />
-                {group.title}
-              </div>
-              {group.items.map((item) => {
-                const isActive =
-                  item.url === "/"
-                    ? location.pathname === "/"
-                    : location.pathname.startsWith(item.url);
-                return (
-                  <Link
-                    key={item.url}
-                    to={item.url}
-                    onClick={() => onOpenChange(false)}
-                    className={cn(
-                      "flex items-center gap-2.5 px-3 py-2.5 pl-6 text-[13px] rounded-sink-sm transition-colors",
-                      isActive
-                        ? "bg-sink-deep-3 text-white border-l-2 border-sink-mint pl-[22px]"
-                        : "text-sink-cream/70 hover:text-sink-cream hover:bg-sink-deep-3"
-                    )}
-                  >
-                    <item.icon className="h-4 w-4" />
-                    {item.title}
-                  </Link>
-                );
-              })}
-            </div>
-          ))}
-
-          {/* Configurações */}
-          <div className="mt-3 border-t border-sink-deep-4/60 pt-2">
-            <Link
-              to="/configuracoes"
-              onClick={() => onOpenChange(false)}
-              className={cn(
-                "flex items-center gap-2.5 px-3 py-2.5 text-[13px] rounded-sink-sm transition-colors",
-                location.pathname.startsWith("/configuracoes")
-                  ? "bg-sink-deep-3 text-white border-l-2 border-sink-mint pl-[10px]"
-                  : "text-sink-cream/70 hover:text-sink-cream hover:bg-sink-deep-3"
-              )}
+      {open && (
+        <div
+          style={{
+            position: "absolute", top: "calc(100% + 8px)", right: 0,
+            width: 220, background: "#FBFBF7",
+            border: "1px solid rgba(10,21,56,0.12)",
+            borderRadius: 14, boxShadow: "var(--shadow-lg)",
+            zIndex: 100, overflow: "hidden",
+          }}
+        >
+          {/* User info */}
+          <div className="px-4 py-3" style={{ borderBottom: "1px solid rgba(10,21,56,0.08)" }}>
+            <div
+              className="w-9 h-9 rounded-full flex items-center justify-center text-[13px] font-semibold mb-2"
+              style={{ background: "rgba(0,212,154,0.15)", color: "#0A1538" }}
             >
-              <Settings className="h-4 w-4" />
-              Configurações
-            </Link>
+              {initials}
+            </div>
+            <p style={{ fontSize: 13, fontWeight: 600, color: "#0A1538", lineHeight: 1.2 }}>{name}</p>
+            <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "rgba(10,21,56,0.45)", marginTop: 2 }}>{email}</p>
           </div>
-        </nav>
-      </SheetContent>
-    </Sheet>
+
+          {/* Actions */}
+          <div className="py-1">
+            <button
+              onClick={() => { navigate("/configuracoes"); setOpen(false); }}
+              className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] transition-colors hover:bg-[rgba(10,21,56,0.04)] text-left"
+              style={{ color: "#0A1538" }}
+            >
+              <Settings style={{ width: 14, height: 14, opacity: 0.5 }} />
+              Configurações
+            </button>
+            <button
+              onClick={() => { navigate("/perfil"); setOpen(false); }}
+              className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] transition-colors hover:bg-[rgba(10,21,56,0.04)] text-left"
+              style={{ color: "#0A1538" }}
+            >
+              <UserIcon style={{ width: 14, height: 14, opacity: 0.5 }} />
+              Meu perfil
+            </button>
+          </div>
+
+          <div style={{ borderTop: "1px solid rgba(10,21,56,0.07)" }} className="py-1">
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] transition-colors hover:bg-[rgba(176,24,42,0.05)] text-left"
+              style={{ color: "#B0182A" }}
+            >
+              <LogOut style={{ width: 14, height: 14 }} />
+              Sair da conta
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
-/* ── AppNavbar ───────────────────────────────────────────────────── */
+/* ── Topbar ─────────────────────────────────────────────────────── */
 
 export function AppNavbar() {
-  const isMobile = useIsMobile();
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [openMenu, setOpenMenu] = useState<string | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const activeModule = getActiveModule(location.pathname);
 
-  // Fechar mega-menu na navegação
   useEffect(() => {
-    setOpenMenu(null);
-    setMobileOpen(false);
-  }, [location.pathname]);
+    supabase.auth.getUser().then(({ data }) => setUser(data.user));
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+      setUser(session?.user ?? null);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
 
-  // Atalho Ctrl/Cmd+J → Consulta CPF/CNPJ
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "j") {
-        e.preventDefault();
-        navigate("/consulta");
-      }
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [navigate]);
+  const subNav =
+    activeModule === "Comercial" ? CRM_SUBNAV :
+    activeModule === "Crédito"   ? CREDITO_SUBNAV :
+    null;
 
-  const handleMouseEnter = (title: string) => {
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    setOpenMenu(title);
-  };
-
-  const handleMouseLeave = () => {
-    timeoutRef.current = setTimeout(() => setOpenMenu(null), 150);
-  };
-
-  /* ── Mobile ── */
-  if (isMobile) {
-    return (
-      <>
-        <header className="h-14 flex items-center justify-between px-4 bg-sink-deep border-b border-sink-deep-4/60 shrink-0">
-          <div className="flex items-center gap-2.5">
-            <img src="/logo.svg" alt="CreditoHub" className="h-7 w-7" />
-            <span className="text-[15px] font-bold text-white tracking-tight">
-              Credito<span className="text-sink-mint">Hub</span>
-            </span>
-          </div>
-          <button
-            onClick={() => setMobileOpen(true)}
-            className="p-1.5 rounded-sink-sm text-sink-cream/70 hover:text-sink-cream hover:bg-sink-deep-3 transition-colors"
-          >
-            <Menu className="h-5 w-5" />
-          </button>
-        </header>
-        <MobileNav open={mobileOpen} onOpenChange={setMobileOpen} />
-      </>
-    );
-  }
-
-  /* ── Desktop ── */
   return (
-    <header className="h-14 flex items-center px-4 gap-2 bg-sink-deep border-b border-sink-deep-4/60 shrink-0">
+    <>
+      <header
+        className="flex items-center gap-6 px-6 flex-shrink-0"
+        style={{
+          height: "var(--topbar-height)",
+          background: "var(--marinho)",
+          fontFamily: "var(--font-sans)",
+        }}
+      >
+        {/* Logo → Painel */}
+        <button onClick={() => navigate("/")} className="flex-shrink-0 hover:opacity-85 transition-opacity">
+          <Logo />
+        </button>
 
-      {/* Wordmark */}
-      <Link to="/" className="flex items-center gap-2.5 shrink-0 mr-1">
-        <img src="/logo.svg" alt="CreditoHub" className="h-7 w-7" />
-        <span className="text-[15px] font-bold text-white tracking-tight hidden lg:inline">
-          Credito<span className="text-sink-mint">Hub</span>
-        </span>
-      </Link>
+        {/* Módulos */}
+        <nav className="flex items-center gap-1 ml-1">
+          {MODULES.map(({ label, path }) => {
+            const isActive = activeModule === label;
+            return (
+              <button
+                key={label}
+                onClick={() => navigate(path)}
+                className={cn(
+                  "px-[14px] py-2 rounded-[999px] text-[13px] font-medium transition-all duration-200 whitespace-nowrap",
+                  isActive
+                    ? "bg-[rgba(250,250,247,0.13)] text-[#FAFAF7] border border-[rgba(250,250,247,0.18)]"
+                    : "text-[rgba(250,250,247,0.62)] hover:bg-[rgba(255,255,255,0.08)] hover:text-[rgba(250,250,247,0.85)] border border-transparent"
+                )}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </nav>
 
-      {/* CTA principal: Consulta */}
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Link
-            to="/consulta"
-            className={cn(
-              "flex items-center gap-1.5 px-2.5 py-1.5 rounded-sink-sm text-[13px] font-semibold transition-colors border shrink-0",
-              location.pathname.startsWith("/consulta")
-                ? "bg-sink-mint text-sink-deep border-sink-mint"
-                : "bg-sink-mint/15 text-sink-cream border-sink-mint/40 hover:bg-sink-mint/25 hover:text-white"
-            )}
+        {/* Spacer */}
+        <div className="flex-1" />
+
+        {/* Search */}
+        <button
+          className="hidden md:flex items-center gap-2 px-[14px] py-2 rounded-[999px] text-[12px] text-[rgba(250,250,247,0.52)] transition-colors hover:bg-[rgba(255,255,255,0.1)]"
+          style={{ background: "rgba(255,255,255,0.06)", minWidth: 200 }}
+          onClick={() => navigate("/consulta")}
+        >
+          <span style={{ opacity: 0.6, fontSize: 15 }}>⌕</span>
+          <span>Buscar cedente, NF, análise…</span>
+          <span
+            className="ml-auto font-mono text-[10px] px-[6px] py-[1px] rounded"
+            style={{ border: "1px solid rgba(255,255,255,0.16)" }}
           >
-            <SearchCheck className="h-4 w-4" />
-            <span className="hidden xl:inline">Nova Consulta</span>
-            <kbd className="hidden 2xl:inline-flex items-center gap-0.5 ml-1 px-1.5 py-0.5 rounded text-[10px] font-mono bg-white/10 border border-white/15">
-              Ctrl+J
-            </kbd>
-          </Link>
-        </TooltipTrigger>
-        <TooltipContent side="bottom" className="text-xs">
-          Consulta CPF/CNPJ — origem do fluxo (Ctrl+J)
-        </TooltipContent>
-      </Tooltip>
+            ⌘K
+          </span>
+        </button>
 
-      {/* Divisor */}
-      <div className="h-5 w-px bg-sink-deep-4 shrink-0" />
+        {/* Nova Consulta */}
+        <button
+          onClick={() => navigate("/consulta")}
+          className="hidden sm:flex items-center gap-1.5 px-[14px] py-[8px] rounded-[999px] text-[13px] font-medium flex-shrink-0 transition-opacity hover:opacity-90"
+          style={{ background: "#00D49A", color: "#0A1538" }}
+        >
+          + Nova Consulta
+        </button>
 
-      {/* Links diretos + grupos */}
-      <nav className="flex items-center gap-0.5 min-w-0 flex-1">
-        {directLinks.map((item) => {
-          const isActive =
-            item.url === "/"
-              ? location.pathname === "/"
-              : location.pathname.startsWith(item.url);
-          return (
-            <Tooltip key={item.url}>
-              <TooltipTrigger asChild>
-                <Link
-                  to={item.url}
-                  className={cn(
-                    "flex items-center gap-1.5 px-2.5 py-2 text-[13px] font-medium rounded-sink-sm transition-colors",
-                    isActive
-                      ? "text-white bg-white/10"
-                      : "text-sink-cream/70 hover:text-sink-cream hover:bg-white/8"
-                  )}
-                >
-                  <item.icon className="h-4 w-4" />
-                  <span className="hidden 2xl:inline">{item.title}</span>
-                </Link>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="2xl:hidden text-xs">
-                {item.title}
-              </TooltipContent>
-            </Tooltip>
-          );
-        })}
+        {/* Notifications */}
+        <NotificationsDropdown />
 
-        <div className="h-5 w-px bg-sink-deep-4 mx-1" />
+        {/* User */}
+        <UserDropdown user={user} navigate={navigate} />
+      </header>
 
-        {groups.map((group) => (
-          <MegaMenuDropdown
-            key={group.title}
-            group={group}
-            isOpen={openMenu === group.title}
-            onMouseEnter={() => handleMouseEnter(group.title)}
-            onMouseLeave={handleMouseLeave}
-          />
-        ))}
-      </nav>
-
-      {/* Direita */}
-      <div className="ml-auto flex items-center gap-1 shrink-0">
-        {/* Busca global — adaptada para fundo escuro */}
-        <GlobalSearch />
-        <NotificationBell />
-
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Link
-              to="/configuracoes"
-              className={cn(
-                "flex items-center justify-center h-8 w-8 rounded-sink-sm transition-colors",
-                location.pathname.startsWith("/configuracoes")
-                  ? "text-white bg-white/10"
-                  : "text-sink-cream/60 hover:text-sink-cream hover:bg-white/8"
-              )}
-            >
-              <Settings className="h-4 w-4" />
-            </Link>
-          </TooltipTrigger>
-          <TooltipContent side="bottom" className="text-xs">Configurações</TooltipContent>
-        </Tooltip>
-
-        <div className="h-5 w-px bg-sink-deep-4 mx-0.5" />
-        <UserAvatar />
-      </div>
-    </header>
+      {/* Sub-nav condicional */}
+      {subNav && (
+        <SubNav items={subNav} pathname={location.pathname} navigate={navigate} />
+      )}
+    </>
   );
 }

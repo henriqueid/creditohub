@@ -1,3 +1,15 @@
+export function cleanDocument(value: string): string {
+  return value.replace(/\D/g, "");
+}
+
+export function maskCNPJ(value: string): string {
+  return cleanDocument(value).slice(0, 14)
+    .replace(/(\d{2})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d)/, "$1/$2")
+    .replace(/(\d{4})(\d)/, "$1-$2");
+}
+
 export function formatCNPJ(value: string): string {
   const digits = value.replace(/\D/g, "").slice(0, 14);
   if (digits.length <= 2) return digits;

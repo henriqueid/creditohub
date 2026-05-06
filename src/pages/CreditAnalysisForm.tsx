@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useCallback, useMemo } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,23 +10,26 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
+import { useCommitteeRequirements, evaluateReadiness, DEFAULT_REQUIRED_FIELDS } from "@/hooks/useCommitteeRequirements";
 import { formatBRL } from "@/lib/formatters";
 import {
   ArrowLeft, Plus, Trash2, Send, Printer, Save, Building2, BarChart3,
   Users, ShieldCheck, TrendingUp, AlertTriangle, Settings2, FileCheck,
   Sparkles, Brain, Target, Gauge, FileText, Zap, ChevronDown, Check, Eye, EyeOff,
-  Landmark, Handshake, MapPin, DollarSign, Scale, Activity
+  Landmark, Handshake, MapPin, DollarSign, Scale, Activity, ChevronsDownUp, ChevronsUpDown
 } from "lucide-react";
 import { StatusBadge } from "@/components/StatusBadge";
 import { fetchPrintData, generatePrintHtml, openPrintWindow } from "@/lib/pdf-export";
 import { cn } from "@/lib/utils";
 import { ScoreGauge } from "@/components/ScoreGauge";
 import { RiskIndicator } from "@/components/RiskIndicator";
-import { ConcentrationChart } from "@/components/ConcentrationChart";
-import { SectionFileUpload } from "@/components/SectionFileUpload";
-import { AIInsightsPanel } from "@/components/AIInsightsPanel";
-import { AnalysisDealsLink } from "@/components/AnalysisDealsLink";
-import { FinancialIndicatorsPanel } from "@/components/FinancialIndicatorsPanel";
+import { ConcentrationChart } from "@/components/credit/ConcentrationChart";
+import { SectionFileUpload } from "@/components/credit/SectionFileUpload";
+import { AIInsightsPanel } from "@/components/credit/AIInsightsPanel";
+import { AnalysisDealsLink } from "@/components/credit/AnalysisDealsLink";
+import { FinancialIndicatorsPanel } from "@/components/credit/FinancialIndicatorsPanel";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import {
   classifyRisk, suggestLimit, calculateConcentration,
   calculateSociosTotal, calculateLimitUtilization, getScoreGrade,
@@ -63,9 +66,9 @@ type SectionAttachments = Record<string, FileAttachment[]>;
 function Field({ label, children, hint }: { label: string; children: React.ReactNode; hint?: string }) {
   return (
     <div className="space-y-1.5">
-      <label className="font-mono text-[10px] uppercase tracking-wider text-sink-ink/60 font-medium">{label}</label>
+      <label className="font-mono text-[10px] uppercase tracking-wider text-sink-deep/60 font-medium">{label}</label>
       {children}
-      {hint && <p className="font-mono text-[10px] text-sink-ink/40">{hint}</p>}
+      {hint && <p className="font-mono text-[10px] text-sink-deep/40">{hint}</p>}
     </div>
   );
 }
@@ -75,7 +78,7 @@ function FieldGroup({ children, cols = 2 }: { children: React.ReactNode; cols?: 
   return <div className={`grid ${gridCols} gap-4`}>{children}</div>;
 }
 
-function SectionWrapper({ title, icon: Icon, children, section, analysisId, attachments, onAttachmentsChange, onDataExtracted, analysisContext, disabled, defaultOpen = true, summary, compactMode }: {
+function SectionWrapper({ title, icon: Icon, children, section, analysisId, attachments, onAttachmentsChange, onDataExtracted, analysisContext, disabled, defaultOpen = true, summary, compactMode, bulkToggle }: {
   title: string;
   icon: React.ElementType;
   children: React.ReactNode;
@@ -89,10 +92,19 @@ function SectionWrapper({ title, icon: Icon, children, section, analysisId, atta
   defaultOpen?: boolean;
   summary?: string[];
   compactMode?: boolean;
+  bulkToggle?: { open: boolean; version: number };
 }) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
   const attachCount = attachments.length;
   const showContent = compactMode ? false : isOpen;
+
+  // Reage ao trigger global de "Contrair tudo / Expandir tudo"
+  useEffect(() => {
+    if (bulkToggle && bulkToggle.version > 0) {
+      setIsOpen(bulkToggle.open);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bulkToggle?.version]);
 
   return (
     <motion.div
@@ -101,17 +113,30 @@ function SectionWrapper({ title, icon: Icon, children, section, analysisId, atta
       viewport={{ once: true, margin: "-20px" }}
       transition={{ duration: 0.3, ease: "easeOut" }}
     >
-      <div className="bg-sink-paper border border-sink-fog rounded-sink-lg shadow-sink-sm overflow-hidden hover:shadow-sink-md transition-shadow duration-300">
+      <div
+        className="bg-sink-paper rounded-sink-lg overflow-hidden transition-all duration-300 hover:shadow-md"
+        style={{
+          borderLeft: "4px solid #00D49A",
+          border: "1px solid rgba(10,21,56,0.10)",
+          borderLeftWidth: 4,
+          borderLeftColor: "#00D49A",
+          boxShadow: "0 1px 3px rgba(10,21,56,0.05), 0 4px 12px -4px rgba(10,21,56,0.06)",
+        }}
+      >
         <button
           type="button"
           onClick={() => setIsOpen(!isOpen)}
-          className="w-full flex items-center justify-between px-5 py-3.5 bg-sink-cream/60 hover:bg-sink-cream transition-colors"
+          className="w-full flex items-center justify-between px-5 py-3.5 transition-colors"
+          style={{
+            background: "linear-gradient(180deg, rgba(10,21,56,0.05) 0%, rgba(10,21,56,0.025) 100%)",
+            borderBottom: "1px solid rgba(10,21,56,0.06)",
+          }}
         >
           <div className="flex items-center gap-2.5">
-            <div className="h-7 w-7 rounded-sink-md bg-sink-mint/10 flex items-center justify-center">
-              <Icon className="h-3.5 w-3.5 text-sink-mint" />
+            <div className="h-8 w-8 rounded-sink-md flex items-center justify-center" style={{ background: "rgba(0,212,154,0.15)", border: "1px solid rgba(0,212,154,0.25)" }}>
+              <Icon className="h-4 w-4 text-sink-mint" />
             </div>
-            <h2 className="font-sans text-sm font-semibold text-sink-ink">{title}</h2>
+            <h2 className="font-sans text-[14px] font-semibold text-sink-deep tracking-tight">{title}</h2>
             {attachCount > 0 && (
               <span className="font-mono text-[10px] font-semibold bg-sink-mint/10 text-sink-deep px-1.5 py-0.5 rounded-sink-pill border border-sink-mint/20">
                 {attachCount} {attachCount === 1 ? 'anexo' : 'anexos'}
@@ -122,7 +147,7 @@ function SectionWrapper({ title, icon: Icon, children, section, analysisId, atta
             animate={{ rotate: showContent ? 180 : 0 }}
             transition={{ duration: 0.2 }}
           >
-            <ChevronDown className="h-4 w-4 text-sink-ink/40" />
+            <ChevronDown className="h-4 w-4 text-sink-deep/40" />
           </motion.div>
         </button>
 
@@ -139,8 +164,8 @@ function SectionWrapper({ title, icon: Icon, children, section, analysisId, atta
               <div className="px-5 py-2.5 bg-sink-cream/30 border-t border-sink-fog/40">
                 <div className="flex flex-wrap gap-x-4 gap-y-1">
                   {summary.map((item, i) => (
-                    <span key={i} className="font-mono text-[11px] text-sink-ink/50">
-                      <span className="text-sink-ink font-semibold">{item.split(": ")[0]}:</span>{" "}
+                    <span key={i} className="font-mono text-[11px] text-sink-deep/50">
+                      <span className="text-sink-deep font-semibold">{item.split(": ")[0]}:</span>{" "}
                       {item.split(": ").slice(1).join(": ") || "—"}
                     </span>
                   ))}
@@ -157,7 +182,7 @@ function SectionWrapper({ title, icon: Icon, children, section, analysisId, atta
               className="overflow-hidden"
             >
               <div className="px-5 py-2 bg-sink-cream/30 border-t border-sink-fog/40">
-                <span className="font-mono text-[11px] text-sink-ink/40 italic">Nenhum dado preenchido</span>
+                <span className="font-mono text-[11px] text-sink-deep/40 italic">Nenhum dado preenchido</span>
               </div>
             </motion.div>
           )}
@@ -199,10 +224,19 @@ export default function CreditAnalysisForm() {
   const { id } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [searchParams] = useSearchParams();
   const isEditing = !!id && id !== "nova";
 
   const [activeTab, setActiveTab] = useState("dossie");
   const [compactMode, setCompactMode] = useState(false);
+  const [bulkToggle, setBulkToggle] = useState<{ open: boolean; version: number }>({ open: true, version: 0 });
+  const { data: committeeRequiredFields } = useCommitteeRequirements();
+
+  // Novo cedente rápido
+  const [newClientOpen, setNewClientOpen] = useState(false);
+  const [newClientRazao, setNewClientRazao] = useState("");
+  const [newClientCnpj, setNewClientCnpj] = useState("");
+  const [newClientCreateDeal, setNewClientCreateDeal] = useState(false);
 
   // Form state
   const [clientId, setClientId] = useState("");
@@ -248,7 +282,7 @@ export default function CreditAnalysisForm() {
   const [tempoAtividade, setTempoAtividade] = useState("");
   const [faturamentoDetalhado, setFaturamentoDetalhado] = useState("");
   const [condicoesEspeciais, setCondicoesEspeciais] = useState("");
-  const [modalidadeOperacao, setModalidadeOperacao] = useState("");
+  const [modalidadesOperacao, setModalidadesOperacao] = useState<string[]>([]);
   const [taxaSugerida, setTaxaSugerida] = useState("");
   const [fonteInformacao, setFonteInformacao] = useState("");
   const [sectionAttachments, setSectionAttachments] = useState<SectionAttachments>({});
@@ -392,11 +426,62 @@ export default function CreditAnalysisForm() {
       setTempoAtividade((analysis as any).tempo_atividade || "");
       setFaturamentoDetalhado((analysis as any).faturamento_detalhado || "");
       setCondicoesEspeciais((analysis as any).condicoes_especiais || "");
-      setModalidadeOperacao((analysis as any).modalidade_operacao || "");
+      // modalidade_operacao pode ser string (legado) ou comma-separated
+      const rawMod = (analysis as any).modalidade_operacao || "";
+      setModalidadesOperacao(rawMod ? rawMod.split(",").map((s: string) => s.trim()).filter(Boolean) : []);
       setTaxaSugerida((analysis as any).taxa_sugerida?.toString() || "");
       setFonteInformacao((analysis as any).fonte_informacao || "");
     }
   }, [analysis]);
+
+  // Pre-select cedente from URL param (e.g. /analises/nova?client_id=X)
+  useEffect(() => {
+    if (!isEditing) {
+      const cid = searchParams.get("client_id");
+      if (cid) setClientId(cid);
+    }
+  }, [isEditing, searchParams]);
+
+  // Se o cedente escolhido já tem análise em andamento (draft / em comitê),
+  // redireciona pra ela em vez de criar duplicada.
+  // Senão, pré-preenche limite e volume do deal vinculado mais recente (se houver).
+  useEffect(() => {
+    if (isEditing || !clientId) return;
+    let cancelled = false;
+    (async () => {
+      const [analysisRes, dealRes] = await Promise.all([
+        supabase
+          .from("credit_analysis")
+          .select("id, status")
+          .eq("client_id", clientId)
+          .in("status", ["draft", "in_committee"])
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+        supabase
+          .from("deals")
+          .select("value, monthly_volume")
+          .eq("client_id", clientId)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+      ]);
+      if (cancelled) return;
+      if (analysisRes.data?.id) {
+        toast({ title: "Análise existente aberta", description: "Este cedente já tinha análise em andamento." });
+        navigate(`/analises/${analysisRes.data.id}`, { replace: true });
+        return;
+      }
+      // Pré-preenche limite/volume do deal mais recente — só se ainda não preencheu manual
+      const deal = dealRes.data as { value?: number | null; monthly_volume?: number | null } | null;
+      if (deal) {
+        if (deal.value && !limiteSugerido) setLimiteSugerido(String(deal.value));
+        if (deal.monthly_volume && !volumeEstimado) setVolumeEstimado(String(deal.monthly_volume));
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clientId, isEditing, navigate]);
 
   useEffect(() => {
     if (existingSacados.length) {
@@ -501,7 +586,7 @@ export default function CreditAnalysisForm() {
         tempo_atividade: tempoAtividade || null,
         faturamento_detalhado: faturamentoDetalhado || null,
         condicoes_especiais: condicoesEspeciais || null,
-        modalidade_operacao: modalidadeOperacao || null,
+        modalidade_operacao: modalidadesOperacao.length > 0 ? modalidadesOperacao.join(",") : null,
         taxa_sugerida: taxaSugerida ? parseFloat(taxaSugerida) : null,
         fonte_informacao: fonteInformacao || null,
       } as any;
@@ -554,6 +639,47 @@ export default function CreditAnalysisForm() {
     },
     onError: (err: Error) => {
       toast({ title: "Erro", description: err.message, variant: "destructive" });
+    },
+  });
+
+  const createClientMutation = useMutation({
+    mutationFn: async () => {
+      if (!newClientRazao.trim()) throw new Error("Informe a razão social");
+      const { data, error } = await supabase
+        .from("clients")
+        .insert({ razao_social: newClientRazao.trim(), cnpj_cpf: newClientCnpj.trim() || null })
+        .select("id")
+        .single();
+      if (error) throw error;
+
+      if (newClientCreateDeal) {
+        const { data: stages } = await supabase
+          .from("deal_stages")
+          .select("id")
+          .eq("is_active", true)
+          .order("order", { ascending: true })
+          .limit(1);
+        if (stages && stages[0]) {
+          await supabase.from("deals").insert({
+            client_id: data.id,
+            stage_id: stages[0].id,
+            title: newClientRazao.trim(),
+          });
+        }
+      }
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["clients-select"] });
+      setClientId(data.id);
+      setNewClientOpen(false);
+      setNewClientRazao("");
+      setNewClientCnpj("");
+      setNewClientCreateDeal(false);
+      toast({ title: newClientCreateDeal ? "Cedente cadastrado e deal criado no Pipeline" : "Cedente cadastrado com sucesso" });
+    },
+    onError: (err: Error) => {
+      toast({ title: "Erro ao cadastrar cedente", description: err.message, variant: "destructive" });
     },
   });
 
@@ -631,7 +757,7 @@ export default function CreditAnalysisForm() {
       },
       {
         key: "operacao", label: "Operação", icon: Settings2,
-        fields: [limiteSugerido, prazoMedioPermitido, concentracaoMaxima, garantias, modalidadeOperacao, taxaSugerida, condicoesEspeciais],
+        fields: [limiteSugerido, prazoMedioPermitido, concentracaoMaxima, garantias, modalidadesOperacao.join(","), taxaSugerida, condicoesEspeciais],
         required: [limiteSugerido],
       },
     ];
@@ -650,6 +776,52 @@ export default function CreditAnalysisForm() {
     const totalFields = sectionProgress.reduce((a, s) => a + s.total, 0);
     return totalFields > 0 ? Math.round((totalFilled / totalFields) * 100) : 0;
   }, [sectionProgress]);
+
+  const committeeReadiness = useMemo(() => {
+    const requiredKeys = committeeRequiredFields ?? DEFAULT_REQUIRED_FIELDS;
+
+    // Snapshot do form state em formato compatível com evaluateReadiness
+    const snapshot: Record<string, any> = {
+      client_id: clientId,
+      responsavel_comercial: responsavelComercial,
+      analista_credito: analistaCredito,
+      tempo_atividade: tempoAtividade,
+      faturamento_medio: faturamentoMedio,
+      volume_estimado: volumeEstimado,
+      prazo_medio_titulos: prazoMedioTitulos,
+      numero_funcionarios: numeroFuncionarios,
+      capital_social: capitalSocial,
+      historico_socios: historicoSocios,
+      credit_score: creditScore,
+      protestos: protestos,
+      pendencias: pendencias,
+      acoes_judiciais: acoesJudiciais,
+      referencias_bancarias: referenciasBancarias,
+      referencias_comerciais: referenciasComerciais,
+      analise_faturamento: analiseFaturamento,
+      estrutura_financeira: estruturaFinanceira,
+      endividamento: endividamento,
+      riscos: riscos,
+      pontos_positivos: pontosPositivos,
+      limite_sugerido: limiteSugerido,
+      modalidade_operacao: modalidadesOperacao.length > 0 ? modalidadesOperacao.join(",") : "",
+      taxa_sugerida: taxaSugerida,
+      garantias: garantias,
+      parecer_analista: parecerAnalista,
+      recommendation: recommendation,
+    };
+    return evaluateReadiness(requiredKeys, snapshot, {
+      sacadosCount: sacados.length,
+      sociosCount: socios.length,
+    });
+  }, [
+    committeeRequiredFields, clientId, responsavelComercial, analistaCredito, tempoAtividade,
+    faturamentoMedio, volumeEstimado, prazoMedioTitulos, numeroFuncionarios, capitalSocial,
+    historicoSocios, creditScore, protestos, pendencias, acoesJudiciais,
+    referenciasBancarias, referenciasComerciais, analiseFaturamento, estruturaFinanceira,
+    endividamento, riscos, pontosPositivos, limiteSugerido, modalidadesOperacao,
+    taxaSugerida, garantias, parecerAnalista, recommendation, sacados.length, socios.length,
+  ]);
 
   const sectionSummaries = useMemo(() => {
     const f = (v: string, label: string) => v.trim() ? `${label}: ${v.trim().substring(0, 60)}${v.trim().length > 60 ? "…" : ""}` : null;
@@ -705,7 +877,7 @@ export default function CreditAnalysisForm() {
       ].filter(Boolean) as string[],
       operacao: [
         limiteNum ? `Limite: ${formatBRL(limiteNum)}` : null,
-        f(modalidadeOperacao, "Modalidade"),
+        modalidadesOperacao.length > 0 ? `Modalidade: ${modalidadesOperacao.join(", ")}` : null,
         taxaSugerida ? `Taxa: ${taxaSugerida}%` : null,
         prazoMedioPermitido ? `Prazo: ${prazoMedioPermitido} dias` : null,
         concentracaoMaxima ? `Conc. máx: ${concentracaoMaxima}%` : null,
@@ -713,10 +885,10 @@ export default function CreditAnalysisForm() {
         f(condicoesEspeciais, "Condições"),
       ].filter(Boolean) as string[],
     };
-  }, [selectedClient, dataAnalise, responsavelComercial, analistaCredito, tempoAtividade, tipoImovelSede, numeroFuncionarios, fatNum, volNum, receitaLiquida, capitalSocial, prazoMedioTitulos, sacados.length, socios.length, sociosTotal, historicoSocios, scoreNum, grade, protestos, pendencias, chequesSemFundo, acoesJudiciais, restricoesCnpj, historicoPagamentos, referenciasBancarias, referenciasComerciais, fonteInformacao, analiseFaturamento, estruturaFinanceira, endividamento, dependenciaClientes, margemLiquida, indiceLiquidez, riscos, pontosPositivos, limiteNum, modalidadeOperacao, taxaSugerida, prazoMedioPermitido, concentracaoMaxima, garantias, condicoesEspeciais]);
+  }, [selectedClient, dataAnalise, responsavelComercial, analistaCredito, tempoAtividade, tipoImovelSede, numeroFuncionarios, fatNum, volNum, receitaLiquida, capitalSocial, prazoMedioTitulos, sacados.length, socios.length, sociosTotal, historicoSocios, scoreNum, grade, protestos, pendencias, chequesSemFundo, acoesJudiciais, restricoesCnpj, historicoPagamentos, referenciasBancarias, referenciasComerciais, fonteInformacao, analiseFaturamento, estruturaFinanceira, endividamento, dependenciaClientes, margemLiquida, indiceLiquidez, riscos, pontosPositivos, limiteNum, modalidadesOperacao, taxaSugerida, prazoMedioPermitido, concentracaoMaxima, garantias, condicoesEspeciais]);
 
   return (
-    <div className="flex h-[calc(100vh-3.5rem)] overflow-hidden">
+    <div className="flex h-[calc(100vh-3.5rem)] overflow-hidden" style={{ background: "#EDEEE7" }}>
       {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top bar */}
@@ -725,16 +897,16 @@ export default function CreditAnalysisForm() {
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 rounded-sink-md text-sink-ink/60 hover:text-sink-ink hover:bg-sink-cream"
+              className="h-8 w-8 rounded-sink-md text-sink-deep/60 hover:text-sink-deep hover:bg-sink-cream"
               onClick={() => navigate("/analises")}
             >
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <div className="min-w-0">
-              <h1 className="font-sans font-bold text-base text-sink-ink truncate">
+              <h1 className="font-sans font-bold text-base text-sink-deep truncate">
                 {isEditing ? (selectedClient?.razao_social || "Dossiê de Crédito") : "Novo Dossiê de Crédito"}
               </h1>
-              {isEditing && <p className="font-mono text-[10px] uppercase tracking-wider text-sink-ink/40">Dossiê inteligente de análise de crédito</p>}
+              {isEditing && <p className="font-mono text-[10px] uppercase tracking-wider text-sink-deep/40">Dossiê inteligente de análise de crédito</p>}
             </div>
             {isEditing && <StatusBadge status={status} />}
           </div>
@@ -744,7 +916,7 @@ export default function CreditAnalysisForm() {
               <Button
                 variant="outline"
                 size="sm"
-                className="text-xs border-sink-fog bg-transparent text-sink-ink/70 hover:bg-sink-cream rounded-sink-md"
+                className="text-xs border-sink-fog bg-transparent text-sink-deep/70 hover:bg-sink-cream rounded-sink-md"
                 onClick={async () => {
                   try {
                     const data = await fetchPrintData(id!);
@@ -772,11 +944,14 @@ export default function CreditAnalysisForm() {
                 {isEditing && (
                   <Button
                     size="sm"
-                    className="text-xs bg-sink-deep text-sink-cream hover:bg-sink-deep-2 rounded-sink-md font-semibold"
+                    title={committeeReadiness.pct < 100 ? `Faltando: ${committeeReadiness.checks.filter(c => !c.ok).map(c => c.label).join(", ")}` : "Enviar ao Comitê"}
+                    className="text-xs rounded-sink-md font-semibold"
+                    style={committeeReadiness.pct === 100 ? { background: "#00D49A", color: "#0A1538" } : { background: "rgba(10,21,56,0.1)", color: "rgba(10,21,56,0.5)" }}
                     onClick={() => sendToCommittee.mutate()}
-                    disabled={sendToCommittee.isPending || !recommendation}
+                    disabled={sendToCommittee.isPending || committeeReadiness.pct < 100}
                   >
-                    <Send className="h-3.5 w-3.5 mr-1" /> Comitê
+                    <Send className="h-3.5 w-3.5 mr-1" />
+                    {committeeReadiness.pct < 100 ? `${committeeReadiness.pct}% pronto` : "Enviar ao Comitê"}
                   </Button>
                 )}
               </>
@@ -786,7 +961,11 @@ export default function CreditAnalysisForm() {
 
         {/* KPI Strip */}
         <motion.div
-          className="shrink-0 border-b border-sink-fog bg-sink-cream/50 px-6 py-2.5"
+          className="shrink-0 px-6 py-2.5"
+          style={{
+            background: "linear-gradient(180deg, #FBFBF7 0%, #F0F1EB 100%)",
+            borderBottom: "1px solid rgba(10,21,56,0.10)",
+          }}
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.15 }}
@@ -795,7 +974,7 @@ export default function CreditAnalysisForm() {
             <div className="flex items-center gap-2.5 shrink-0">
               <ScoreGauge score={scoreNum} size="sm" />
               <div>
-                <p className="font-mono text-[10px] uppercase tracking-wider text-sink-ink/40">Risco</p>
+                <p className="font-mono text-[10px] uppercase tracking-wider text-sink-deep/40">Risco</p>
                 <RiskIndicator score={scoreNum} compact />
               </div>
             </div>
@@ -803,8 +982,8 @@ export default function CreditAnalysisForm() {
             <div className="h-8 w-px bg-sink-fog shrink-0" />
 
             <div className="shrink-0">
-              <p className="font-mono text-[10px] uppercase tracking-wider text-sink-ink/40">Limite Sugerido</p>
-              <p className="font-mono text-base font-bold tabular-nums text-sink-ink">{limiteNum ? formatBRL(limiteNum) : "—"}</p>
+              <p className="font-mono text-[10px] uppercase tracking-wider text-sink-deep/40">Limite Sugerido</p>
+              <p className="font-mono text-base font-bold tabular-nums text-sink-deep">{limiteNum ? formatBRL(limiteNum) : "—"}</p>
               {autoLimit > 0 && !limiteNum && (
                 <button type="button" className="font-mono text-[10px] text-sink-mint hover:underline" onClick={() => setLimiteSugerido(autoLimit.toString())}>
                   <Zap className="h-2.5 w-2.5 inline mr-0.5" />Sugerir {formatBRL(autoLimit)}
@@ -815,7 +994,7 @@ export default function CreditAnalysisForm() {
             <div className="h-8 w-px bg-sink-fog shrink-0" />
 
             <div className="shrink-0">
-              <p className="font-mono text-[10px] uppercase tracking-wider text-sink-ink/40">Utilização</p>
+              <p className="font-mono text-[10px] uppercase tracking-wider text-sink-deep/40">Utilização</p>
               <div className="flex items-center gap-2">
                 <div className="w-16 h-1.5 rounded-full bg-sink-fog overflow-hidden">
                   <div
@@ -823,15 +1002,15 @@ export default function CreditAnalysisForm() {
                     style={{ width: `${Math.min(limitUtil, 100)}%` }}
                   />
                 </div>
-                <span className="font-mono text-xs font-bold tabular-nums text-sink-ink">{limitUtil.toFixed(0)}%</span>
+                <span className="font-mono text-xs font-bold tabular-nums text-sink-deep">{limitUtil.toFixed(0)}%</span>
               </div>
             </div>
 
             <div className="h-8 w-px bg-sink-fog shrink-0" />
 
             <div className="shrink-0">
-              <p className="font-mono text-[10px] uppercase tracking-wider text-sink-ink/40">Concentração</p>
-              <p className={cn("font-mono text-xs font-semibold tabular-nums", concentration.alerts.length > 0 ? "text-sink-danger" : "text-sink-ink")}>
+              <p className="font-mono text-[10px] uppercase tracking-wider text-sink-deep/40">Concentração</p>
+              <p className={cn("font-mono text-xs font-semibold tabular-nums", concentration.alerts.length > 0 ? "text-sink-danger" : "text-sink-deep")}>
                 Max: {concentration.maxSingleConcentration.toFixed(1)}%
               </p>
             </div>
@@ -839,8 +1018,8 @@ export default function CreditAnalysisForm() {
             <div className="h-8 w-px bg-sink-fog shrink-0" />
 
             <div className="shrink-0">
-              <p className="font-mono text-[10px] uppercase tracking-wider text-sink-ink/40">Societária</p>
-              <p className={cn("font-mono text-xs font-semibold tabular-nums", !sociosTotal.isValid && socios.length > 0 ? "text-sink-danger" : "text-sink-ink")}>
+              <p className="font-mono text-[10px] uppercase tracking-wider text-sink-deep/40">Societária</p>
+              <p className={cn("font-mono text-xs font-semibold tabular-nums", !sociosTotal.isValid && socios.length > 0 ? "text-sink-danger" : "text-sink-deep")}>
                 {socios.length} sócios • {sociosTotal.totalParticipacao.toFixed(1)}%
               </p>
             </div>
@@ -848,7 +1027,7 @@ export default function CreditAnalysisForm() {
             <div className="h-8 w-px bg-sink-fog shrink-0" />
 
             <div className="shrink-0">
-              <p className="font-mono text-[10px] uppercase tracking-wider text-sink-ink/40">Score Global</p>
+              <p className="font-mono text-[10px] uppercase tracking-wider text-sink-deep/40">Score Global</p>
               <p className={cn("font-mono text-xs font-bold tabular-nums",
                 overallRiskScore >= 70 ? "text-sink-mint" : overallRiskScore >= 40 ? "text-sink-warn" : "text-sink-danger"
               )}>
@@ -859,15 +1038,15 @@ export default function CreditAnalysisForm() {
             <div className="h-8 w-px bg-sink-fog shrink-0" />
 
             <div className="shrink-0">
-              <p className="font-mono text-[10px] uppercase tracking-wider text-sink-ink/40">Taxa IA</p>
-              <p className="font-mono text-xs font-semibold tabular-nums text-sink-ink">{autoRate}% a.m.</p>
+              <p className="font-mono text-[10px] uppercase tracking-wider text-sink-deep/40">Taxa IA</p>
+              <p className="font-mono text-xs font-semibold tabular-nums text-sink-deep">{autoRate}% a.m.</p>
             </div>
 
             <div className="h-8 w-px bg-sink-fog shrink-0" />
 
             <div className="shrink-0">
-              <p className="font-mono text-[10px] uppercase tracking-wider text-sink-ink/40">Anexos</p>
-              <p className="font-mono text-xs font-semibold tabular-nums flex items-center gap-1 text-sink-ink">
+              <p className="font-mono text-[10px] uppercase tracking-wider text-sink-deep/40">Anexos</p>
+              <p className="font-mono text-xs font-semibold tabular-nums flex items-center gap-1 text-sink-deep">
                 <FileText className="h-3 w-3 text-sink-mint" />
                 {Object.values(sectionAttachments).flat().length}
               </p>
@@ -890,7 +1069,13 @@ export default function CreditAnalysisForm() {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
-          <div className="shrink-0 px-6 pt-2 border-b border-sink-fog bg-sink-paper">
+          <div
+            className="shrink-0 px-6 pt-2"
+            style={{
+              background: "#FBFBF7",
+              borderBottom: "1px solid rgba(10,21,56,0.10)",
+            }}
+          >
             <TabsList className="h-9 bg-transparent gap-0 p-0">
               {[
                 { value: "dossie", icon: FileCheck, label: "Dossiê" },
@@ -906,7 +1091,7 @@ export default function CreditAnalysisForm() {
                     "font-mono text-[11px] px-4 rounded-none border-b-2 gap-1.5 transition-all h-9",
                     activeTab === value
                       ? "border-sink-mint text-sink-mint bg-transparent font-semibold"
-                      : "border-transparent text-sink-ink/50 hover:text-sink-ink hover:border-sink-fog"
+                      : "border-transparent text-sink-deep/50 hover:text-sink-deep hover:border-sink-fog"
                   )}
                 >
                   <Icon className="h-3.5 w-3.5" /> {label}
@@ -931,11 +1116,43 @@ export default function CreditAnalysisForm() {
                 initial={{ opacity: 0, y: -8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: 0.1 }}
-                className="bg-sink-paper border border-sink-fog rounded-sink-lg p-4 shadow-sink-sm"
+                className="bg-sink-paper rounded-sink-lg p-4"
+                style={{
+                  border: "1px solid rgba(10,21,56,0.10)",
+                  boxShadow: "0 1px 3px rgba(10,21,56,0.05), 0 4px 12px -4px rgba(10,21,56,0.06)",
+                }}
               >
                 <div className="flex items-center justify-between mb-3">
-                  <p className="font-mono text-[10px] uppercase tracking-wider text-sink-ink/50 font-semibold">Progresso do Dossiê</p>
-                  <div className="flex items-center gap-2">
+                  <p className="font-mono text-[10px] uppercase tracking-wider text-sink-deep/50 font-semibold">Progresso do Dossiê</p>
+                  <div className="flex items-center gap-1.5">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-6 font-mono text-[10px] gap-1 px-2 rounded-sink-md border-sink-fog bg-transparent text-sink-deep/60 hover:bg-sink-cream"
+                      onClick={() => {
+                        setCompactMode(false);
+                        setBulkToggle(p => ({ open: false, version: p.version + 1 }));
+                      }}
+                      title="Contrai todas as seções"
+                    >
+                      <ChevronsDownUp className="h-3 w-3" />
+                      Contrair tudo
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-6 font-mono text-[10px] gap-1 px-2 rounded-sink-md border-sink-fog bg-transparent text-sink-deep/60 hover:bg-sink-cream"
+                      onClick={() => {
+                        setCompactMode(false);
+                        setBulkToggle(p => ({ open: true, version: p.version + 1 }));
+                      }}
+                      title="Expande todas as seções"
+                    >
+                      <ChevronsUpDown className="h-3 w-3" />
+                      Expandir tudo
+                    </Button>
                     <Button
                       type="button"
                       variant={compactMode ? "default" : "outline"}
@@ -944,16 +1161,17 @@ export default function CreditAnalysisForm() {
                         "h-6 font-mono text-[10px] gap-1 px-2 rounded-sink-md",
                         compactMode
                           ? "bg-sink-mint text-sink-deep hover:bg-sink-mint-2 border-0"
-                          : "border-sink-fog bg-transparent text-sink-ink/60 hover:bg-sink-cream"
+                          : "border-sink-fog bg-transparent text-sink-deep/60 hover:bg-sink-cream"
                       )}
                       onClick={() => setCompactMode(!compactMode)}
+                      title="Modo compacto: mostra só resumos"
                     >
                       {compactMode ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
-                      {compactMode ? "Expandir" : "Compacto"}
+                      Resumo
                     </Button>
                     <span className={cn(
                       "font-mono text-xs font-bold tabular-nums px-2 py-0.5 rounded-sink-pill",
-                      overallProgress === 100 ? "bg-sink-mint/10 text-sink-deep" : "bg-sink-fog/30 text-sink-ink/50"
+                      overallProgress === 100 ? "bg-sink-mint/10 text-sink-deep" : "bg-sink-fog/30 text-sink-deep/50"
                     )}>
                       {overallProgress}%
                     </span>
@@ -988,20 +1206,20 @@ export default function CreditAnalysisForm() {
                           isComplete
                             ? "bg-sink-mint text-sink-deep"
                             : hasContent
-                              ? "bg-sink-cream-2 text-sink-ink"
-                              : "bg-sink-fog/40 text-sink-ink/40"
+                              ? "bg-sink-cream-2 text-sink-deep"
+                              : "bg-sink-fog/40 text-sink-deep/40"
                         )}>
                           {isComplete ? <Check className="h-3.5 w-3.5" /> : <Icon className="h-3.5 w-3.5" />}
                         </div>
                         <span className={cn(
                           "font-mono text-[10px] font-medium leading-tight",
-                          isComplete ? "text-sink-deep" : hasContent ? "text-sink-ink" : "text-sink-ink/40"
+                          isComplete ? "text-sink-deep" : hasContent ? "text-sink-deep" : "text-sink-deep/40"
                         )}>
                           {s.label}
                         </span>
                         <span className={cn(
                           "font-mono text-[9px] tabular-nums",
-                          isComplete ? "text-sink-mint" : "text-sink-ink/40"
+                          isComplete ? "text-sink-mint" : "text-sink-deep/40"
                         )}>
                           {s.filled}/{s.total}
                         </span>
@@ -1011,22 +1229,144 @@ export default function CreditAnalysisForm() {
                 </div>
               </motion.div>
 
+              {/* Prontidão para Comitê */}
+              {!isReadOnly && (
+                <motion.div
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, delay: 0.2 }}
+                  className="rounded-sink-lg border overflow-hidden shadow-sink-sm"
+                  style={{
+                    borderColor: committeeReadiness.pct === 100 ? "#00D49A" : committeeReadiness.pct >= 50 ? "#D9A300" : "rgba(10,21,56,0.10)",
+                    background: committeeReadiness.pct === 100 ? "rgba(0,212,154,0.05)" : "var(--paper)",
+                  }}
+                >
+                  <div className="px-4 py-3 flex items-center justify-between gap-3" style={{ borderBottom: "1px solid rgba(10,21,56,0.07)" }}>
+                    <div className="flex items-center gap-2">
+                      <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: "rgba(10,21,56,0.5)", fontWeight: 600 }}>
+                        Prontidão para Comitê
+                      </span>
+                    </div>
+                    <span style={{
+                      fontFamily: "var(--font-mono)", fontSize: 15, fontWeight: 700,
+                      color: committeeReadiness.pct === 100 ? "#00D49A" : committeeReadiness.pct >= 50 ? "#D9A300" : "#B0182A",
+                    }}>
+                      {committeeReadiness.pct}%
+                    </span>
+                  </div>
+                  <div className="px-4 py-3">
+                    <div style={{ height: 6, borderRadius: 99, background: "rgba(10,21,56,0.07)", overflow: "hidden", marginBottom: 10 }}>
+                      <div style={{
+                        height: "100%",
+                        width: `${committeeReadiness.pct}%`,
+                        borderRadius: 99,
+                        background: committeeReadiness.pct === 100 ? "#00D49A" : committeeReadiness.pct >= 50 ? "#D9A300" : "#B0182A",
+                        transition: "width 0.5s ease",
+                      }} />
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-1.5">
+                      {committeeReadiness.checks.map(c => (
+                        <div key={c.label} className="flex items-center gap-1.5">
+                          <span style={{ width: 6, height: 6, borderRadius: "50%", flexShrink: 0, background: c.ok ? "#00D49A" : "rgba(10,21,56,0.15)" }} />
+                          <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: c.ok ? "rgba(10,21,56,0.6)" : "rgba(10,21,56,0.4)" }}>
+                            {c.label}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
               {/* 1. Identificação */}
               <SectionWrapper title="Identificação do Cliente" icon={Building2} section="identificacao"
                 analysisId={isEditing ? id! : null} attachments={sectionAttachments.identificacao || []}
                 onAttachmentsChange={updateSectionAttachments("identificacao")}
                 onDataExtracted={handleDataExtracted} analysisContext={analysisDataForAI} disabled={isReadOnly}
-                compactMode={compactMode} summary={sectionSummaries.identificacao}
+                compactMode={compactMode} bulkToggle={bulkToggle} summary={sectionSummaries.identificacao}
               >
                 <FieldGroup cols={2}>
                   <Field label="Cedente *">
-                    <Select value={clientId} onValueChange={setClientId} disabled={isReadOnly}>
-                      <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Selecione o cedente" /></SelectTrigger>
-                      <SelectContent>
-                        {clients.map((c) => <SelectItem key={c.id} value={c.id}>{c.razao_social}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
+                    <div className="flex gap-2">
+                      <Select value={clientId} onValueChange={setClientId} disabled={isReadOnly}>
+                        <SelectTrigger className="h-9 text-sm flex-1"><SelectValue placeholder="Selecione o cedente" /></SelectTrigger>
+                        <SelectContent>
+                          {clients.map((c) => (
+                            <SelectItem key={c.id} value={c.id}>
+                              <span className="font-medium">{c.razao_social}</span>
+                              {c.cnpj_cpf && <span className="ml-2 text-xs opacity-50 font-mono">{c.cnpj_cpf}</span>}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {!isReadOnly && (
+                        <button
+                          type="button"
+                          onClick={() => setNewClientOpen(true)}
+                          title="Cadastrar novo cedente"
+                          className="h-9 w-9 flex items-center justify-center rounded-sink-md border border-sink-fog bg-transparent text-sink-deep/60 hover:bg-sink-cream hover:text-sink-deep transition-colors flex-shrink-0"
+                        >
+                          <Plus className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
                   </Field>
+
+                  {/* Dialog: cadastro rápido de cedente */}
+                  <Dialog open={newClientOpen} onOpenChange={setNewClientOpen}>
+                    <DialogContent className="max-w-md">
+                      <DialogHeader>
+                        <DialogTitle>Novo cedente</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4 py-2">
+                        <div className="space-y-1.5">
+                          <Label className="font-mono text-[10px] uppercase tracking-wider text-sink-deep/60">Razão Social *</Label>
+                          <Input
+                            value={newClientRazao}
+                            onChange={e => setNewClientRazao(e.target.value)}
+                            placeholder="Nome empresarial completo"
+                            className="h-9"
+                            autoFocus
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="font-mono text-[10px] uppercase tracking-wider text-sink-deep/60">CNPJ / CPF</Label>
+                          <Input
+                            value={newClientCnpj}
+                            onChange={e => setNewClientCnpj(e.target.value)}
+                            placeholder="00.000.000/0001-00"
+                            className="h-9 font-mono"
+                          />
+                        </div>
+                        <label className="flex items-center gap-2 cursor-pointer pt-1">
+                          <input
+                            type="checkbox"
+                            checked={newClientCreateDeal}
+                            onChange={e => setNewClientCreateDeal(e.target.checked)}
+                            className="rounded border-sink-fog accent-sink-mint"
+                          />
+                          <span className="text-sm text-sink-deep/70">Criar oportunidade no Pipeline Comercial</span>
+                        </label>
+                      </div>
+                      <DialogFooter>
+                        <button
+                          type="button"
+                          onClick={() => setNewClientOpen(false)}
+                          className="px-4 py-2 text-sm text-sink-deep/60 hover:text-sink-deep transition-colors"
+                        >
+                          Cancelar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => createClientMutation.mutate()}
+                          disabled={!newClientRazao.trim() || createClientMutation.isPending}
+                          className="px-4 py-2 text-sm font-medium rounded-sink-md bg-sink-deep text-white hover:bg-sink-deep/90 transition-colors disabled:opacity-40"
+                        >
+                          {createClientMutation.isPending ? "Cadastrando..." : "Cadastrar"}
+                        </button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
                   <Field label="Data da Análise">
                     <Input type="date" value={dataAnalise} onChange={(e) => setDataAnalise(e.target.value)} disabled={isReadOnly} className="h-9 text-sm" />
                   </Field>
@@ -1063,7 +1403,7 @@ export default function CreditAnalysisForm() {
                 analysisId={isEditing ? id! : null} attachments={sectionAttachments.operacional || []}
                 onAttachmentsChange={updateSectionAttachments("operacional")}
                 onDataExtracted={handleDataExtracted} analysisContext={analysisDataForAI} disabled={isReadOnly}
-                compactMode={compactMode} summary={sectionSummaries.operacional}
+                compactMode={compactMode} bulkToggle={bulkToggle} summary={sectionSummaries.operacional}
               >
                 <FieldGroup cols={3}>
                   <Field label="Faturamento Médio (R$)">
@@ -1091,13 +1431,13 @@ export default function CreditAnalysisForm() {
                 {/* Sacados table */}
                 <div className="pt-3">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="font-mono text-[10px] uppercase tracking-wider text-sink-ink/50 font-semibold">Principais Sacados</span>
+                    <span className="font-mono text-[10px] uppercase tracking-wider text-sink-deep/50 font-semibold">Principais Sacados</span>
                     {!isReadOnly && (
                       <Button
                         type="button"
                         variant="ghost"
                         size="sm"
-                        className="h-7 font-mono text-[10px] rounded-sink-md border border-sink-fog bg-transparent text-sink-ink/60 hover:bg-sink-cream hover:text-sink-ink"
+                        className="h-7 font-mono text-[10px] rounded-sink-md border border-sink-fog bg-transparent text-sink-deep/60 hover:bg-sink-cream hover:text-sink-deep"
                         onClick={addSacado}
                       >
                         <Plus className="h-3 w-3 mr-1" /> Sacado
@@ -1109,9 +1449,9 @@ export default function CreditAnalysisForm() {
                       <Table>
                         <TableHeader>
                           <TableRow className="bg-sink-cream/80 border-b border-sink-fog hover:bg-sink-cream">
-                            <TableHead className="font-mono text-[10px] uppercase tracking-wider text-sink-ink/50 h-8">Sacado</TableHead>
-                            <TableHead className="font-mono text-[10px] uppercase tracking-wider text-sink-ink/50 h-8 w-32">% Fat.</TableHead>
-                            <TableHead className="font-mono text-[10px] uppercase tracking-wider text-sink-ink/50 h-8 w-28">Prazo</TableHead>
+                            <TableHead className="font-mono text-[10px] uppercase tracking-wider text-sink-deep/50 h-8">Sacado</TableHead>
+                            <TableHead className="font-mono text-[10px] uppercase tracking-wider text-sink-deep/50 h-8 w-32">% Fat.</TableHead>
+                            <TableHead className="font-mono text-[10px] uppercase tracking-wider text-sink-deep/50 h-8 w-28">Prazo</TableHead>
                             {!isReadOnly && <TableHead className="w-10 h-8" />}
                           </TableRow>
                         </TableHeader>
@@ -1146,10 +1486,10 @@ export default function CreditAnalysisForm() {
                 analysisId={isEditing ? id! : null} attachments={sectionAttachments.societaria || []}
                 onAttachmentsChange={updateSectionAttachments("societaria")}
                 onDataExtracted={handleDataExtracted} analysisContext={analysisDataForAI} disabled={isReadOnly}
-                compactMode={compactMode} summary={sectionSummaries.societaria}
+                compactMode={compactMode} bulkToggle={bulkToggle} summary={sectionSummaries.societaria}
               >
                 <div className="flex items-center justify-between mb-2">
-                  <span className="font-mono text-[10px] uppercase tracking-wider text-sink-ink/50 font-semibold">
+                  <span className="font-mono text-[10px] uppercase tracking-wider text-sink-deep/50 font-semibold">
                     Quadro Societário
                     {socios.length > 0 && (
                       <span className={cn("ml-2", sociosTotal.isValid ? "text-sink-mint" : "text-sink-danger")}>
@@ -1162,7 +1502,7 @@ export default function CreditAnalysisForm() {
                       type="button"
                       variant="ghost"
                       size="sm"
-                      className="h-7 font-mono text-[10px] rounded-sink-md border border-sink-fog bg-transparent text-sink-ink/60 hover:bg-sink-cream hover:text-sink-ink"
+                      className="h-7 font-mono text-[10px] rounded-sink-md border border-sink-fog bg-transparent text-sink-deep/60 hover:bg-sink-cream hover:text-sink-deep"
                       onClick={addSocio}
                     >
                       <Plus className="h-3 w-3 mr-1" /> Sócio
@@ -1174,10 +1514,10 @@ export default function CreditAnalysisForm() {
                     <Table>
                       <TableHeader>
                         <TableRow className="bg-sink-cream/80 border-b border-sink-fog hover:bg-sink-cream">
-                          <TableHead className="font-mono text-[10px] uppercase tracking-wider text-sink-ink/50 h-8">Nome</TableHead>
-                          <TableHead className="font-mono text-[10px] uppercase tracking-wider text-sink-ink/50 h-8 w-36">CPF</TableHead>
-                          <TableHead className="font-mono text-[10px] uppercase tracking-wider text-sink-ink/50 h-8 w-24">Part. %</TableHead>
-                          <TableHead className="font-mono text-[10px] uppercase tracking-wider text-sink-ink/50 h-8 w-32">Cargo</TableHead>
+                          <TableHead className="font-mono text-[10px] uppercase tracking-wider text-sink-deep/50 h-8">Nome</TableHead>
+                          <TableHead className="font-mono text-[10px] uppercase tracking-wider text-sink-deep/50 h-8 w-36">CPF</TableHead>
+                          <TableHead className="font-mono text-[10px] uppercase tracking-wider text-sink-deep/50 h-8 w-24">Part. %</TableHead>
+                          <TableHead className="font-mono text-[10px] uppercase tracking-wider text-sink-deep/50 h-8 w-32">Cargo</TableHead>
                           {!isReadOnly && <TableHead className="w-10 h-8" />}
                         </TableRow>
                       </TableHeader>
@@ -1219,7 +1559,7 @@ export default function CreditAnalysisForm() {
                 analysisId={isEditing ? id! : null} attachments={sectionAttachments.credito || []}
                 onAttachmentsChange={updateSectionAttachments("credito")}
                 onDataExtracted={handleDataExtracted} analysisContext={analysisDataForAI} disabled={isReadOnly}
-                compactMode={compactMode} summary={sectionSummaries.credito}
+                compactMode={compactMode} bulkToggle={bulkToggle} summary={sectionSummaries.credito}
               >
                 <FieldGroup cols={3}>
                   <Field label="Score de Crédito">
@@ -1259,7 +1599,7 @@ export default function CreditAnalysisForm() {
                 analysisId={isEditing ? id! : null} attachments={sectionAttachments.referencias || []}
                 onAttachmentsChange={updateSectionAttachments("referencias")}
                 onDataExtracted={handleDataExtracted} analysisContext={analysisDataForAI} disabled={isReadOnly}
-                compactMode={compactMode} summary={sectionSummaries.referencias}
+                compactMode={compactMode} bulkToggle={bulkToggle} summary={sectionSummaries.referencias}
               >
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
                   <Field label="Referências Bancárias" hint="Bancos, agências, limites, tempo de conta">
@@ -1281,7 +1621,7 @@ export default function CreditAnalysisForm() {
                 analysisId={isEditing ? id! : null} attachments={sectionAttachments.financeira || []}
                 onAttachmentsChange={updateSectionAttachments("financeira")}
                 onDataExtracted={handleDataExtracted} analysisContext={analysisDataForAI} disabled={isReadOnly}
-                compactMode={compactMode} summary={sectionSummaries.financeira}
+                compactMode={compactMode} bulkToggle={bulkToggle} summary={sectionSummaries.financeira}
               >
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
                   <Field label="Análise de Faturamento">
@@ -1312,7 +1652,7 @@ export default function CreditAnalysisForm() {
                 analysisId={isEditing ? id! : null} attachments={sectionAttachments.riscos || []}
                 onAttachmentsChange={updateSectionAttachments("riscos")}
                 onDataExtracted={handleDataExtracted} analysisContext={analysisDataForAI} disabled={isReadOnly}
-                compactMode={compactMode} summary={sectionSummaries.riscos}
+                compactMode={compactMode} bulkToggle={bulkToggle} summary={sectionSummaries.riscos}
               >
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
                   <Field label="Riscos Identificados">
@@ -1329,27 +1669,54 @@ export default function CreditAnalysisForm() {
                 analysisId={isEditing ? id! : null} attachments={sectionAttachments.operacao || []}
                 onAttachmentsChange={updateSectionAttachments("operacao")}
                 onDataExtracted={handleDataExtracted} analysisContext={analysisDataForAI} disabled={isReadOnly}
-                compactMode={compactMode} summary={sectionSummaries.operacao}
+                compactMode={compactMode} bulkToggle={bulkToggle} summary={sectionSummaries.operacao}
               >
                 <FieldGroup cols={3}>
-                  <Field label="Modalidade da Operação" hint="Factoring, FIDC, antecipação, etc.">
-                    <Select value={modalidadeOperacao} onValueChange={setModalidadeOperacao} disabled={isReadOnly}>
-                      <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Selecione" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="factoring">Factoring</SelectItem>
-                        <SelectItem value="fidc">FIDC</SelectItem>
-                        <SelectItem value="antecipacao">Antecipação de Recebíveis</SelectItem>
-                        <SelectItem value="desconto_duplicatas">Desconto de Duplicatas</SelectItem>
-                        <SelectItem value="capital_giro">Capital de Giro</SelectItem>
-                        <SelectItem value="outro">Outro</SelectItem>
-                      </SelectContent>
-                    </Select>
+                  <Field label="Modalidades da Operação" hint="Marque uma ou mais — o cliente pode combinar tipos">
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {[
+                        { value: "factoring",            label: "Factoring" },
+                        { value: "fidc",                 label: "FIDC" },
+                        { value: "antecipacao",          label: "Antecipação" },
+                        { value: "desconto_duplicatas",  label: "Desconto Duplicatas" },
+                        { value: "capital_giro",         label: "Capital de Giro" },
+                        { value: "outro",                label: "Outro" },
+                      ].map(opt => {
+                        const checked = modalidadesOperacao.includes(opt.value);
+                        return (
+                          <label
+                            key={opt.value}
+                            className="flex items-center gap-2 px-2.5 py-1.5 rounded-sink-md border cursor-pointer transition-colors text-[12px] select-none"
+                            style={{
+                              borderColor: checked ? "#00D49A" : "rgba(10,21,56,0.10)",
+                              background: checked ? "rgba(0,212,154,0.08)" : "transparent",
+                              opacity: isReadOnly ? 0.6 : 1,
+                              pointerEvents: isReadOnly ? "none" : "auto",
+                            }}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={() => {
+                                setModalidadesOperacao(prev =>
+                                  checked ? prev.filter(v => v !== opt.value) : [...prev, opt.value]
+                                );
+                              }}
+                              className="h-3.5 w-3.5 accent-sink-mint"
+                            />
+                            <span style={{ color: checked ? "#0A1538" : "rgba(10,21,56,0.7)", fontWeight: checked ? 600 : 400 }}>
+                              {opt.label}
+                            </span>
+                          </label>
+                        );
+                      })}
+                    </div>
                   </Field>
                   <Field label="Limite Sugerido (R$)">
                     <div className="space-y-1">
                       <Input type="number" step="0.01" value={limiteSugerido} onChange={(e) => setLimiteSugerido(e.target.value)} disabled={isReadOnly} className="h-9 text-sm tabular-nums font-semibold" placeholder="0,00" />
                       {autoLimit > 0 && (
-                        <p className="font-mono text-[10px] text-sink-ink/40">
+                        <p className="font-mono text-[10px] text-sink-deep/40">
                           <Sparkles className="h-2.5 w-2.5 inline mr-0.5 text-sink-mint" />
                           IA sugere: {formatBRL(autoLimit)} (baseado no faturamento e score)
                         </p>
@@ -1388,8 +1755,8 @@ export default function CreditAnalysisForm() {
                   <Brain className="h-5 w-5 text-sink-mint" />
                 </div>
                 <div>
-                  <h2 className="font-sans font-bold text-base text-sink-ink">Insights Inteligentes</h2>
-                  <p className="font-mono text-[10px] uppercase tracking-wider text-sink-ink/40">IA analisa os dados e gera insights profundos sobre o cedente</p>
+                  <h2 className="font-sans font-bold text-base text-sink-deep">Insights Inteligentes</h2>
+                  <p className="font-mono text-[10px] uppercase tracking-wider text-sink-deep/40">IA analisa os dados e gera insights profundos sobre o cedente</p>
                 </div>
               </div>
 
@@ -1409,25 +1776,25 @@ export default function CreditAnalysisForm() {
                   <Target className="h-5 w-5 text-sink-mint" />
                 </div>
                 <div>
-                  <h2 className="font-sans font-bold text-base text-sink-ink">Análise de Concentração</h2>
-                  <p className="font-mono text-[10px] uppercase tracking-wider text-sink-ink/40">Visualização da concentração de sacados e alertas automáticos</p>
+                  <h2 className="font-sans font-bold text-base text-sink-deep">Análise de Concentração</h2>
+                  <p className="font-mono text-[10px] uppercase tracking-wider text-sink-deep/40">Visualização da concentração de sacados e alertas automáticos</p>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-sink-paper border border-sink-fog rounded-sink-lg p-5 shadow-sink-sm">
-                  <p className="font-mono text-[10px] uppercase tracking-wider text-sink-ink/50 mb-2">Sacados Cadastrados</p>
-                  <p className="font-sans text-3xl font-bold tabular-nums text-sink-ink">{sacados.length}</p>
+                <div className="bg-sink-paper rounded-sink-lg p-5" style={{ border: "1px solid rgba(10,21,56,0.10)", boxShadow: "0 1px 3px rgba(10,21,56,0.05), 0 4px 12px -4px rgba(10,21,56,0.06)" }}>
+                  <p className="font-mono text-[10px] uppercase tracking-wider text-sink-deep/50 mb-2">Sacados Cadastrados</p>
+                  <p className="font-sans text-3xl font-bold tabular-nums text-sink-deep">{sacados.length}</p>
                 </div>
-                <div className="bg-sink-paper border border-sink-fog rounded-sink-lg p-5 shadow-sink-sm">
-                  <p className="font-mono text-[10px] uppercase tracking-wider text-sink-ink/50 mb-2">Concentração Máxima</p>
-                  <p className={cn("font-sans text-3xl font-bold tabular-nums", concentration.maxSingleConcentration > 30 ? "text-sink-danger" : "text-sink-ink")}>
+                <div className="bg-sink-paper rounded-sink-lg p-5" style={{ border: "1px solid rgba(10,21,56,0.10)", boxShadow: "0 1px 3px rgba(10,21,56,0.05), 0 4px 12px -4px rgba(10,21,56,0.06)" }}>
+                  <p className="font-mono text-[10px] uppercase tracking-wider text-sink-deep/50 mb-2">Concentração Máxima</p>
+                  <p className={cn("font-sans text-3xl font-bold tabular-nums", concentration.maxSingleConcentration > 30 ? "text-sink-danger" : "text-sink-deep")}>
                     {concentration.maxSingleConcentration.toFixed(1)}%
                   </p>
                 </div>
-                <div className="bg-sink-paper border border-sink-fog rounded-sink-lg p-5 shadow-sink-sm">
-                  <p className="font-mono text-[10px] uppercase tracking-wider text-sink-ink/50 mb-2">Total Concentração</p>
-                  <p className="font-sans text-3xl font-bold tabular-nums text-sink-ink">{concentration.totalConcentration.toFixed(1)}%</p>
+                <div className="bg-sink-paper rounded-sink-lg p-5" style={{ border: "1px solid rgba(10,21,56,0.10)", boxShadow: "0 1px 3px rgba(10,21,56,0.05), 0 4px 12px -4px rgba(10,21,56,0.06)" }}>
+                  <p className="font-mono text-[10px] uppercase tracking-wider text-sink-deep/50 mb-2">Total Concentração</p>
+                  <p className="font-sans text-3xl font-bold tabular-nums text-sink-deep">{concentration.totalConcentration.toFixed(1)}%</p>
                 </div>
               </div>
 
@@ -1442,9 +1809,9 @@ export default function CreditAnalysisForm() {
                 </div>
               )}
 
-              <div className="bg-sink-paper border border-sink-fog rounded-sink-lg shadow-sink-sm overflow-hidden">
+              <div className="bg-sink-paper rounded-sink-lg overflow-hidden" style={{ border: "1px solid rgba(10,21,56,0.10)", boxShadow: "0 1px 3px rgba(10,21,56,0.05), 0 4px 12px -4px rgba(10,21,56,0.06)" }}>
                 <div className="px-5 py-3.5 border-b border-sink-fog bg-sink-cream/60">
-                  <h3 className="font-sans font-semibold text-sm text-sink-ink">Distribuição por Sacado</h3>
+                  <h3 className="font-sans font-semibold text-sm text-sink-deep">Distribuição por Sacado</h3>
                 </div>
                 <div className="p-5">
                   <ConcentrationChart
@@ -1464,8 +1831,8 @@ export default function CreditAnalysisForm() {
                   <Activity className="h-5 w-5 text-sink-mint" />
                 </div>
                 <div>
-                  <h2 className="font-sans font-bold text-base text-sink-ink">Indicadores & Gráficos</h2>
-                  <p className="font-mono text-[10px] uppercase tracking-wider text-sink-ink/40">Dashboard completo de indicadores financeiros, radar de risco e análise comparativa</p>
+                  <h2 className="font-sans font-bold text-base text-sink-deep">Indicadores & Gráficos</h2>
+                  <p className="font-mono text-[10px] uppercase tracking-wider text-sink-deep/40">Dashboard completo de indicadores financeiros, radar de risco e análise comparativa</p>
                 </div>
               </div>
 
@@ -1500,31 +1867,31 @@ export default function CreditAnalysisForm() {
                   <Gauge className="h-5 w-5 text-sink-mint" />
                 </div>
                 <div>
-                  <h2 className="font-sans font-bold text-base text-sink-ink">Parecer & Decisão Final</h2>
-                  <p className="font-mono text-[10px] uppercase tracking-wider text-sink-ink/40">Recomendação do analista com base no dossiê completo</p>
+                  <h2 className="font-sans font-bold text-base text-sink-deep">Parecer & Decisão Final</h2>
+                  <p className="font-mono text-[10px] uppercase tracking-wider text-sink-deep/40">Recomendação do analista com base no dossiê completo</p>
                 </div>
               </div>
 
               {/* Summary cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-sink-paper border border-sink-fog rounded-sink-lg shadow-sink-sm overflow-hidden">
+                <div className="bg-sink-paper rounded-sink-lg overflow-hidden" style={{ border: "1px solid rgba(10,21,56,0.10)", boxShadow: "0 1px 3px rgba(10,21,56,0.05), 0 4px 12px -4px rgba(10,21,56,0.06)" }}>
                   <div className="px-5 py-3.5 border-b border-sink-fog bg-sink-cream/60">
-                    <p className="font-mono text-[10px] uppercase tracking-wider text-sink-ink/50 font-semibold">Classificação de Risco</p>
+                    <p className="font-mono text-[10px] uppercase tracking-wider text-sink-deep/50 font-semibold">Classificação de Risco</p>
                   </div>
                   <div className="px-5 py-4 flex items-center gap-4">
                     <ScoreGauge score={scoreNum} size="md" />
                     <div>
                       <RiskIndicator score={scoreNum} />
-                      <p className="font-mono text-xs text-sink-ink/50 mt-2">
-                        Grade: <span className="font-bold text-sink-ink">{grade}</span>
+                      <p className="font-mono text-xs text-sink-deep/50 mt-2">
+                        Grade: <span className="font-bold text-sink-deep">{grade}</span>
                       </p>
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-sink-paper border border-sink-fog rounded-sink-lg shadow-sink-sm overflow-hidden">
+                <div className="bg-sink-paper rounded-sink-lg overflow-hidden" style={{ border: "1px solid rgba(10,21,56,0.10)", boxShadow: "0 1px 3px rgba(10,21,56,0.05), 0 4px 12px -4px rgba(10,21,56,0.06)" }}>
                   <div className="px-5 py-3.5 border-b border-sink-fog bg-sink-cream/60">
-                    <p className="font-mono text-[10px] uppercase tracking-wider text-sink-ink/50 font-semibold">Operação Proposta</p>
+                    <p className="font-mono text-[10px] uppercase tracking-wider text-sink-deep/50 font-semibold">Operação Proposta</p>
                   </div>
                   <div className="px-5 py-4 space-y-2.5">
                     {[
@@ -1534,8 +1901,8 @@ export default function CreditAnalysisForm() {
                       { label: "Utilização", value: `${limitUtil.toFixed(0)}%`, danger: limitUtil > 100 },
                     ].map(({ label, value, danger }) => (
                       <div key={label} className="flex justify-between items-center">
-                        <span className="font-mono text-xs text-sink-ink/50">{label}</span>
-                        <span className={cn("font-mono text-sm font-bold tabular-nums", danger ? "text-sink-danger" : "text-sink-ink")}>{value}</span>
+                        <span className="font-mono text-xs text-sink-deep/50">{label}</span>
+                        <span className={cn("font-mono text-sm font-bold tabular-nums", danger ? "text-sink-danger" : "text-sink-deep")}>{value}</span>
                       </div>
                     ))}
                   </div>
@@ -1553,7 +1920,7 @@ export default function CreditAnalysisForm() {
               />
 
               {/* Parecer text */}
-              <div className="bg-sink-paper border border-sink-fog rounded-sink-lg p-5 shadow-sink-sm">
+              <div className="bg-sink-paper rounded-sink-lg p-5" style={{ border: "1px solid rgba(10,21,56,0.10)", boxShadow: "0 1px 3px rgba(10,21,56,0.05), 0 4px 12px -4px rgba(10,21,56,0.06)" }}>
                 <Field label="Parecer do Analista">
                   <Textarea
                     value={parecerAnalista}
@@ -1567,7 +1934,7 @@ export default function CreditAnalysisForm() {
               </div>
 
               {/* Recommendation */}
-              <div className="bg-sink-paper border border-sink-fog rounded-sink-lg p-5 shadow-sink-sm">
+              <div className="bg-sink-paper rounded-sink-lg p-5" style={{ border: "1px solid rgba(10,21,56,0.10)", boxShadow: "0 1px 3px rgba(10,21,56,0.05), 0 4px 12px -4px rgba(10,21,56,0.06)" }}>
                 <Field label="Recomendação Final">
                   <div className="flex gap-3 pt-2">
                     {[
@@ -1599,7 +1966,7 @@ export default function CreditAnalysisForm() {
                           "flex-1 px-4 py-3 rounded-sink-lg font-sans text-sm font-semibold border-2 transition-all",
                           recommendation === opt.value
                             ? opt.activeClass
-                            : "border-sink-fog text-sink-ink/50 hover:border-sink-fog/80 hover:bg-sink-cream bg-sink-paper"
+                            : "border-sink-fog text-sink-deep/50 hover:border-sink-fog/80 hover:bg-sink-cream bg-sink-paper"
                         )}
                       >
                         <span className={cn("block h-2 w-2 rounded-full mx-auto mb-2", recommendation === opt.value ? opt.dot : "bg-sink-fog")} />

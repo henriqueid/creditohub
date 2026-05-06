@@ -316,18 +316,26 @@ export default function InvoiceMonitoring() {
     );
   }
 
+  const TT = {
+    text: "#0A1538", textMute: "rgba(10,21,56,0.62)", textFaint: "rgba(10,21,56,0.42)",
+    border: "rgba(10,21,56,0.07)", white: "#FFFFFF",
+  };
+
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="p-7 space-y-[14px]">
+      {/* Header */}
+      <div className="flex items-end justify-between mb-2">
         <div>
-          <h1 className="text-2xl font-bold">Monitoramento de Notas Fiscais</h1>
-          <p className="text-muted-foreground text-sm">
-            Importe NFs via XML/CNAB, valide e cruze com sacados da análise de crédito.
-          </p>
+          <h1 style={{ fontSize: 28, fontWeight: 500, color: TT.text, letterSpacing: "-0.03em", lineHeight: 1.1 }}>
+            Monitoramento de NFs
+          </h1>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: TT.textMute, letterSpacing: "0.08em", textTransform: "uppercase", marginTop: 6 }}>
+            {stats.total} NFs · {formatBRL(stats.totalValue)} · {groups?.filter(g => g.is_active).length || 0} GRUPOS ATIVOS
+          </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-[10px]">
           <Select value={selectedClient} onValueChange={setSelectedClient}>
-            <SelectTrigger className="w-64">
+            <SelectTrigger className="w-52 rounded-[999px]" style={{ border: "1px solid var(--border-strong)", height: 38 }}>
               <SelectValue placeholder="Filtrar por cedente" />
             </SelectTrigger>
             <SelectContent>
@@ -337,7 +345,9 @@ export default function InvoiceMonitoring() {
               ))}
             </SelectContent>
           </Select>
-          <Button
+          <button
+            className="px-[16px] py-[9px] rounded-[999px] text-[13px] font-medium border transition-colors hover:bg-[#F0F1EB]"
+            style={{ border: "1px solid var(--border-strong)", color: TT.text }}
             onClick={() => {
               const input = document.createElement("input");
               input.type = "file";
@@ -351,44 +361,33 @@ export default function InvoiceMonitoring() {
             }}
             disabled={uploadMutation.isPending}
           >
-            <Upload className="mr-2 h-4 w-4" />
-            {uploadMutation.isPending ? "Importando..." : "Importar XML/CNAB"}
-          </Button>
+            {uploadMutation.isPending ? "Importando…" : "↑ Importar XML/CNAB"}
+          </button>
         </div>
       </div>
 
       {/* KPIs */}
-      <div className="grid gap-4 md:grid-cols-5">
-        <Card>
-          <CardContent className="pt-4 pb-3 text-center">
-            <div className="text-2xl font-bold">{stats.total}</div>
-            <div className="text-xs text-muted-foreground">Total NFs</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4 pb-3 text-center">
-            <div className="text-2xl font-bold text-status-approved">{stats.valid}</div>
-            <div className="text-xs text-muted-foreground">Válidas</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4 pb-3 text-center">
-            <div className="text-2xl font-bold text-sink-danger">{stats.invalid}</div>
-            <div className="text-xs text-muted-foreground">Inválidas</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4 pb-3 text-center">
-            <div className="text-2xl font-bold text-sink-warn">{stats.pending}</div>
-            <div className="text-xs text-muted-foreground">Pendentes</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4 pb-3 text-center">
-            <div className="text-2xl font-bold">{formatBRL(stats.totalValue)}</div>
-            <div className="text-xs text-muted-foreground">Valor Total</div>
-          </CardContent>
-        </Card>
+      <div className="grid gap-3 grid-cols-5">
+        {[
+          { label: "TOTAL NFs", value: String(stats.total), color: TT.text },
+          { label: "VÁLIDAS", value: String(stats.valid), color: "#009E73" },
+          { label: "INVÁLIDAS", value: String(stats.invalid), color: "#B0182A" },
+          { label: "PENDENTES", value: String(stats.pending), color: "#D9A300" },
+          { label: "VOLUME TOTAL", value: formatBRL(stats.totalValue), color: TT.text },
+        ].map((k, i) => (
+          <div
+            key={i}
+            className="rounded-[16px] px-[18px] py-[16px]"
+            style={{ background: TT.white, border: `1px solid ${TT.border}` }}
+          >
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: TT.textMute, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 8 }}>
+              {k.label}
+            </div>
+            <div style={{ fontSize: 28, fontWeight: 500, color: k.color, letterSpacing: "-0.03em", lineHeight: 1 }}>
+              {k.value}
+            </div>
+          </div>
+        ))}
       </div>
 
       <Tabs defaultValue="list">

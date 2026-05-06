@@ -1,29 +1,32 @@
 import { useLocation, Link } from "react-router-dom";
-import {
-  Breadcrumb,
-  BreadcrumbList,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
-import { Home } from "lucide-react";
 
 const routeLabels: Record<string, string> = {
-  "": "Painel Inicial",
-  "cedentes": "Cedentes",
-  "novo": "Novo Cadastro",
-  "historico": "Histórico",
-  "analises": "Análises de Crédito",
-  "nova": "Nova Análise",
-  "comite": "Comitê de Crédito",
-  "consulta": "Consulta CPF/CNPJ",
-  "prospects": "Prospects",
-  "monitoramento-nfs": "Monitoramento NFs",
-  "falimentar": "Informe Falimentar",
-  "blacklist": "Blacklist",
-  "configuracoes": "Configurações",
-  "motor": "Motor de Crédito",
+  "":                  "Painel",
+  "cedentes":          "Cedentes",
+  "novo":              "Novo Cadastro",
+  "historico":         "Histórico",
+  "analises":          "Análises de Crédito",
+  "nova":              "Nova Análise",
+  "comite":            "Comitê de Crédito",
+  "consulta":          "Consulta CPF/CNPJ",
+  "prospects":         "Prospects",
+  "monitoramento-nfs": "Monitoramento de NFs",
+  "performance":       "Performance da Esteira",
+  "falimentar":        "Informe Falimentar",
+  "blacklist":         "Blacklist",
+  "configuracoes":     "Configurações",
+  "motor":             "Motor de Crédito",
+  "bureaus":           "Bureaus",
+  "integracoes":       "Integrações",
+  "audit-log":         "Auditoria",
+  "patrimonial":       "Patrimonial",
+  "crm":               "Comercial",
+  "pipeline":          "Pipeline",
+  "contatos":          "Contatos",
+  "atividades":        "Atividades",
+  "tarefas":           "Tarefas",
+  "dashboard":         "Painel",
+  "cliente":           "Perfil do Cliente",
 };
 
 function isUuid(segment: string) {
@@ -38,39 +41,47 @@ export function AppBreadcrumbs() {
 
   const crumbs = segments.map((seg, i) => {
     const path = "/" + segments.slice(0, i + 1).join("/");
-    const label = isUuid(seg) ? "Detalhes" : (routeLabels[seg] || seg);
+    const label = isUuid(seg) ? "Detalhes" : (routeLabels[seg] ?? seg);
     const isLast = i === segments.length - 1;
     return { path, label, isLast };
   });
 
   return (
-    <div className="border-b border-border px-5 py-2 bg-card">
-      <Breadcrumb>
-        <BreadcrumbList>
-          <BreadcrumbItem>
-            <BreadcrumbLink asChild>
-              <Link to="/" className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors">
-                <Home className="h-3.5 w-3.5" />
-                <span className="sr-only">Início</span>
-              </Link>
-            </BreadcrumbLink>
-          </BreadcrumbItem>
-          {crumbs.map((crumb) => (
-            <span key={crumb.path} className="contents">
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                {crumb.isLast ? (
-                  <BreadcrumbPage className="text-xs font-medium">{crumb.label}</BreadcrumbPage>
-                ) : (
-                  <BreadcrumbLink asChild>
-                    <Link to={crumb.path} className="text-xs">{crumb.label}</Link>
-                  </BreadcrumbLink>
-                )}
-              </BreadcrumbItem>
+    <div
+      className="flex items-center gap-2 px-7 flex-shrink-0"
+      style={{
+        height: "var(--breadcrumb-height)",
+        background: "var(--off)",
+        borderBottom: "1px solid var(--hairline)",
+        fontFamily: "var(--font-sans)",
+        fontSize: 12,
+      }}
+    >
+      <Link
+        to="/"
+        className="transition-colors"
+        style={{ color: "var(--text-faint)" }}
+      >
+        Painel
+      </Link>
+      {crumbs.map((crumb, i) => (
+        <span key={crumb.path} className="contents">
+          <span style={{ color: "var(--text-faint)", opacity: 0.5 }}>›</span>
+          {crumb.isLast ? (
+            <span style={{ color: "var(--text)", fontWeight: 500 }}>
+              {crumb.label}
             </span>
-          ))}
-        </BreadcrumbList>
-      </Breadcrumb>
+          ) : (
+            <Link
+              to={crumb.path}
+              className="transition-colors hover:opacity-80"
+              style={{ color: "var(--text-mute)" }}
+            >
+              {crumb.label}
+            </Link>
+          )}
+        </span>
+      ))}
     </div>
   );
 }

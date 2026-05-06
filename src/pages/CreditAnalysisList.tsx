@@ -1,171 +1,355 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Briefcase, FileText } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { formatBRL, formatDate, statusLabels } from "@/lib/formatters";
+import { formatBRL } from "@/lib/formatters";
+import { T } from "@/lib/tokens";
+import { PageHeader } from "@/components/trilho/PageHeader";
+import { StatusBadge } from "@/components/trilho/StatusBadge";
+import { toast } from "sonner";
+import { Send } from "lucide-react";
+import { DragDropContext, Droppable, Draggable, type DropResult } from "@hello-pangea/dnd";
+import { useState } from "react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { useCommitteeRequirements, evaluateReadiness, DEFAULT_REQUIRED_FIELDS } from "@/hooks/useCommitteeRequirements";
+import { ANALYSIS_STATUS, type AnalysisStatus, findDealStageForAnalysisStatus } from "@/lib/analysis-status";
 
-// Status pill colors mapping to SINK tokens
-const statusPills: Record<string, string> = {
-  draft: "bg-sink-fog/20 text-sink-ink/60 border border-sink-fog",
-  in_analysis: "bg-sink-warn/10 text-sink-warn border border-sink-warn/40",
-  in_committee: "bg-sink-mint/10 text-sink-deep border border-sink-mint/40",
-  approved: "bg-sink-mint text-sink-deep border border-sink-mint",
-  approved_restricted: "bg-sink-mint-soft text-sink-deep border border-sink-mint-2",
-  rejected: "bg-sink-danger/10 text-sink-danger border border-sink-danger/40",
-};
+const STAGES: { key: AnalysisStatus; label: string; color: string }[] = [
+  { key: ANALYSIS_STATUS.draft,               label: "Em análise",  color: T.marinho },
+  { key: ANALYSIS_STATUS.in_committee,        label: "Comitê",      color: T.amber },
+  { key: ANALYSIS_STATUS.approved,            label: "Aprovado",    color: T.esmeralda },
+  { key: ANALYSIS_STATUS.approved_restricted, label: "Restrito",    color: "#D97706" },
+  { key: ANALYSIS_STATUS.rejected,            label: "Reprovado",   color: T.danger },
+];
 
-function StatusPill({ status }: { status: string }) {
+function getTier(score: number | null) {
+  if (!score) return null;
+  if (score >= 800) return "AAA";
+  if (score >= 700) return "AA";
+  if (score >= 600) return "A";
+  return "BBB";
+}
+
+function calcReadiness(a: any, requiredKeys: string[]): { pct: number; missing: string[] } {
+  const r = evaluateReadiness(requiredKeys, a);
+  return { pct: r.pct, missing: r.missing };
+}
+
+function ReadinessBar({ pct }: { pct: number }) {
+  const color = pct === 100 ? T.esmeralda : pct >= 50 ? T.amber : T.danger;
   return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-sink-pill text-[11px] font-semibold font-mono tracking-wide ${statusPills[status] || "bg-sink-fog/20 text-sink-ink/60 border border-sink-fog"}`}>
-      {statusLabels[status] || status}
-    </span>
+    <div style={{ marginTop: 8 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: T.textMute, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+          Prontidão para comitê
+        </span>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color }}>{pct}%</span>
+      </div>
+      <div style={{ height: 4, borderRadius: 99, background: "rgba(10,21,56,0.07)", overflow: "hidden" }}>
+        <div style={{ height: "100%", width: `${pct}%`, background: color, borderRadius: 99, transition: "width 0.4s ease" }} />
+      </div>
+    </div>
   );
 }
 
 export default function CreditAnalysisList() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [readinessAlert, setReadinessAlert] = useState<{ analysisId: string; missing: string[] } | null>(null);
+  const { data: committeeRequiredFields } = useCommitteeRequirements();
+  const requiredKeys = committeeRequiredFields ?? DEFAULT_REQUIRED_FIELDS;
 
   const { data: analyses = [], isLoading } = useQuery({
     queryKey: ["credit-analyses"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("credit_analysis")
-        .select("*, clients(razao_social, cnpj_cpf)")
+        .select("*, clients(razao_social, cnpj_cpf), credit_analysis_sacados(count)")
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data;
-    },
-  });
-
-  // Buscar deals vinculados (por credit_analysis_id) para mostrar a coluna pipeline
-  const { data: deals = [] } = useQuery({
-    queryKey: ["deals-for-analyses-list"],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("deals")
-        .select("id, value, credit_analysis_id, stage_id, deal_stages(name, color, is_won, is_lost)");
       return data || [];
     },
   });
 
-  const dealsByAnalysis = deals.reduce<Record<string, { count: number; total: number; stages: Set<string>; colors: Set<string> }>>((acc, d: any) => {
-    if (!d.credit_analysis_id) return acc;
-    if (!acc[d.credit_analysis_id]) acc[d.credit_analysis_id] = { count: 0, total: 0, stages: new Set(), colors: new Set() };
-    acc[d.credit_analysis_id].count += 1;
-    acc[d.credit_analysis_id].total += d.value || 0;
-    if (d.deal_stages?.name) acc[d.credit_analysis_id].stages.add(d.deal_stages.name);
-    if (d.deal_stages?.color) acc[d.credit_analysis_id].colors.add(d.deal_stages.color);
+  // Deal stages — usado pra sincronizar deal vinculado quando análise muda de status
+  const { data: dealStages = [] } = useQuery({
+    queryKey: ["deal-stages-for-sync"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("deal_stages")
+        .select("id, name, is_won, is_lost")
+        .eq("is_active", true)
+        .order("order");
+      return data ?? [];
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Atualiza status + sincroniza deal_stage do deal vinculado
+  const moveStatus = useMutation({
+    mutationFn: async ({ analysisId, status }: { analysisId: string; status: AnalysisStatus }) => {
+      // 1. Atualiza análise
+      const { error } = await supabase
+        .from("credit_analysis")
+        .update({ status: status as any })
+        .eq("id", analysisId);
+      if (error) throw error;
+
+      // 2. Sync com Pipeline — atualiza stage do deal vinculado (se houver)
+      const targetStageId = findDealStageForAnalysisStatus(status, dealStages);
+      if (!targetStageId) return { dealsUpdated: 0, status };
+
+      const { data: deals } = await supabase
+        .from("deals")
+        .select("id, stage_id")
+        .eq("credit_analysis_id", analysisId);
+
+      if (!deals?.length) return { dealsUpdated: 0, status };
+
+      const toUpdate = deals.filter(d => d.stage_id !== targetStageId);
+      await Promise.all(
+        toUpdate.map(d => supabase.from("deals").update({ stage_id: targetStageId }).eq("id", d.id))
+      );
+      return { dealsUpdated: toUpdate.length, status };
+    },
+    onSuccess: ({ dealsUpdated, status }) => {
+      queryClient.invalidateQueries({ queryKey: ["credit-analyses"] });
+      queryClient.invalidateQueries({ queryKey: ["deals"] });
+      const stageLabel = STAGES.find(s => s.key === status)?.label ?? status;
+      if (dealsUpdated > 0) {
+        toast.success(`Análise → ${stageLabel} · Deal sincronizado no Pipeline`);
+      } else {
+        toast.success(`Análise → ${stageLabel}`);
+      }
+    },
+    onError: (e: any) => toast.error(e?.message || "Erro ao mover análise"),
+  });
+
+  function onDragEnd(result: DropResult) {
+    const { destination, source, draggableId } = result;
+    if (!destination) return;
+    if (destination.droppableId === source.droppableId) return;
+
+    const targetStatus = destination.droppableId as AnalysisStatus;
+    const analysis = analyses.find(a => a.id === draggableId);
+    if (!analysis) return;
+
+    // Guard: ao mover draft → in_committee, exigir prontidão 100%
+    if (source.droppableId === ANALYSIS_STATUS.draft && targetStatus === ANALYSIS_STATUS.in_committee) {
+      const r = calcReadiness(analysis, requiredKeys);
+      if (r.pct < 100) {
+        setReadinessAlert({ analysisId: analysis.id, missing: r.missing });
+        return;
+      }
+    }
+    moveStatus.mutate({ analysisId: draggableId, status: targetStatus });
+  }
+
+  const byStage = STAGES.reduce<Record<string, typeof analyses>>((acc, s) => {
+    acc[s.key] = analyses.filter(a => a.status === s.key);
     return acc;
   }, {});
 
   return (
-    <div className="p-6 space-y-5">
-      {/* Page header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="font-sans font-bold text-2xl text-sink-ink tracking-tight">Análises de Crédito</h1>
-          <p className="font-mono text-xs uppercase tracking-wider text-sink-ink/50 mt-0.5">Dossiês e relatórios de análise</p>
-        </div>
-        <Button
-          onClick={() => navigate("/analises/nova")}
-          className="bg-sink-mint text-sink-deep hover:bg-sink-mint-2 rounded-sink-pill font-sans font-semibold shadow-sink-sm transition-all"
-        >
-          <Plus className="h-4 w-4 mr-1.5" />
-          Nova Análise
-        </Button>
-      </div>
+    <div className="p-7 flex flex-col h-full" style={{ minHeight: "calc(100vh - 104px)" }}>
+      <PageHeader
+        title="Análises de Crédito"
+        subtitle={`${analyses.length} ANÁLISES · ARRASTE PARA MOVER ETAPA`}
+        actions={
+          <button
+            onClick={() => navigate("/analises/nova")}
+            className="px-[14px] py-[9px] rounded-[999px] text-[13px] font-medium text-white transition-opacity hover:opacity-90"
+            style={{ background: "var(--marinho)" }}
+          >
+            + Nova análise
+          </button>
+        }
+      />
 
-      {/* Table card */}
-      <div className="bg-sink-paper border border-sink-fog rounded-sink-lg shadow-sink-sm overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-sink-cream border-b border-sink-fog hover:bg-sink-cream">
-              <TableHead className="font-mono text-[10px] uppercase tracking-wider text-sink-ink/50 h-10">Cedente</TableHead>
-              <TableHead className="font-mono text-[10px] uppercase tracking-wider text-sink-ink/50 h-10">Analista</TableHead>
-              <TableHead className="font-mono text-[10px] uppercase tracking-wider text-sink-ink/50 h-10">Limite Sugerido</TableHead>
-              <TableHead className="font-mono text-[10px] uppercase tracking-wider text-sink-ink/50 h-10">Pipeline</TableHead>
-              <TableHead className="font-mono text-[10px] uppercase tracking-wider text-sink-ink/50 h-10">Data</TableHead>
-              <TableHead className="font-mono text-[10px] uppercase tracking-wider text-sink-ink/50 h-10">Status</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center py-12">
-                  <div className="flex flex-col items-center gap-2">
-                    <div className="h-6 w-6 rounded-full border-2 border-sink-mint border-t-transparent animate-spin" />
-                    <span className="font-mono text-xs text-sink-ink/40">Carregando análises...</span>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ) : analyses.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center py-14">
-                  <div className="flex flex-col items-center gap-3">
-                    <div className="h-12 w-12 rounded-sink-lg bg-sink-cream flex items-center justify-center">
-                      <FileText className="h-6 w-6 text-sink-ink/30" />
-                    </div>
-                    <div>
-                      <p className="font-sans font-semibold text-sink-ink/60 text-sm">Nenhuma análise encontrada</p>
-                      <p className="font-mono text-xs text-sink-ink/40 mt-0.5">Crie a primeira análise de crédito</p>
-                    </div>
-                    <Button
-                      size="sm"
-                      onClick={() => navigate("/analises/nova")}
-                      className="bg-sink-mint text-sink-deep hover:bg-sink-mint-2 rounded-sink-pill font-sans font-semibold"
-                    >
-                      <Plus className="h-3.5 w-3.5 mr-1" /> Nova Análise
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ) : (
-              analyses.map((a) => {
-                const pipeline = dealsByAnalysis[a.id];
-                return (
-                  <TableRow
-                    key={a.id}
-                    className="cursor-pointer border-b border-sink-fog/50 hover:bg-sink-cream transition-colors"
-                    onClick={() => navigate(`/analises/${a.id}`)}
+      {isLoading ? (
+        <div className="flex-1 flex items-center justify-center" style={{ color: T.textMute, fontSize: 13 }}>
+          Carregando…
+        </div>
+      ) : (
+        <DragDropContext onDragEnd={onDragEnd}>
+          <div
+            className="flex-1 grid gap-[10px]"
+            style={{ gridTemplateColumns: `repeat(${STAGES.length}, 1fr)`, minHeight: 400 }}
+          >
+            {STAGES.map((stage) => {
+              const cards = byStage[stage.key] || [];
+              const isDraftCol = stage.key === ANALYSIS_STATUS.draft;
+              return (
+                <div key={stage.key} className="flex flex-col min-w-0">
+                  {/* Column header */}
+                  <div
+                    className="flex justify-between items-center px-[10px] py-[8px]"
+                    style={{
+                      background: T.white,
+                      border: `1px solid ${T.border}`,
+                      borderTop: `3px solid ${stage.color}`,
+                      borderRadius: "10px 10px 0 0",
+                    }}
                   >
-                    <TableCell className="font-sans font-semibold text-sink-ink text-sm py-3.5">
-                      {(a.clients as any)?.razao_social || "—"}
-                    </TableCell>
-                    <TableCell className="font-mono text-xs text-sink-ink/70 py-3.5">
-                      {a.analista_credito || <span className="text-sink-ink/30">—</span>}
-                    </TableCell>
-                    <TableCell className="font-mono text-sm tabular-nums text-sink-ink font-semibold py-3.5">
-                      {a.limite_sugerido ? formatBRL(a.limite_sugerido) : <span className="text-sink-ink/30 font-normal">—</span>}
-                    </TableCell>
-                    <TableCell className="py-3.5">
-                      {pipeline ? (
-                        <button
-                          onClick={(e) => { e.stopPropagation(); navigate("/crm/pipeline"); }}
-                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-sink-md border border-sink-fog bg-sink-cream hover:bg-sink-cream-2 transition-colors"
-                        >
-                          <Briefcase className="h-3 w-3 text-sink-mint" />
-                          <span className="font-mono text-xs font-semibold tabular-nums text-sink-ink">{formatBRL(pipeline.total)}</span>
-                          <span className="font-mono text-[10px] text-sink-ink/50">· {pipeline.count}</span>
-                        </button>
-                      ) : (
-                        <span className="font-mono text-xs text-sink-ink/30">—</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="font-mono text-xs text-sink-ink/60 py-3.5">
-                      {formatDate(a.data_analise)}
-                    </TableCell>
-                    <TableCell className="py-3.5">
-                      <StatusPill status={a.status} />
-                    </TableCell>
-                  </TableRow>
-                );
-              })
-            )}
-          </TableBody>
-        </Table>
-      </div>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: T.text }}>{stage.label}</span>
+                    <span
+                      className="flex items-center justify-center rounded-full"
+                      style={{
+                        width: 22, height: 22,
+                        background: cards.length > 0 ? `${stage.color}22` : T.cinza,
+                        color: cards.length > 0 ? stage.color : T.textMute,
+                        fontSize: 11, fontWeight: 600,
+                      }}
+                    >
+                      {cards.length}
+                    </span>
+                  </div>
+
+                  {/* Cards area (droppable) */}
+                  <Droppable droppableId={stage.key}>
+                    {(provided, snapshot) => (
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.droppableProps}
+                        className="flex-1 flex flex-col gap-2 p-2 overflow-y-auto transition-colors"
+                        style={{
+                          background: snapshot.isDraggingOver ? "rgba(0,212,154,0.06)" : "rgba(10,21,56,0.025)",
+                          border: `1px solid ${snapshot.isDraggingOver ? T.esmeralda : T.border}`,
+                          borderTop: "none",
+                          borderRadius: "0 0 12px 12px",
+                          minHeight: 200,
+                        }}
+                      >
+                        {cards.map((a, index) => {
+                          const name = (a.clients as any)?.razao_social || "—";
+                          const cnpj = (a.clients as any)?.cnpj_cpf || "";
+                          const score = a.credit_score;
+                          const limite = a.limite_sugerido;
+                          const tier = getTier(score);
+                          const readiness = isDraftCol ? calcReadiness(a, requiredKeys) : null;
+                          const isReady = readiness?.pct === 100;
+
+                          return (
+                            <Draggable key={a.id} draggableId={a.id} index={index}>
+                              {(dragProvided, dragSnapshot) => (
+                                <div
+                                  ref={dragProvided.innerRef}
+                                  {...dragProvided.draggableProps}
+                                  {...dragProvided.dragHandleProps}
+                                  onClick={() => navigate(`/analises/${a.id}`)}
+                                  className="rounded-[10px] p-[10px] cursor-pointer transition-shadow"
+                                  style={{
+                                    ...dragProvided.draggableProps.style,
+                                    background: T.white,
+                                    border: `1px solid ${dragSnapshot.isDragging ? T.esmeralda : T.border}`,
+                                    fontSize: 12,
+                                    boxShadow: dragSnapshot.isDragging
+                                      ? "0 12px 28px -8px rgba(10,21,56,0.25)"
+                                      : "var(--shadow-sm)",
+                                    opacity: dragSnapshot.isDragging ? 0.95 : 1,
+                                  }}
+                                >
+                                  <div style={{ fontWeight: 500, color: T.text, lineHeight: 1.3, marginBottom: 4 }}>
+                                    {name}
+                                  </div>
+                                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: T.textMute, marginBottom: 8 }}>
+                                    {cnpj}
+                                  </div>
+                                  <div className="flex justify-between items-center">
+                                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: T.text }}>
+                                      {score ? `Score ${score}` : "Sem score"}
+                                    </span>
+                                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: T.text }}>
+                                      {limite ? formatBRL(limite) : "—"}
+                                    </span>
+                                  </div>
+                                  {tier && (
+                                    <div className="mt-2">
+                                      <StatusBadge status={tier} />
+                                    </div>
+                                  )}
+                                  {readiness && <ReadinessBar pct={readiness.pct} />}
+                                  {isReady && (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        moveStatus.mutate({ analysisId: a.id, status: ANALYSIS_STATUS.in_committee });
+                                      }}
+                                      disabled={moveStatus.isPending}
+                                      className="mt-2 w-full flex items-center justify-center gap-1.5 py-1.5 rounded-[6px] text-[11px] font-semibold transition-colors hover:opacity-90"
+                                      style={{ background: T.esmeralda, color: T.marinho }}
+                                    >
+                                      <Send style={{ width: 10, height: 10 }} />
+                                      Enviar ao Comitê
+                                    </button>
+                                  )}
+                                  {readiness && !isReady && readiness.missing.length > 0 && (
+                                    <div style={{ marginTop: 6 }}>
+                                      <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: T.textMute, marginBottom: 2 }}>
+                                        Faltando:
+                                      </p>
+                                      {readiness.missing.slice(0, 3).map(m => (
+                                        <span key={m} style={{ display: "block", fontFamily: "var(--font-mono)", fontSize: 9, color: T.textMute }}>
+                                          · {m}
+                                        </span>
+                                      ))}
+                                      {readiness.missing.length > 3 && (
+                                        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: T.textMute }}>
+                                          · +{readiness.missing.length - 3} mais
+                                        </span>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </Draggable>
+                          );
+                        })}
+                        {provided.placeholder}
+                        {cards.length === 0 && !snapshot.isDraggingOver && (
+                          <div
+                            className="flex-1 flex items-center justify-center py-6 pointer-events-none"
+                            style={{ fontSize: 12, color: T.textFaint }}
+                          >
+                            Nenhuma
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </Droppable>
+                </div>
+              );
+            })}
+          </div>
+        </DragDropContext>
+      )}
+
+      <AlertDialog open={!!readinessAlert} onOpenChange={(o) => !o && setReadinessAlert(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Dossiê incompleto</AlertDialogTitle>
+            <AlertDialogDescription>
+              Antes de enviar ao comitê, preencha os campos obrigatórios faltantes:
+              <ul style={{ marginTop: 8 }}>
+                {readinessAlert?.missing.map(m => (
+                  <li key={m} style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: T.text }}>· {m}</li>
+                ))}
+              </ul>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Voltar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (readinessAlert) navigate(`/analises/${readinessAlert.analysisId}`);
+                setReadinessAlert(null);
+              }}
+            >
+              Abrir dossiê
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

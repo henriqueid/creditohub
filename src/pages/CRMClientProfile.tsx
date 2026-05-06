@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StatusBadge } from "@/components/StatusBadge";
 import { ScoreGauge } from "@/components/ScoreGauge";
-import { ClientTagManager } from "@/components/ClientTagManager";
+import { ClientTagManager } from "@/components/crm/ClientTagManager";
 import { formatBRL, formatDate, formatCNPJorCPF } from "@/lib/formatters";
 import {
   ArrowLeft, Building2, Phone, Mail, ShieldAlert,

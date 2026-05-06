@@ -201,3 +201,40 @@ export function snapshotToClient(snap: ConsultaSnapshot): Record<string, unknown
     estado: snap.estado || null,
   };
 }
+
+/**
+ * Garante que existe um `clients` row para este documento.
+ * Se já existe, retorna o id. Se não, cria com os dados do snapshot (ou fallback mínimo).
+ *
+ * Compartilhado por Prospects (promoção), ConsultaCPFCNPJ ("Adicionar à carteira")
+ * e NewDealDialog (criação de deal com cedente novo).
+ */
+export async function ensureClientFromSnapshot(
+  documento: string,
+  snapshot?: ConsultaSnapshot | null,
+  fallback?: { razao_social?: string; nome_fantasia?: string; segmento?: string; cidade?: string; estado?: string },
+): Promise<string> {
+  const digits = documento.replace(/\D/g, "");
+
+  const existing = await supabase
+    .from("clients").select("id").eq("cnpj_cpf", digits).maybeSingle();
+  if (existing.data?.id) return existing.data.id;
+
+  const payload = snapshot
+    ? { ...snapshotToClient(snapshot), cnpj_cpf: digits }
+    : {
+        cnpj_cpf: digits,
+        razao_social: fallback?.razao_social || `Cedente ${digits}`,
+        nome_fantasia: fallback?.nome_fantasia || null,
+        segmento: fallback?.segmento || null,
+        cidade: fallback?.cidade || null,
+        estado: fallback?.estado || null,
+      };
+
+  const { data, error } = await supabase
+    .from("clients")
+    .insert(payload as { cnpj_cpf: string; razao_social: string })
+    .select("id").single();
+  if (error) throw error;
+  return data.id;
+}

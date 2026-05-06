@@ -41,7 +41,6 @@ function checkDataSufficiency(analysisData: any, clientData: any, insightType: s
     }
   }
 
-  // Count how many substantive fields have data
   const substantiveFields = [
     "credit_score", "faturamento_medio", "volume_estimado", "receita_liquida",
     "capital_social", "prazo_medio_titulos", "protestos", "pendencias",
@@ -67,12 +66,17 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    // TODO: Configure AI_API_KEY in Supabase secrets (Anthropic, OpenAI, or Google)
-    // and update AI_API_URL + model below before deploying
-    const AI_API_KEY = Deno.env.get("AI_API_KEY");
-    if (!AI_API_KEY) throw new Error("AI_API_KEY is not configured");
+    const body = await req.json();
+    const { analysisData, clientData, insightType, anthropic_api_key: userApiKey } = body;
 
-    const { analysisData, clientData, insightType } = await req.json();
+    // Use per-user key if provided, otherwise fall back to server secret
+    const apiKey = userApiKey || Deno.env.get("ANTHROPIC_API_KEY") || Deno.env.get("AI_API_KEY");
+    if (!apiKey) {
+      return new Response(JSON.stringify({
+        error: "Chave de API da IA não configurada. Acesse Meu Perfil → Configurações de IA para adicionar sua chave Anthropic.",
+        no_api_key: true,
+      }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
 
     // === DATA VALIDATION ===
     const { missing, filledCount, totalPossible } = checkDataSufficiency(analysisData, clientData, insightType);
@@ -90,7 +94,6 @@ serve(async (req) => {
       });
     }
 
-    // Warn if very few fields are filled (less than 25%)
     const coveragePercent = Math.round((filledCount / totalPossible) * 100);
     const lowCoverage = coveragePercent < 25;
 
@@ -201,19 +204,19 @@ ${JSON.stringify(availableData, null, 2)}
 Dados do cliente:
 ${JSON.stringify(clientData || {}, null, 2)}`;
 
-    // TODO: Replace URL and model with chosen provider:
-    // OpenAI:   https://api.openai.com/v1/chat/completions  |  model: "gpt-4o"
-    // Google:   https://generativelanguage.googleapis.com/v1beta/...
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    // Anthropic Claude API
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${AI_API_KEY}`,
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "gpt-4o",
+        model: "claude-sonnet-4-6",
+        max_tokens: 2048,
+        system: systemPrompt,
         messages: [
-          { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
         ],
       }),
@@ -221,22 +224,27 @@ ${JSON.stringify(clientData || {}, null, 2)}`;
 
     if (!response.ok) {
       const errText = await response.text();
-      console.error("AI gateway error:", response.status, errText);
+      console.error("Anthropic API error:", response.status, errText);
       if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limit. Tente novamente em alguns segundos." }), {
+        return new Response(JSON.stringify({ error: "Rate limit atingido. Tente novamente em alguns segundos." }), {
           status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+      if (response.status === 401) {
+        return new Response(JSON.stringify({ error: "Chave de API inválida. Verifique sua chave Anthropic em Meu Perfil → Configurações de IA.", invalid_key: true }), {
+          status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
       if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "Créditos de IA insuficientes." }), {
+        return new Response(JSON.stringify({ error: "Créditos de IA insuficientes na conta Anthropic." }), {
           status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      throw new Error(`AI error: ${response.status}`);
+      throw new Error(`Anthropic API error: ${response.status}`);
     }
 
     const data = await response.json();
-    const content = data.choices?.[0]?.message?.content || "Não foi possível gerar insights.";
+    const content = data.content?.[0]?.text || "Não foi possível gerar insights.";
 
     return new Response(JSON.stringify({
       success: true,

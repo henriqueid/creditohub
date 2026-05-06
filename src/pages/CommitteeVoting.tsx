@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card as SCard, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -14,7 +14,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "@/hooks/use-toast";
 import { formatBRL, formatDate, voteLabels, statusLabels } from "@/lib/formatters";
-import { StatusBadge } from "@/components/StatusBadge";
+import { StatusBadge } from "@/components/trilho/StatusBadge";
+import { PageHeader } from "@/components/trilho/PageHeader";
 import { classifyRisk, getScoreGrade, suggestLimit, calculateConcentration } from "@/lib/credit-calculations";
 import { ScoreGauge } from "@/components/ScoreGauge";
 import ReactMarkdown from "react-markdown";
@@ -24,6 +25,8 @@ import {
   BarChart3, Users, DollarSign, Clock, Percent, ExternalLink
 } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
+
+const Card = SCard;
 
 type CommitteeVoteType = Database["public"]["Enums"]["committee_vote"];
 
@@ -257,15 +260,29 @@ export default function CommitteeVoting() {
   const isFinalized = !!existingResult || (analysis && analysis.status !== "in_committee");
 
   return (
-    <div className="p-6 space-y-4">
-      <div className="flex items-center justify-between">
-        <Button variant="ghost" size="sm" onClick={() => navigate("/comite")}>
-          <ArrowLeft className="h-4 w-4 mr-1" /> Voltar ao Comitê
-        </Button>
-        <Button variant="outline" size="sm" onClick={() => navigate(`/analises/${id}`)}>
-          <ExternalLink className="h-3.5 w-3.5 mr-1" /> Abrir Dossiê Completo
-        </Button>
-      </div>
+    <div className="p-7 space-y-[14px]">
+      <PageHeader
+        title={`Comitê · ${client?.razao_social || "..."}`}
+        subtitle={`VOTAÇÃO · QUÓRUM ${votes.length}/${totalMembers}`}
+        actions={
+          <>
+            <button
+              onClick={() => navigate("/comite")}
+              className="px-[14px] py-[6px] rounded-[999px] text-[12px] font-medium border transition-colors hover:bg-[#F0F1EB]"
+              style={{ border: "1px solid var(--border-strong)", color: "#0A1538" }}
+            >
+              ← Voltar
+            </button>
+            <button
+              onClick={() => navigate(`/analises/${id}`)}
+              className="px-[14px] py-[6px] rounded-[999px] text-[12px] font-medium border transition-colors hover:bg-[#F0F1EB]"
+              style={{ border: "1px solid var(--border-strong)", color: "#0A1538" }}
+            >
+              Dossiê completo
+            </button>
+          </>
+        }
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
         {/* LEFT: Dossiê Resumido para o Comitê (60%) */}

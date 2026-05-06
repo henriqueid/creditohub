@@ -1,13 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { StatusBadge } from "@/components/StatusBadge";
 import { formatBRL, formatDate, formatCNPJorCPF, voteLabels, recommendationLabels } from "@/lib/formatters";
-import { ArrowLeft, FileText, Users, CheckCircle2, Clock, AlertTriangle, XCircle, Circle, Briefcase, MessageSquare, ListTodo } from "lucide-react";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
+import { T } from "@/lib/tokens";
+import { StatusBadge } from "@/components/trilho/StatusBadge";
+import { Card } from "@/components/trilho/Card";
+import { PageHeader } from "@/components/trilho/PageHeader";
+import { DataTable } from "@/components/trilho/DataTable";
 
 interface TimelineEvent {
   id: string;
@@ -19,27 +18,15 @@ interface TimelineEvent {
   meta?: Record<string, string>;
 }
 
-function getTimelineIcon(type: TimelineEvent["type"], status?: string) {
-  switch (type) {
-    case "analysis_created":
-      return <FileText className="h-4 w-4 text-primary" />;
-    case "status_change":
-      return <Clock className="h-4 w-4 text-status-committee" />;
-    case "vote":
-      if (status === "approve") return <CheckCircle2 className="h-4 w-4 text-status-approved" />;
-      if (status === "reject") return <XCircle className="h-4 w-4 text-status-rejected" />;
-      return <AlertTriangle className="h-4 w-4 text-status-restricted" />;
-    case "committee_result":
-      return <Users className="h-4 w-4 text-primary" />;
-    case "deal_created":
-      return <Briefcase className="h-4 w-4 text-status-approved" />;
-    case "activity":
-      return <MessageSquare className="h-4 w-4 text-muted-foreground" />;
-    case "task":
-      return <ListTodo className="h-4 w-4 text-status-committee" />;
-    default:
-      return <Circle className="h-4 w-4 text-muted-foreground" />;
+function getDotColor(type: TimelineEvent["type"], status?: string) {
+  if (type === "vote") {
+    if (status === "approve") return T.esmeralda;
+    if (status === "reject") return T.red;
+    return T.amber;
   }
+  if (type === "committee_result" || type === "deal_created") return T.esmeralda;
+  if (type === "analysis_created") return T.marinho;
+  return T.cinza;
 }
 
 export default function ClientHistory() {
@@ -243,117 +230,103 @@ export default function ClientHistory() {
 
   timeline.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-  return (
-    <div className="p-5 space-y-6 w-full">
-      <Button variant="ghost" size="sm" onClick={() => navigate("/cedentes")} className="mb-2">
-        <ArrowLeft className="h-4 w-4 mr-1" /> Voltar
-      </Button>
+  const cnpjDisplay = client ? formatCNPJorCPF(client.cnpj_cpf) : "—";
 
-      {/* Client header */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-xl">Histórico — {client?.razao_social || "..."}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-            <div>
-              <span className="text-muted-foreground">CNPJ/CPF</span>
-              <p className="font-medium tabular-nums">{client ? formatCNPJorCPF(client.cnpj_cpf) : "—"}</p>
+  return (
+    <div className="p-7 space-y-[14px]">
+      <PageHeader
+        title={client?.razao_social || "Histórico do cedente"}
+        subtitle={`${cnpjDisplay} · ${analyses.length} ANÁLISES`}
+        actions={
+          <button
+            onClick={() => navigate("/cedentes")}
+            className="px-[14px] py-[6px] rounded-[999px] text-[12px] font-medium border transition-colors hover:bg-[#F0F1EB]"
+            style={{ border: "1px solid var(--border-strong)", color: T.text }}
+          >
+            ← Voltar
+          </button>
+        }
+      />
+
+      {/* Info strip */}
+      <Card padding={16}>
+        <div className="grid grid-cols-4 gap-4">
+          {[
+            ["CNPJ/CPF", cnpjDisplay, true],
+            ["Segmento", client?.segmento || "—", false],
+            ["Cidade/UF", [client?.cidade, client?.estado].filter(Boolean).join("/") || "—", false],
+            ["Análises", String(analyses.length), true],
+          ].map(([label, value, mono], i) => (
+            <div key={i}>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: T.textMute, letterSpacing: "0.08em", textTransform: "uppercase" as const }}>{label}</div>
+              <div style={{ fontSize: 14, fontWeight: 500, color: T.text, marginTop: 3, fontFamily: mono ? "var(--font-mono)" : undefined }}>{value}</div>
             </div>
-            <div>
-              <span className="text-muted-foreground">Segmento</span>
-              <p className="font-medium">{client?.segmento || "—"}</p>
-            </div>
-            <div>
-              <span className="text-muted-foreground">Cidade/UF</span>
-              <p className="font-medium">{[client?.cidade, client?.estado].filter(Boolean).join("/") || "—"}</p>
-            </div>
-            <div>
-              <span className="text-muted-foreground">Total de Análises</span>
-              <p className="font-medium">{analyses.length}</p>
-            </div>
-          </div>
-        </CardContent>
+          ))}
+        </div>
       </Card>
 
-      {/* Analyses summary cards */}
-      <div>
-        <h2 className="text-lg font-semibold mb-3">Análises de Crédito</h2>
-        {analyses.length === 0 ? (
-          <p className="text-muted-foreground text-sm">Nenhuma análise encontrada para este cedente.</p>
+      {/* Analyses */}
+      <Card padding={0}>
+        <div className="px-[18px] py-[14px]" style={{ borderBottom: `1px solid ${T.border}`, fontSize: 14, fontWeight: 500, color: T.text }}>
+          Análises de crédito
+        </div>
+        <DataTable
+          cols={[
+            { key: "date", label: "Data", width: "120px", mono: true },
+            { key: "analista", label: "Analista", width: "1.4fr" },
+            { key: "score", label: "Score", width: "80px", align: "right", mono: true },
+            { key: "limite", label: "Limite", width: "140px", align: "right", mono: true },
+            { key: "status", label: "Status", width: "130px" },
+          ]}
+          rows={analyses.map(a => ({
+            date: formatDate(a.data_analise) || "—",
+            analista: a.analista_credito || "—",
+            score: a.credit_score ? String(a.credit_score) : "—",
+            limite: formatBRL(a.limite_sugerido),
+            status: <StatusBadge status={a.status} />,
+          }))}
+          onRowClick={(_, i) => navigate(`/analises/${analyses[i].id}`)}
+        />
+      </Card>
+
+      {/* Timeline */}
+      <Card padding={18}>
+        <div style={{ fontSize: 14, fontWeight: 500, color: T.text, marginBottom: 16 }}>Timeline de auditoria</div>
+        {timeline.length === 0 ? (
+          <div style={{ fontSize: 13, color: T.textMute, textAlign: "center", padding: "24px 0" }}>Nenhum evento registrado.</div>
         ) : (
-          <div className="grid gap-3">
-            {analyses.map((a) => (
-              <Card
-                key={a.id}
-                className="cursor-pointer hover:bg-muted/30 transition-colors"
-                onClick={() => navigate(`/analises/${a.id}`)}
-              >
-                <CardContent className="py-4 flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <FileText className="h-5 w-5 text-muted-foreground shrink-0" />
-                    <div>
-                      <p className="font-medium text-sm">
-                        Análise de {formatDate(a.data_analise)}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Analista: {a.analista_credito || "—"} · Limite: {formatBRL(a.limite_sugerido)}
-                      </p>
-                    </div>
+          <div className="relative" style={{ paddingLeft: 20 }}>
+            <div style={{ position: "absolute", left: 7, top: 4, bottom: 4, width: 1, background: T.border }} />
+            {timeline.map((event, idx) => (
+              <div key={event.id} style={{ position: "relative", paddingBottom: idx < timeline.length - 1 ? 20 : 0 }}>
+                <div style={{
+                  position: "absolute", left: -17, top: 4, width: 9, height: 9,
+                  borderRadius: "50%", background: getDotColor(event.type, event.status),
+                }} />
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: T.textMute, letterSpacing: "0.06em" }}>
+                  {new Date(event.date).toLocaleString("pt-BR")}
+                </div>
+                <div style={{ fontSize: 13, fontWeight: 500, color: T.text, marginTop: 2, display: "flex", alignItems: "center", gap: 8 }}>
+                  {event.title}
+                  {event.status && <StatusBadge status={event.status} />}
+                </div>
+                {event.description && (
+                  <div style={{ fontSize: 12, color: T.textMute, marginTop: 1 }}>{event.description}</div>
+                )}
+                {event.meta && (
+                  <div style={{ display: "flex", flexWrap: "wrap" as const, gap: "2px 16px", marginTop: 4 }}>
+                    {Object.entries(event.meta).map(([k, v]) => (
+                      <span key={k} style={{ fontSize: 11, color: T.textMute }}>
+                        {k}: <span style={{ color: T.text, fontWeight: 500 }}>{v}</span>
+                      </span>
+                    ))}
                   </div>
-                  <StatusBadge status={a.status} />
-                </CardContent>
-              </Card>
+                )}
+              </div>
             ))}
           </div>
         )}
-      </div>
-
-      {/* Audit timeline */}
-      <div>
-        <h2 className="text-lg font-semibold mb-3">Timeline de Auditoria</h2>
-        {timeline.length === 0 ? (
-          <p className="text-muted-foreground text-sm">Nenhum evento registrado.</p>
-        ) : (
-          <ScrollArea className="max-h-[600px]">
-            <div className="relative pl-8 space-y-0">
-              {/* vertical line */}
-              <div className="absolute left-[15px] top-2 bottom-2 w-px bg-border" />
-
-              {timeline.map((event, idx) => (
-                <div key={event.id} className="relative pb-6 last:pb-0">
-                  {/* dot */}
-                  <div className="absolute -left-8 top-0.5 flex h-8 w-8 items-center justify-center rounded-full bg-background border border-border">
-                    {getTimelineIcon(event.type, event.status)}
-                  </div>
-
-                  <div className="ml-2">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-medium text-sm">{event.title}</span>
-                      {event.status && <StatusBadge status={event.status} />}
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-0.5">{event.description}</p>
-                    <time className="text-xs text-muted-foreground/70 tabular-nums">
-                      {new Date(event.date).toLocaleString("pt-BR")}
-                    </time>
-
-                    {event.meta && (
-                      <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
-                        {Object.entries(event.meta).map(([k, v]) => (
-                          <span key={k} className="text-xs">
-                            <span className="text-muted-foreground">{k}:</span>{" "}
-                            <span className="font-medium">{v}</span>
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </ScrollArea>
-        )}
-      </div>
+      </Card>
     </div>
   );
 }

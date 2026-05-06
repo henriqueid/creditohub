@@ -7,7 +7,7 @@ import {
   calculateFinancialRatios, calculateRiskRadar, calculateOverallRiskScore,
   suggestRate, parseRevenueData, calculateConcentration,
 } from "@/lib/credit-calculations";
-import { RiskRadarChart } from "@/components/RiskRadarChart";
+import { RiskRadarChart } from "@/components/credit/RiskRadarChart";
 import {
   TrendingUp, DollarSign, Shield, Percent, Users, BarChart3,
   Activity, ArrowUpRight, ArrowDownRight, Minus, AlertTriangle, CheckCircle2, XCircle

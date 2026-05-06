@@ -1,187 +1,132 @@
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Loader2, ArrowRight, Eye, EyeOff } from "lucide-react";
+import {
+  Loader2, ArrowRight, Eye, EyeOff,
+  Lock, Shield, FileCheck, Award,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
+import { StatsCounter } from "@/components/auth/StatsCounter";
+import { MiniPipeline } from "@/components/auth/MiniPipeline";
+import { TrilhoHeroLoop } from "@/components/auth/TrilhoHeroLoop";
 
 /* ── Tipos ───────────────────────────────────────────────────────── */
 
 type AuthMode = "login" | "signup" | "forgot";
 
-/* ── Rede de nós animada ─────────────────────────────────────────── */
-
-interface Node {
-  x: number; y: number; vx: number; vy: number; r: number;
-}
-
-function NodeNetwork() {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    const MINT = "43,212,156";
-    const NODE_COUNT = 28;
-    const MAX_DIST = 160;
-    let animId: number;
-
-    const resize = () => {
-      canvas.width = canvas.offsetWidth;
-      canvas.height = canvas.offsetHeight;
-    };
-    resize();
-    window.addEventListener("resize", resize);
-
-    const nodes: Node[] = Array.from({ length: NODE_COUNT }, () => ({
-      x: Math.random() * canvas.width,
-      y: Math.random() * canvas.height,
-      vx: (Math.random() - 0.5) * 0.45,
-      vy: (Math.random() - 0.5) * 0.45,
-      r: 2 + Math.random() * 2.5,
-    }));
-
-    const draw = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      // Move nodes
-      for (const n of nodes) {
-        n.x += n.vx;
-        n.y += n.vy;
-        if (n.x < 0 || n.x > canvas.width) n.vx *= -1;
-        if (n.y < 0 || n.y > canvas.height) n.vy *= -1;
-      }
-
-      // Draw edges
-      for (let i = 0; i < nodes.length; i++) {
-        for (let j = i + 1; j < nodes.length; j++) {
-          const dx = nodes[i].x - nodes[j].x;
-          const dy = nodes[i].y - nodes[j].y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < MAX_DIST) {
-            const alpha = (1 - dist / MAX_DIST) * 0.35;
-            ctx.strokeStyle = `rgba(${MINT},${alpha})`;
-            ctx.lineWidth = 0.8;
-            ctx.beginPath();
-            ctx.moveTo(nodes[i].x, nodes[i].y);
-            ctx.lineTo(nodes[j].x, nodes[j].y);
-            ctx.stroke();
-          }
-        }
-      }
-
-      // Draw nodes
-      for (const n of nodes) {
-        ctx.beginPath();
-        ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(${MINT},0.55)`;
-        ctx.fill();
-        // glow ring
-        ctx.beginPath();
-        ctx.arc(n.x, n.y, n.r + 3, 0, Math.PI * 2);
-        ctx.strokeStyle = `rgba(${MINT},0.12)`;
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-      }
-
-      animId = requestAnimationFrame(draw);
-    };
-
-    draw();
-    return () => {
-      cancelAnimationFrame(animId);
-      window.removeEventListener("resize", resize);
-    };
-  }, []);
-
-  return (
-    <canvas
-      ref={canvasRef}
-      className="absolute inset-0 w-full h-full"
-      style={{ opacity: 0.7 }}
-    />
-  );
-}
-
 /* ── Painel decorativo esquerdo ──────────────────────────────────── */
 
 function DecorativePanel() {
   return (
-    <div className="hidden lg:flex flex-col relative overflow-hidden bg-sink-deep w-[52%] shrink-0">
-      {/* Rede de nós animada */}
-      <NodeNetwork />
+    <div className="hidden lg:flex flex-col relative overflow-hidden bg-marinho w-[52%] shrink-0">
+      {/* Hero animado da marca como camada de fundo full-panel */}
+      <TrilhoHeroLoop />
 
-      {/* Gradiente diagonal interno para profundidade */}
-      <div className="absolute inset-0 bg-gradient-to-br from-sink-deep-2/60 via-transparent to-sink-deep-4/50" />
-
-      {/* Orb de glow no canto */}
-      <div
-        className="absolute -bottom-24 -right-24 h-64 w-64 rounded-full"
+      {/* Conteúdo no terço inferior — sobreposto ao hero */}
+      <div className="relative z-10 mt-auto flex flex-col gap-7 px-12 pb-10 pt-16"
         style={{
-          background: "radial-gradient(circle, rgba(43,212,156,0.15) 0%, transparent 70%)",
+          background: "linear-gradient(180deg, transparent 0%, rgba(7,15,43,0.55) 30%, rgba(7,15,43,0.85) 100%)",
         }}
-      />
-      <div
-        className="absolute -top-16 -left-16 h-48 w-48 rounded-full"
-        style={{
-          background: "radial-gradient(circle, rgba(43,212,156,0.08) 0%, transparent 70%)",
-        }}
-      />
+      >
+        {/* STATS STRIP */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.6, ease: "easeOut" }}
+          className="flex items-stretch gap-6"
+        >
+          <StatBlock
+            value={<><span className="text-white/50 text-[18px] mr-1">R$</span><StatsCounter to={2.3} format="currency-bi" delay={800} /></>}
+            unit="bi processados"
+          />
+          <StatDivider />
+          <StatBlock
+            value={<StatsCounter to={1247} delay={800} />}
+            unit="cedentes ativos"
+          />
+          <StatDivider />
+          <StatBlock
+            value={<><StatsCounter to={94} format="percent" delay={800} /><span className="text-esmeralda">%</span></>}
+            unit="aprovação no comitê"
+          />
+        </motion.div>
 
-      {/* Conteúdo */}
-      <div className="relative z-10 flex flex-col h-full px-12 py-14">
-        {/* Wordmark */}
-        <div className="flex items-center gap-3">
-          <img src="/logo.svg" alt="CreditoHub" className="h-9 w-9 shrink-0" />
-          <span className="text-xl font-bold tracking-tight text-white">
-            Credito<span className="text-sink-mint">Hub</span>
-          </span>
-        </div>
-
-        {/* Texto central */}
-        <div className="mt-auto mb-auto flex flex-col gap-5 max-w-[340px]">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-sink-pill border border-sink-mint/30 bg-sink-mint/10 w-fit">
-            <span className="h-1.5 w-1.5 rounded-full bg-sink-mint" />
-            <span className="text-[11px] font-semibold uppercase tracking-widest text-sink-mint">
-              Plataforma de Crédito
+        {/* MINI-PIPELINE */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.75, ease: "easeOut" }}
+          className="flex flex-col gap-3"
+        >
+          <div className="flex items-center gap-2">
+            <div className="h-px flex-1 bg-white/10" />
+            <span className="font-mono text-[10px] uppercase tracking-widest text-white/35">
+              Esteira do crédito
             </span>
+            <div className="h-px flex-1 bg-white/10" />
           </div>
+          <MiniPipeline />
+        </motion.div>
 
-          <h1 className="text-[2.25rem] font-bold leading-[1.15] tracking-tight text-white">
-            Inteligência para{" "}
-            <span className="text-sink-mint">decisões</span>{" "}
-            de crédito
-          </h1>
-
-          <p className="text-[15px] text-sink-fog/60 leading-relaxed">
-            Esteira completa — da prospecção ao comitê. Análise, monitoramento
-            e CRM integrados em um único lugar.
-          </p>
-        </div>
-
-        {/* Features footer */}
-        <div className="flex flex-col gap-2.5">
-          {[
-            "Análise de crédito estruturada em dossiê",
-            "Comitê com votação e parecer colaborativo",
-            "Monitoramento de NFs e informe falimentar",
-          ].map((feat) => (
-            <div key={feat} className="flex items-center gap-2.5">
-              <div className="h-4 w-4 rounded-full bg-sink-mint/20 flex items-center justify-center shrink-0">
-                <div className="h-1.5 w-1.5 rounded-full bg-sink-mint" />
-              </div>
-              <span className="text-[13px] text-sink-fog/55">{feat}</span>
-            </div>
-          ))}
-        </div>
+        {/* TRUST STRIP */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.6, delay: 0.95 }}
+          className="flex items-center flex-wrap gap-x-5 gap-y-2 pt-1"
+        >
+          <TrustBadge icon={Lock} label="LGPD" />
+          <TrustDot />
+          <TrustBadge icon={Shield} label="SSL/TLS" />
+          <TrustDot />
+          <TrustBadge icon={FileCheck} label="Auditoria automática" />
+          <TrustDot />
+          <TrustBadge icon={Award} label="SOC 2" />
+        </motion.div>
       </div>
     </div>
   );
+}
+
+function StatBlock({ value, unit }: { value: React.ReactNode; unit: string }) {
+  return (
+    <div className="flex flex-col gap-0.5 flex-1 min-w-0">
+      <div
+        className="text-white font-bold leading-none whitespace-nowrap"
+        style={{
+          fontSize: 30,
+          letterSpacing: "-0.02em",
+          fontFamily: "var(--font-mono)",
+        }}
+      >
+        {value}
+      </div>
+      <span className="text-white/50 text-[12px] mt-1">{unit}</span>
+    </div>
+  );
+}
+
+function StatDivider() {
+  return <div className="w-px self-stretch bg-gradient-to-b from-transparent via-white/15 to-transparent" />;
+}
+
+function TrustBadge({ icon: Icon, label }: { icon: React.ElementType; label: string }) {
+  return (
+    <div className="flex items-center gap-1.5">
+      <Icon style={{ width: 12, height: 12, color: "rgba(255,255,255,0.40)" }} />
+      <span className="font-mono text-[10.5px] uppercase tracking-wider text-white/45">
+        {label}
+      </span>
+    </div>
+  );
+}
+
+function TrustDot() {
+  return <span className="text-white/20 text-xs">·</span>;
 }
 
 /* ── Campo de input estilizado ───────────────────────────────────── */
@@ -215,7 +160,7 @@ function SinkInput({
     <div className="flex flex-col gap-1.5">
       <Label
         htmlFor={id}
-        className="text-[12px] font-semibold uppercase tracking-wider text-sink-ink/60"
+        className="text-[11.5px] font-semibold uppercase tracking-wider text-ink/55"
       >
         {label}
       </Label>
@@ -230,9 +175,9 @@ function SinkInput({
           minLength={minLength}
           autoComplete={autoComplete}
           className={cn(
-            "h-11 bg-white border-sink-fog text-sink-ink placeholder:text-sink-ink/30",
-            "focus-visible:ring-2 focus-visible:ring-sink-mint focus-visible:ring-offset-0 focus-visible:border-sink-mint",
-            "rounded-sink-sm text-[14px]",
+            "h-11 bg-white border-cinza text-ink placeholder:text-ink/30",
+            "focus-visible:ring-2 focus-visible:ring-esmeralda focus-visible:ring-offset-0 focus-visible:border-esmeralda",
+            "rounded-t-sm text-[14px]",
             isPassword && "pr-10"
           )}
         />
@@ -240,7 +185,7 @@ function SinkInput({
           <button
             type="button"
             onClick={() => setShowPassword((v) => !v)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-sink-ink/30 hover:text-sink-ink/60 transition-colors"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-ink/30 hover:text-ink/60 transition-colors"
             tabIndex={-1}
           >
             {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -269,12 +214,12 @@ function SinkButton({
       type={type}
       disabled={disabled || loading}
       className={cn(
-        "w-full h-11 flex items-center justify-center gap-2 rounded-sink-pill",
-        "bg-sink-mint text-sink-deep text-[14px] font-bold tracking-wide",
+        "w-full h-11 flex items-center justify-center gap-2 rounded-t-pill",
+        "bg-esmeralda text-marinho text-[14px] font-bold tracking-wide",
         "transition-all duration-150",
-        "hover:bg-sink-mint-2 active:scale-[0.98]",
+        "hover:bg-esmeralda-2 active:scale-[0.98]",
         "disabled:opacity-50 disabled:cursor-not-allowed",
-        "shadow-sm hover:shadow-sink-sm"
+        "shadow-sm hover:shadow-t-sm"
       )}
     >
       {loading ? (
@@ -299,7 +244,7 @@ export default function Auth() {
   const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
 
-  /* Handlers ── preservando toda a lógica existente */
+  /* Handlers (preservados da implementação original) */
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -355,7 +300,6 @@ export default function Auth() {
       ? handleSignup
       : handleForgotPassword;
 
-  /* Títulos por modo */
   const titles: Record<AuthMode, { heading: string; sub: string }> = {
     login: {
       heading: "Bem-vindo de volta",
@@ -378,129 +322,160 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen flex bg-sink-cream">
-      {/* Painel esquerdo decorativo */}
+    <div className="min-h-screen flex bg-off">
       <DecorativePanel />
 
-      {/* Painel direito: formulário */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 bg-sink-cream">
-        {/* Logo mobile (só visível no mobile) */}
+      {/* Painel direito: formulário em card */}
+      <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 bg-off">
+        {/* Logo mobile */}
         <div className="flex lg:hidden items-center gap-2.5 mb-10">
-          <img src="/logo.svg" alt="CreditoHub" className="h-8 w-8" />
-          <span className="text-lg font-bold tracking-tight text-sink-ink">
-            Credito<span className="text-sink-mint-3">Hub</span>
+          <svg width="28" height="28" viewBox="0 0 64 64" style={{ display: "block", flexShrink: 0 }}>
+            <rect x="6" y="20" width="52" height="6" rx="3" fill="#0A1538" />
+            <rect x="6" y="38" width="52" height="6" rx="3" fill="#0A1538" />
+            <circle cx="46" cy="32" r="7" fill="#00D49A" />
+          </svg>
+          <span className="text-lg font-medium tracking-tight text-ink" style={{ letterSpacing: "-0.03em" }}>
+            Trilho<span style={{ color: "#00D49A" }}>.</span>
           </span>
         </div>
 
         {/* Card do formulário */}
-        <div className="w-full max-w-[380px] flex flex-col gap-8">
-          {/* Cabeçalho */}
-          <div className="flex flex-col gap-1.5">
-            <h2 className="text-[1.5rem] font-bold tracking-tight text-sink-ink leading-tight">
-              {titles[mode].heading}
-            </h2>
-            <p className="text-[13px] text-sink-ink/50 leading-relaxed">
-              {titles[mode].sub}
-            </p>
-          </div>
+        <div
+          className="w-full max-w-[420px] rounded-[16px] bg-white"
+          style={{
+            border: "1px solid rgba(10,21,56,0.06)",
+            boxShadow: "var(--shadow-md)",
+            padding: "40px 36px",
+          }}
+        >
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={mode}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.22, ease: "easeOut" }}
+              className="flex flex-col gap-7"
+            >
+              {/* Cabeçalho */}
+              <div className="flex flex-col gap-2">
+                <h2
+                  className="font-bold text-ink"
+                  style={{
+                    fontSize: 32,
+                    lineHeight: 1.1,
+                    letterSpacing: "-0.025em",
+                  }}
+                >
+                  {titles[mode].heading}
+                </h2>
+                <p
+                  className="text-ink/55"
+                  style={{ fontSize: 14.5, lineHeight: 1.6 }}
+                >
+                  {titles[mode].sub}
+                </p>
+              </div>
 
-          {/* Formulário */}
-          <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-            {mode === "signup" && (
-              <SinkInput
-                id="fullName"
-                label="Nome completo"
-                value={fullName}
-                onChange={setFullName}
-                placeholder="Seu nome completo"
-                required
-                autoComplete="name"
-              />
-            )}
+              {/* Formulário */}
+              <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+                {mode === "signup" && (
+                  <SinkInput
+                    id="fullName"
+                    label="Nome completo"
+                    value={fullName}
+                    onChange={setFullName}
+                    placeholder="Seu nome completo"
+                    required
+                    autoComplete="name"
+                  />
+                )}
 
-            <SinkInput
-              id="email"
-              label="Email"
-              type="email"
-              value={email}
-              onChange={setEmail}
-              placeholder="seu@email.com"
-              required
-              autoComplete="email"
-            />
-
-            {mode !== "forgot" && (
-              <div className="flex flex-col gap-1.5">
                 <SinkInput
-                  id="password"
-                  label="Senha"
-                  type="password"
-                  value={password}
-                  onChange={setPassword}
-                  placeholder="••••••••"
+                  id="email"
+                  label="Email"
+                  type="email"
+                  value={email}
+                  onChange={setEmail}
+                  placeholder="seu@email.com"
                   required
-                  minLength={6}
-                  autoComplete={mode === "login" ? "current-password" : "new-password"}
+                  autoComplete="email"
                 />
-                {mode === "login" && (
-                  <div className="flex justify-end">
-                    <button
-                      type="button"
-                      onClick={() => setMode("forgot")}
-                      className="text-[12px] text-sink-mint-3 hover:text-sink-mint font-medium transition-colors"
-                    >
-                      Esqueceu a senha?
-                    </button>
+
+                {mode !== "forgot" && (
+                  <div className="flex flex-col gap-1.5">
+                    <SinkInput
+                      id="password"
+                      label="Senha"
+                      type="password"
+                      value={password}
+                      onChange={setPassword}
+                      placeholder="••••••••"
+                      required
+                      minLength={6}
+                      autoComplete={mode === "login" ? "current-password" : "new-password"}
+                    />
+                    {mode === "login" && (
+                      <div className="flex justify-end">
+                        <button
+                          type="button"
+                          onClick={() => setMode("forgot")}
+                          className="text-[12px] text-esmeralda-dark hover:text-esmeralda font-medium transition-colors"
+                        >
+                          Esqueceu a senha?
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
+
+                <SinkButton loading={loading}>{ctaLabel[mode]}</SinkButton>
+              </form>
+
+              {/* Links secundários */}
+              <div className="text-center text-[13px] text-ink/45">
+                {mode === "login" && (
+                  <p>
+                    Não tem conta?{" "}
+                    <button
+                      type="button"
+                      onClick={() => setMode("signup")}
+                      className="text-esmeralda-dark hover:text-esmeralda font-semibold transition-colors"
+                    >
+                      Cadastre-se
+                    </button>
+                  </p>
+                )}
+                {mode === "signup" && (
+                  <p>
+                    Já tem conta?{" "}
+                    <button
+                      type="button"
+                      onClick={() => setMode("login")}
+                      className="text-esmeralda-dark hover:text-esmeralda font-semibold transition-colors"
+                    >
+                      Entrar
+                    </button>
+                  </p>
+                )}
+                {mode === "forgot" && (
+                  <button
+                    type="button"
+                    onClick={() => setMode("login")}
+                    className="text-esmeralda-dark hover:text-esmeralda font-semibold transition-colors"
+                  >
+                    Voltar para o login
+                  </button>
+                )}
               </div>
-            )}
-
-            <SinkButton loading={loading}>{ctaLabel[mode]}</SinkButton>
-          </form>
-
-          {/* Links secundários */}
-          <div className="text-center text-[13px] text-sink-ink/45">
-            {mode === "login" && (
-              <p>
-                Não tem conta?{" "}
-                <button
-                  type="button"
-                  onClick={() => setMode("signup")}
-                  className="text-sink-mint-3 hover:text-sink-mint font-semibold transition-colors"
-                >
-                  Cadastre-se
-                </button>
-              </p>
-            )}
-            {mode === "signup" && (
-              <p>
-                Já tem conta?{" "}
-                <button
-                  type="button"
-                  onClick={() => setMode("login")}
-                  className="text-sink-mint-3 hover:text-sink-mint font-semibold transition-colors"
-                >
-                  Entrar
-                </button>
-              </p>
-            )}
-            {mode === "forgot" && (
-              <button
-                type="button"
-                onClick={() => setMode("login")}
-                className="text-sink-mint-3 hover:text-sink-mint font-semibold transition-colors"
-              >
-                Voltar para o login
-              </button>
-            )}
-          </div>
-
-          {/* Rodapé discreto */}
-          <p className="text-center text-[11px] text-sink-ink/25 mt-4">
-            &copy; {new Date().getFullYear()} CreditoHub. Todos os direitos reservados.
-          </p>
+            </motion.div>
+          </AnimatePresence>
         </div>
+
+        {/* Rodapé */}
+        <p className="text-center text-[11px] text-ink/30 mt-6 font-mono">
+          &copy; {new Date().getFullYear()} CreditoHub · Todos os direitos reservados
+        </p>
       </div>
     </div>
   );

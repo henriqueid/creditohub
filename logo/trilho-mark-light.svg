@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <title>Trilho — Symbol (light on dark)</title>
+  <rect x="6" y="20" width="52" height="6" rx="3" fill="#FAFAF7"></rect>
+  <rect x="6" y="38" width="52" height="6" rx="3" fill="#FAFAF7"></rect>
+  <circle cx="46" cy="32" r="7" fill="#00D49A"></circle>
+</svg>

@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Trilho — Hero loop</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  :root{
+    --navy:#0A1538;
+    --navy-2:#0d1a45;
+    --emerald:#00D49A;
+    --off:#FAFAF7;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;background:var(--navy);font-family:'Geist','Inter',system-ui,-apple-system,sans-serif;color:var(--off);overflow:hidden}
+  /* The hero box — drop this whole thing into your login left panel.
+     Make the container any size; the SVG scales to fit. */
+  .hero{
+    position:relative;
+    width:100%;
+    height:100%;
+    background:
+      radial-gradient(80% 60% at 50% 38%, rgba(0,212,154,.07) 0%, rgba(0,212,154,0) 60%),
+      radial-gradient(70% 50% at 78% 22%, rgba(0,212,154,.05) 0%, rgba(0,212,154,0) 55%),
+      linear-gradient(180deg, #0A1538 0%, #0c1840 100%);
+    overflow:hidden;
+  }
+  .hero svg{position:absolute;inset:0;width:100%;height:100%;display:block}
+
+  /* ── Constellation layer ── */
+  .star{
+    fill:#00D49A;
+    transform-box:fill-box;
+    transform-origin:center;
+    animation:starPulse 6s ease-in-out infinite;
+  }
+  @keyframes starPulse{
+    0%,100%{opacity:.18;transform:scale(.8)}
+    50%   {opacity:.65;transform:scale(1)}
+  }
+  .link{
+    stroke:#00D49A;
+    stroke-width:.5;
+    fill:none;
+    opacity:0;
+    animation:linkFade 8s ease-in-out infinite;
+  }
+  @keyframes linkFade{
+    0%,100%{opacity:0}
+    40%,60%{opacity:.22}
+  }
+
+  /* Stagger constellations */
+  .s-1{animation-delay:-0.0s}.s-2{animation-delay:-1.2s}.s-3{animation-delay:-2.4s}
+  .s-4{animation-delay:-3.6s}.s-5{animation-delay:-4.8s}.s-6{animation-delay:-0.6s}
+  .s-7{animation-delay:-2.0s}.s-8{animation-delay:-3.0s}.s-9{animation-delay:-4.2s}
+  .s-10{animation-delay:-1.5s}.s-11{animation-delay:-3.3s}.s-12{animation-delay:-5.1s}
+  .s-13{animation-delay:-0.9s}.s-14{animation-delay:-2.7s}
+  .l-1{animation-delay:-0.4s}.l-2{animation-delay:-2.8s}.l-3{animation-delay:-5.2s}.l-4{animation-delay:-1.6s}
+
+  /* ── Mark animation (the bigger Trilho mark) ── */
+  .rail{
+    fill:#FAFAF7;
+    opacity:.92;
+  }
+  /* Light sweep travelling through the rails */
+  .rail-glow{
+    fill:url(#railSweep);
+    opacity:.0;
+    animation:railSweep 6s ease-in-out infinite;
+  }
+  @keyframes railSweep{
+    0%   {opacity:0;transform:translateX(-30%)}
+    20%  {opacity:.85}
+    80%  {opacity:.85}
+    100% {opacity:0;transform:translateX(30%)}
+  }
+  .ball{
+    fill:var(--emerald);
+    filter:url(#ballGlow);
+    animation:ballRun 6s ease-in-out infinite;
+  }
+  @keyframes ballRun{
+    /* Cycles forward and back so the loop is seamless */
+    0%   {transform:translateX(-90px)}
+    50%  {transform:translateX(90px)}
+    100% {transform:translateX(-90px)}
+  }
+  .ball-trail{
+    fill:url(#trailGrad);
+    opacity:.55;
+    animation:trailRun 6s ease-in-out infinite;
+  }
+  @keyframes trailRun{
+    0%   {transform:translateX(-90px) scaleX(.4);opacity:.0}
+    25%  {opacity:.5}
+    50%  {transform:translateX(90px)  scaleX(.4);opacity:.0}
+    75%  {opacity:.5}
+    100% {transform:translateX(-90px) scaleX(.4);opacity:.0}
+  }
+
+  /* Wordmark — gentle breathing */
+  .wordmark{
+    font-family:'Geist','Inter',system-ui,sans-serif;
+    font-weight:500;
+    letter-spacing:-3.5px;
+    fill:var(--off);
+    animation:wordBreathe 6s ease-in-out infinite;
+  }
+  .wordmark .dot{fill:var(--emerald)}
+  @keyframes wordBreathe{
+    0%,100%{opacity:.95}
+    50%   {opacity:1}
+  }
+
+  /* Subtle horizon line */
+  .horizon{
+    stroke:#00D49A;
+    stroke-width:.4;
+    opacity:.18;
+  }
+
+  /* Reduce-motion friendly */
+  @media (prefers-reduced-motion:reduce){
+    *{animation:none !important}
+    .ball{transform:translateX(0)}
+    .rail-glow{opacity:0}
+  }
+</style>
+</head>
+<body>
+
+<div class="hero" aria-label="Trilho — animação institucional">
+
+  <svg viewBox="0 0 1200 720" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <defs>
+      <!-- Light sweep that moves along the rails -->
+      <linearGradient id="railSweep" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%"  stop-color="#00D49A" stop-opacity="0"/>
+        <stop offset="50%" stop-color="#00D49A" stop-opacity="1"/>
+        <stop offset="100%" stop-color="#00D49A" stop-opacity="0"/>
+      </linearGradient>
+
+      <!-- Trail behind the moving ball -->
+      <linearGradient id="trailGrad" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%"   stop-color="#00D49A" stop-opacity="0"/>
+        <stop offset="100%" stop-color="#00D49A" stop-opacity=".9"/>
+      </linearGradient>
+
+      <!-- Soft glow on the moving ball -->
+      <filter id="ballGlow" x="-200%" y="-200%" width="500%" height="500%">
+        <feGaussianBlur stdDeviation="6" result="blur"/>
+        <feMerge>
+          <feMergeNode in="blur"/>
+          <feMergeNode in="blur"/>
+          <feMergeNode in="SourceGraphic"/>
+        </feMerge>
+      </filter>
+
+      <!-- Vignette to focus center -->
+      <radialGradient id="vignette" cx="50%" cy="50%" r="65%">
+        <stop offset="60%" stop-color="#0A1538" stop-opacity="0"/>
+        <stop offset="100%" stop-color="#0A1538" stop-opacity=".55"/>
+      </radialGradient>
+    </defs>
+
+    <!-- ╭───────── Constellation backdrop ─────────╮ -->
+    <g>
+      <!-- Right-side cluster (mirrors your screenshot) -->
+      <circle class="star s-1"  cx="1010" cy="120" r="2.2"/>
+      <circle class="star s-2"  cx="1080" cy="180" r="1.8"/>
+      <circle class="star s-3"  cx="1130" cy="240" r="2.4"/>
+      <circle class="star s-4"  cx="1075" cy="300" r="1.6"/>
+      <circle class="star s-5"  cx="1145" cy="360" r="2"/>
+      <circle class="star s-6"  cx="1090" cy="430" r="1.8"/>
+      <circle class="star s-7"  cx="1035" cy="490" r="2.2"/>
+      <polyline class="link l-1" points="1010,120 1080,180 1130,240 1075,300 1145,360 1090,430 1035,490"/>
+
+      <!-- Center-bottom cluster -->
+      <circle class="star s-8"  cx="430" cy="540" r="1.6"/>
+      <circle class="star s-9"  cx="500" cy="580" r="2"/>
+      <circle class="star s-10" cx="580" cy="555" r="1.8"/>
+      <circle class="star s-11" cx="650" cy="610" r="2.2"/>
+      <circle class="star s-12" cx="730" cy="565" r="1.8"/>
+      <polyline class="link l-2" points="430,540 500,580 580,555 650,610 730,565"/>
+
+      <!-- Left scatter -->
+      <circle class="star s-13" cx="120" cy="170" r="1.6"/>
+      <circle class="star s-14" cx="80"  cy="450" r="1.8"/>
+      <circle class="star s-1"  cx="180" cy="600" r="2"/>
+      <polyline class="link l-3" points="120,170 80,450 180,600"/>
+
+      <!-- Misc scattered -->
+      <circle class="star s-2" cx="350" cy="110" r="1.6"/>
+      <circle class="star s-5" cx="900" cy="640" r="1.8"/>
+      <circle class="star s-9" cx="250" cy="320" r="1.6"/>
+      <circle class="star s-3" cx="970" cy="80"  r="1.8"/>
+      <polyline class="link l-4" points="350,110 250,320 80,450"/>
+    </g>
+
+    <!-- ╭───────── Center mark (animated rails + ball) ─────────╮ -->
+    <g transform="translate(600 320)">
+      <!-- Mark is centered around (0,0). Rails span -160 → +160 -->
+      <g>
+        <!-- Top rail -->
+        <rect class="rail" x="-160" y="-22" width="320" height="10" rx="5"/>
+        <!-- Top rail glow sweep -->
+        <rect class="rail-glow" x="-160" y="-22" width="320" height="10" rx="5"/>
+
+        <!-- Bottom rail -->
+        <rect class="rail" x="-160" y="12"  width="320" height="10" rx="5"/>
+        <!-- Bottom rail glow sweep -->
+        <rect class="rail-glow" x="-160" y="12"  width="320" height="10" rx="5"/>
+
+        <!-- Subtle horizon under the rails -->
+        <line class="horizon" x1="-220" y1="60" x2="220" y2="60"/>
+      </g>
+
+      <!-- Trail (drawn behind the ball) -->
+      <ellipse class="ball-trail" cx="0" cy="-5" rx="40" ry="6"/>
+
+      <!-- Moving ball -->
+      <circle class="ball" cx="0" cy="-5" r="13"/>
+    </g>
+
+    <!-- ╭───────── Wordmark ─────────╮ -->
+    <text class="wordmark" x="600" y="455" text-anchor="middle" font-size="86">
+      Trilho<tspan class="dot">.</tspan>
+    </text>
+
+    <!-- ╭───────── Tagline (small) ─────────╮ -->
+    <text x="600" y="498" text-anchor="middle"
+          font-family="Geist,Inter,system-ui,sans-serif"
+          font-size="13" font-weight="400"
+          letter-spacing="6" fill="#FAFAF7" opacity=".55">
+      INTELIGÊNCIA  PARA  DECISÕES  DE  CRÉDITO
+    </text>
+
+    <!-- Vignette on top -->
+    <rect x="0" y="0" width="1200" height="720" fill="url(#vignette)" pointer-events="none"/>
+  </svg>
+</div>
+
+</body>
+</html>

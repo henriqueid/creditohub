@@ -1,676 +1,522 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { toast as toastHook } from "@/hooks/use-toast";
-import { motion } from "framer-motion";
+import { T } from "@/lib/tokens";
+import { PageHeader } from "@/components/trilho/PageHeader";
 import {
-  Settings as SettingsIcon,
-  Shield,
-  Zap,
-  Users,
-  Save,
-  Building2,
-  Target,
-  Clock,
-  TrendingUp,
-  AlertTriangle,
-  CheckCircle2,
-  XCircle,
-  Percent,
-  DollarSign,
-  BarChart3,
-  Bot,
-  Bell,
-  CalendarClock,
-  Plug,
-  Plus,
-  Trash2,
-  Edit,
-  TestTube,
-  User,
-  Loader2,
-  UserSearch,
+  Building2, Shield, Zap, Users, Save, Target, Clock, TrendingUp,
+  AlertTriangle, CheckCircle2, XCircle, Percent, DollarSign, BarChart3,
+  Bot, Bell, CalendarClock, Plug, Plus, Trash2, Edit, TestTube,
+  UserSearch, Loader2, ChevronRight,
 } from "lucide-react";
+import { COMMITTEE_FIELD_OPTIONS, DEFAULT_REQUIRED_FIELDS } from "@/hooks/useCommitteeRequirements";
 
-type SettingRow = {
-  id: string;
-  key: string;
-  value: any;
-  category: string;
-  description: string | null;
-  updated_at: string;
-};
+/* ── Types ────────────────────────────────────────────────────────── */
+
+type SettingRow = { id: string; key: string; value: any; category: string; description: string | null; updated_at: string };
 
 function parseValue(val: any): string {
   if (typeof val === "string") return val;
   return JSON.stringify(val);
 }
 
-function ProfileTab() {
-  const [profile, setProfile] = useState({ full_name: "", cargo: "" });
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [userId, setUserId] = useState<string | null>(null);
+type Section = "empresa" | "aprovacao" | "comite" | "automacao" | "integracoes" | "acessos";
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session?.user) return;
-      setUserId(session.user.id);
-      supabase
-        .from("profiles")
-        .select("full_name, cargo")
-        .eq("user_id", session.user.id)
-        .maybeSingle()
-        .then(({ data }) => {
-          if (data) setProfile({ full_name: data.full_name || "", cargo: data.cargo || "" });
-          setLoading(false);
-        });
-    });
-  }, []);
+/* ── Sub-components ────────────────────────────────────────────────── */
 
-  const handleSave = async () => {
-    if (!userId) return;
-    setSaving(true);
-    const { error } = await supabase
-      .from("profiles")
-      .update({ full_name: profile.full_name, cargo: profile.cargo })
-      .eq("user_id", userId);
-    setSaving(false);
-    if (error) {
-      toast.error("Erro ao salvar perfil");
-    } else {
-      toast.success("Perfil atualizado!");
-    }
-  };
-
-  if (loading) {
-    return (
-      <Card>
-        <CardContent className="py-8 flex justify-center">
-          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-        </CardContent>
-      </Card>
-    );
-  }
-
+function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
-    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <User className="h-5 w-5 text-primary" /> Meu Perfil
-          </CardTitle>
-          <CardDescription>Gerencie suas informações pessoais</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4 max-w-md">
-          <div className="space-y-2">
-            <Label htmlFor="profile-name">Nome completo</Label>
-            <Input
-              id="profile-name"
-              value={profile.full_name}
-              onChange={(e) => setProfile((p) => ({ ...p, full_name: e.target.value }))}
-              placeholder="Seu nome"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="profile-cargo">Cargo / Função</Label>
-            <Input
-              id="profile-cargo"
-              value={profile.cargo}
-              onChange={(e) => setProfile((p) => ({ ...p, cargo: e.target.value }))}
-              placeholder="Ex: Analista de Crédito"
-            />
-          </div>
-          <Button onClick={handleSave} disabled={saving}>
-            {saving ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Save className="h-4 w-4 mr-1" />}
-            Salvar Perfil
-          </Button>
-        </CardContent>
-      </Card>
-    </motion.div>
+    <div className="flex items-center justify-between gap-4 py-[14px]">
+      <div className="min-w-0 flex-1">
+        <p style={{ fontSize: 13, fontWeight: 500, color: T.text }}>{label}</p>
+        {hint && <p style={{ fontSize: 12, color: T.textMute, marginTop: 2 }}>{hint}</p>}
+      </div>
+      <div className="flex-shrink-0">{children}</div>
+    </div>
   );
 }
+
+function Toggle({ label, hint, checked, onChange }: { label: string; hint?: string; checked: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <div className="flex items-center justify-between gap-4 py-[14px]">
+      <div className="min-w-0 flex-1">
+        <p style={{ fontSize: 13, fontWeight: 500, color: T.text }}>{label}</p>
+        {hint && <p style={{ fontSize: 12, color: T.textMute, marginTop: 2 }}>{hint}</p>}
+      </div>
+      <Switch checked={checked} onCheckedChange={onChange} />
+    </div>
+  );
+}
+
+function SettingsInput({ value, onChange, type = "text", placeholder, max, min, step, width = 120 }: {
+  value: string; onChange: (v: string) => void; type?: string; placeholder?: string;
+  max?: number; min?: number; step?: string; width?: number;
+}) {
+  return (
+    <input
+      type={type}
+      value={value}
+      onChange={e => onChange(e.target.value)}
+      placeholder={placeholder}
+      max={max}
+      min={min}
+      step={step}
+      className="px-3 py-[7px] rounded-[8px] text-[13px] outline-none transition-all"
+      style={{
+        width,
+        background: T.white,
+        border: `1px solid ${T.border}`,
+        color: T.text,
+        fontFamily: "var(--font-mono)",
+        boxShadow: "var(--shadow-sm)",
+      }}
+      onFocus={e => (e.target.style.borderColor = T.esmeralda)}
+      onBlur={e => (e.target.style.borderColor = T.border)}
+    />
+  );
+}
+
+function SectionTitle({ children }: { children: React.ReactNode }) {
+  return (
+    <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", color: T.textFaint, fontWeight: 500, marginBottom: 2 }}>
+      {children}
+    </p>
+  );
+}
+
+function Divider() {
+  return <div style={{ height: 1, background: T.border }} />;
+}
+
+/* ── Settings page ─────────────────────────────────────────────────── */
 
 export default function Settings() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [section, setSection] = useState<Section>("empresa");
   const [localSettings, setLocalSettings] = useState<Record<string, string>>({});
   const [dirty, setDirty] = useState(false);
+
   const { data: settings = [], isLoading } = useQuery({
     queryKey: ["system-settings"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("system_settings")
-        .select("*")
-        .order("category");
+      const { data, error } = await supabase.from("system_settings").select("*").order("category");
       if (error) throw error;
       return data as SettingRow[];
     },
   });
 
-  const { data: integrationCount = 0 } = useQuery({
+  const { data: integrationList = [] } = useQuery({
     queryKey: ["integration-configs-count"],
     queryFn: async () => {
       const { data } = await supabase.from("integration_configs").select("id, is_active");
       return data || [];
     },
-    select: (data) => data,
   });
-
-  const activeIntegrations = Array.isArray(integrationCount) ? integrationCount.filter((i: any) => i.is_active).length : 0;
-  const totalIntegrations = Array.isArray(integrationCount) ? integrationCount.length : 0;
+  const activeIntegrations = integrationList.filter((i: any) => i.is_active).length;
+  const totalIntegrations = integrationList.length;
 
   useEffect(() => {
     if (settings.length > 0 && Object.keys(localSettings).length === 0) {
       const map: Record<string, string> = {};
-      settings.forEach((s) => {
-        map[s.key] = parseValue(s.value);
-      });
+      settings.forEach(s => { map[s.key] = parseValue(s.value); });
       setLocalSettings(map);
     }
   }, [settings]);
 
-  const updateSetting = (key: string, value: string) => {
-    setLocalSettings((prev) => ({ ...prev, [key]: value }));
-    setDirty(true);
-  };
+  const set = (key: string, value: string) => { setLocalSettings(p => ({ ...p, [key]: value })); setDirty(true); };
+  const get = (key: string) => localSettings[key] ?? "";
+  const getBool = (key: string) => get(key) === "true";
+  const getHint = (key: string) => settings.find(s => s.key === key)?.description ?? "";
 
   const saveMutation = useMutation({
     mutationFn: async () => {
       const promises = Object.entries(localSettings).map(([key, value]) => {
         let jsonValue: any;
-        if (value === "true" || value === "false") {
-          jsonValue = value === "true";
-        } else if (!isNaN(Number(value)) && value.trim() !== "") {
-          jsonValue = Number(value);
-        } else {
-          jsonValue = value;
-        }
-        return supabase
-          .from("system_settings")
-          .update({ value: jsonValue, updated_at: new Date().toISOString() })
-          .eq("key", key);
+        if (value === "true" || value === "false") jsonValue = value === "true";
+        else if (!isNaN(Number(value)) && value.trim() !== "") jsonValue = Number(value);
+        else jsonValue = value;
+        return supabase.from("system_settings").update({ value: jsonValue, updated_at: new Date().toISOString() }).eq("key", key);
       });
       await Promise.all(promises);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["system-settings"] });
-      setDirty(false);
-      toast.success("Configurações salvas com sucesso!");
-    },
-    onError: () => toast.error("Erro ao salvar configurações"),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["system-settings"] }); setDirty(false); toast.success("Configurações salvas!"); },
+    onError: () => toast.error("Erro ao salvar"),
   });
 
-  const getSetting = (key: string) => localSettings[key] ?? "";
-  const getSettingBool = (key: string) => getSetting(key) === "true";
-  const getDescription = (key: string) => settings.find((s) => s.key === key)?.description ?? "";
+  const NAV: { key: Section; label: string; icon: React.ElementType; badge?: string }[] = [
+    { key: "empresa",      label: "Empresa",            icon: Building2 },
+    { key: "aprovacao",    label: "Políticas de crédito", icon: Shield },
+    { key: "comite",       label: "Requisitos do comitê", icon: CheckCircle2 },
+    { key: "automacao",    label: "Automações",          icon: Zap },
+    { key: "integracoes",  label: "Integrações",         icon: Plug, badge: totalIntegrations > 0 ? `${activeIntegrations}/${totalIntegrations}` : undefined },
+    { key: "acessos",      label: "Acessos",             icon: Users },
+  ];
 
   if (isLoading) {
     return (
-      <div className="p-6 flex items-center justify-center h-64 text-muted-foreground">
-        Carregando configurações...
+      <div className="flex items-center justify-center h-64">
+        <Loader2 style={{ width: 20, height: 20, color: T.textMute, animation: "spin 1s linear infinite" }} />
       </div>
     );
   }
 
-
   return (
-    <div className="p-6 space-y-4">
-      {/* Motor de Crédito Banner */}
-      <Card className="bg-primary/5 border-primary/20 cursor-pointer hover:bg-primary/10 transition-colors" onClick={() => navigate("/configuracoes/motor")}>
-        <CardContent className="py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Zap className="h-6 w-6 text-primary" />
-            <div>
-              <h3 className="font-semibold">Motor de Crédito</h3>
-              <p className="text-sm text-muted-foreground">Configure regras, pesos, faixas de score e políticas de decisão</p>
-            </div>
+    <div className="p-7 space-y-5">
+      <PageHeader
+        title="Configurações"
+        subtitle="SISTEMA E OPERAÇÕES"
+        actions={
+          dirty && (
+            <button
+              onClick={() => saveMutation.mutate()}
+              disabled={saveMutation.isPending}
+              className="flex items-center gap-2 px-5 py-[9px] rounded-[999px] text-[13px] font-semibold transition-opacity hover:opacity-90 disabled:opacity-60"
+              style={{ background: T.marinho, color: "#FAFAF7" }}
+            >
+              {saveMutation.isPending ? <Loader2 style={{ width: 13, height: 13, animation: "spin 1s linear infinite" }} /> : <Save style={{ width: 13, height: 13 }} />}
+              Salvar alterações
+            </button>
+          )
+        }
+      />
+
+      {/* Motor de Crédito — destaque */}
+      <button
+        onClick={() => navigate("/configuracoes/motor")}
+        className="w-full flex items-center justify-between px-5 py-4 rounded-[14px] text-left transition-opacity hover:opacity-90"
+        style={{ background: T.marinho, boxShadow: "var(--shadow-md)" }}
+      >
+        <div className="flex items-center gap-4">
+          <div style={{ width: 40, height: 40, borderRadius: 12, background: "rgba(0,212,154,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Zap style={{ width: 20, height: 20, color: T.esmeralda }} />
           </div>
-          <Button variant="outline" size="sm">Configurar Motor →</Button>
-        </CardContent>
-      </Card>
-
-
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Configurações</h1>
-          <p className="text-muted-foreground">Gerencie as regras e políticas do sistema</p>
+          <div>
+            <p style={{ fontSize: 14, fontWeight: 600, color: "#FAFAF7" }}>Motor de Crédito</p>
+            <p style={{ fontSize: 12, color: "rgba(250,250,247,0.55)", marginTop: 1 }}>Configure pesos, faixas de score e políticas de decisão automática</p>
+          </div>
         </div>
-        <Button onClick={() => saveMutation.mutate()} disabled={!dirty || saveMutation.isPending}>
-          <Save className="h-4 w-4 mr-1" />
-          {saveMutation.isPending ? "Salvando..." : "Salvar Alterações"}
-        </Button>
-      </div>
+        <ChevronRight style={{ width: 18, height: 18, color: "rgba(250,250,247,0.4)" }} />
+      </button>
 
-      <Tabs defaultValue="profile" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-6">
-          <TabsTrigger value="profile" className="gap-1.5">
-            <User className="h-4 w-4" /> Perfil
-          </TabsTrigger>
-          <TabsTrigger value="general" className="gap-1.5">
-            <Building2 className="h-4 w-4" /> Geral
-          </TabsTrigger>
-          <TabsTrigger value="approval" className="gap-1.5">
-            <Shield className="h-4 w-4" /> Aprovação
-          </TabsTrigger>
-          <TabsTrigger value="automation" className="gap-1.5">
-            <Zap className="h-4 w-4" /> Automação
-          </TabsTrigger>
-          <TabsTrigger value="integrations" className="gap-1.5">
-            <Plug className="h-4 w-4" /> Integrações
-            {totalIntegrations > 0 && <Badge variant="secondary" className="ml-1 text-xs px-1.5">{totalIntegrations}</Badge>}
-          </TabsTrigger>
-          <TabsTrigger value="access" className="gap-1.5">
-            <Users className="h-4 w-4" /> Acessos
-          </TabsTrigger>
-        </TabsList>
+      {/* Sidebar + content */}
+      <div className="grid gap-5" style={{ gridTemplateColumns: "200px 1fr" }}>
 
-        {/* === PERFIL === */}
-        <TabsContent value="profile">
-          <ProfileTab />
-        </TabsContent>
+        {/* Sidebar nav */}
+        <div
+          className="rounded-[16px] py-2 h-fit"
+          style={{ background: T.white, border: `1px solid ${T.border}`, boxShadow: "var(--shadow-sm)" }}
+        >
+          {NAV.map(item => {
+            const active = section === item.key;
+            return (
+              <button
+                key={item.key}
+                onClick={() => setSection(item.key)}
+                className="w-full flex items-center gap-3 px-4 py-[10px] text-left transition-colors"
+                style={{
+                  background: active ? "rgba(0,212,154,0.08)" : "transparent",
+                  borderLeft: `3px solid ${active ? T.esmeralda : "transparent"}`,
+                }}
+              >
+                <item.icon style={{ width: 15, height: 15, color: active ? T.esmeralda : T.textMute, flexShrink: 0 }} />
+                <span style={{ fontSize: 13, fontWeight: active ? 600 : 400, color: active ? T.text : T.textMute, flex: 1 }}>
+                  {item.label}
+                </span>
+                {item.badge && (
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: T.textFaint }}>{item.badge}</span>
+                )}
+              </button>
+            );
+          })}
+        </div>
 
-        {/* === GERAL === */}
-        <TabsContent value="general">
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Building2 className="h-5 w-5 text-primary" />
-                  Dados da Empresa
-                </CardTitle>
-                <CardDescription>Informações gerais exibidas no sistema e relatórios</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-5">
-                <SettingField
-                  label="Nome da Empresa"
-                  description={getDescription("company_name")}
-                  icon={<Building2 className="h-4 w-4" />}
-                >
-                  <Input
-                    value={getSetting("company_name")}
-                    onChange={(e) => updateSetting("company_name", e.target.value)}
-                  />
-                </SettingField>
-                <SettingField
-                  label="CNPJ da Empresa"
-                  description={getDescription("company_cnpj")}
-                  icon={<BarChart3 className="h-4 w-4" />}
-                >
-                  <Input
-                    value={getSetting("company_cnpj")}
-                    onChange={(e) => updateSetting("company_cnpj", e.target.value)}
-                    placeholder="00.000.000/0000-00"
-                  />
-                </SettingField>
-              </CardContent>
-            </Card>
-          </motion.div>
-        </TabsContent>
+        {/* Content */}
+        <div className="rounded-[16px]" style={{ background: T.white, border: `1px solid ${T.border}`, boxShadow: "var(--shadow-sm)", overflow: "hidden" }}>
 
-        {/* === POLÍTICAS DE APROVAÇÃO === */}
-        <TabsContent value="approval">
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
-            {/* Committee */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5 text-primary" />
-                  Comitê de Crédito
-                </CardTitle>
-                <CardDescription>Regras de composição e votação do comitê</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-5">
-                <SettingField
-                  label="Membros Mínimos do Comitê"
-                  description={getDescription("min_committee_members")}
-                  icon={<Users className="h-4 w-4" />}
-                >
-                  <Input
-                    type="number"
-                    min={1}
-                    max={20}
-                    value={getSetting("min_committee_members")}
-                    onChange={(e) => updateSetting("min_committee_members", e.target.value)}
-                    className="max-w-[120px]"
-                  />
-                </SettingField>
-              </CardContent>
-            </Card>
+          {/* ── Empresa ──────────────────────────────────────────── */}
+          {section === "empresa" && (
+            <div>
+              <div className="px-6 py-5" style={{ borderBottom: `1px solid ${T.border}`, background: T.paper }}>
+                <SectionTitle>Dados da empresa</SectionTitle>
+                <p style={{ fontSize: 14, fontWeight: 600, color: T.text }}>Informações gerais do sistema</p>
+              </div>
+              <div className="px-6 divide-y" style={{ borderColor: T.border }}>
+                <Field label="Nome da empresa" hint={getHint("company_name")}>
+                  <SettingsInput value={get("company_name")} onChange={v => set("company_name", v)} width={220} />
+                </Field>
+                <Field label="CNPJ da empresa" hint={getHint("company_cnpj")}>
+                  <SettingsInput value={get("company_cnpj")} onChange={v => set("company_cnpj", v)} placeholder="00.000.000/0000-00" width={200} />
+                </Field>
+              </div>
+            </div>
+          )}
 
-            {/* Score thresholds */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Target className="h-5 w-5 text-primary" />
-                  Thresholds de Score
-                </CardTitle>
-                <CardDescription>Defina os limites de score para decisões automáticas</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-5">
-                <SettingField
-                  label="Score Mínimo para Aprovação Automática"
-                  description={getDescription("auto_approve_score")}
-                  icon={<CheckCircle2 className="h-4 w-4 text-status-approved" />}
-                >
-                  <Input
-                    type="number"
-                    min={0}
-                    max={1000}
-                    value={getSetting("auto_approve_score")}
-                    onChange={(e) => updateSetting("auto_approve_score", e.target.value)}
-                    className="max-w-[120px]"
-                  />
-                </SettingField>
-                <SettingField
-                  label="Score Máximo para Rejeição Automática"
-                  description={getDescription("auto_reject_score")}
-                  icon={<XCircle className="h-4 w-4 text-destructive" />}
-                >
-                  <Input
-                    type="number"
-                    min={0}
-                    max={1000}
-                    value={getSetting("auto_reject_score")}
-                    onChange={(e) => updateSetting("auto_reject_score", e.target.value)}
-                    className="max-w-[120px]"
-                  />
-                </SettingField>
-                <div className="rounded-lg border border-border/50 bg-muted/30 p-3">
-                  <div className="flex items-center gap-6 text-xs text-muted-foreground">
-                    <div className="flex items-center gap-1.5">
-                      <XCircle className="h-3.5 w-3.5 text-destructive" />
-                      <span>0 — {getSetting("auto_reject_score") || "300"}</span>
-                      <span className="font-medium">Rejeição</span>
+          {/* ── Aprovação ─────────────────────────────────────────── */}
+          {section === "aprovacao" && (
+            <div>
+              <div className="px-6 py-5" style={{ borderBottom: `1px solid ${T.border}`, background: T.paper }}>
+                <SectionTitle>Políticas de crédito</SectionTitle>
+                <p style={{ fontSize: 14, fontWeight: 600, color: T.text }}>Thresholds, limites e regras de decisão</p>
+              </div>
+              <div className="px-6 divide-y" style={{ borderColor: T.border }}>
+
+                {/* Comitê */}
+                <div className="py-4">
+                  <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.10em", textTransform: "uppercase", color: T.textFaint, marginBottom: 2 }}>COMITÊ</p>
+                </div>
+                <Field label="Membros mínimos do comitê" hint={getHint("min_committee_members")}>
+                  <SettingsInput type="number" value={get("min_committee_members")} onChange={v => set("min_committee_members", v)} min={1} max={20} width={80} />
+                </Field>
+
+                {/* Score */}
+                <div className="py-4">
+                  <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.10em", textTransform: "uppercase", color: T.textFaint, marginBottom: 2 }}>THRESHOLDS DE SCORE</p>
+                </div>
+                <Field label="Score mínimo para aprovação automática" hint={getHint("auto_approve_score")}>
+                  <SettingsInput type="number" value={get("auto_approve_score")} onChange={v => set("auto_approve_score", v)} min={0} max={1000} width={80} />
+                </Field>
+                <Field label="Score máximo para rejeição automática" hint={getHint("auto_reject_score")}>
+                  <SettingsInput type="number" value={get("auto_reject_score")} onChange={v => set("auto_reject_score", v)} min={0} max={1000} width={80} />
+                </Field>
+
+                {/* Régua visual de score */}
+                <div className="py-4">
+                  <div className="flex rounded-[8px] overflow-hidden" style={{ height: 28, fontSize: 11, fontFamily: "var(--font-mono)" }}>
+                    <div style={{ flex: Number(get("auto_reject_score")) || 300, background: T.danger, display: "flex", alignItems: "center", paddingLeft: 8, color: "#fff", fontSize: 10 }}>
+                      0–{get("auto_reject_score") || "300"}
                     </div>
-                    <div className="flex items-center gap-1.5">
-                      <AlertTriangle className="h-3.5 w-3.5 text-status-committee" />
-                      <span>{getSetting("auto_reject_score") || "300"} — {getSetting("auto_approve_score") || "800"}</span>
-                      <span className="font-medium">Análise Manual</span>
+                    <div style={{ flex: (Number(get("auto_approve_score")) || 800) - (Number(get("auto_reject_score")) || 300), background: T.amber, display: "flex", alignItems: "center", paddingLeft: 8, color: T.marinho, fontSize: 10 }}>
+                      Análise manual
                     </div>
-                    <div className="flex items-center gap-1.5">
-                      <CheckCircle2 className="h-3.5 w-3.5 text-status-approved" />
-                      <span>{getSetting("auto_approve_score") || "800"} — 1000</span>
-                      <span className="font-medium">Aprovação</span>
+                    <div style={{ flex: 1000 - (Number(get("auto_approve_score")) || 800), background: T.esmeralda, display: "flex", alignItems: "center", paddingLeft: 8, color: T.marinho, fontSize: 10 }}>
+                      {get("auto_approve_score") || "800"}–1000
                     </div>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
 
-            {/* Limits & Rates */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-primary" />
-                  Limites e Taxas
-                </CardTitle>
-                <CardDescription>Parâmetros padrão para operações de crédito</CardDescription>
-              </CardHeader>
-              <CardContent className="grid grid-cols-2 gap-5">
-                <SettingField
-                  label="Concentração Máxima (%)"
-                  description={getDescription("max_concentration")}
-                  icon={<Percent className="h-4 w-4" />}
-                >
-                  <Input
-                    type="number"
-                    min={1}
-                    max={100}
-                    value={getSetting("max_concentration")}
-                    onChange={(e) => updateSetting("max_concentration", e.target.value)}
-                    className="max-w-[120px]"
-                  />
-                </SettingField>
-                <SettingField
-                  label="Prazo Máximo (dias)"
-                  description={getDescription("max_term_days")}
-                  icon={<Clock className="h-4 w-4" />}
-                >
-                  <Input
-                    type="number"
-                    min={1}
-                    value={getSetting("max_term_days")}
-                    onChange={(e) => updateSetting("max_term_days", e.target.value)}
-                    className="max-w-[120px]"
-                  />
-                </SettingField>
-                <SettingField
-                  label="Taxa Padrão Sugerida (%)"
-                  description={getDescription("default_rate")}
-                  icon={<TrendingUp className="h-4 w-4" />}
-                >
-                  <Input
-                    type="number"
-                    step="0.1"
-                    min={0}
-                    value={getSetting("default_rate")}
-                    onChange={(e) => updateSetting("default_rate", e.target.value)}
-                    className="max-w-[120px]"
-                  />
-                </SettingField>
-                <SettingField
-                  label="Limite Mínimo de Operação (R$)"
-                  description={getDescription("min_limit_amount")}
-                  icon={<DollarSign className="h-4 w-4" />}
-                >
-                  <Input
-                    type="number"
-                    min={0}
-                    value={getSetting("min_limit_amount")}
-                    onChange={(e) => updateSetting("min_limit_amount", e.target.value)}
-                    className="max-w-[140px]"
-                  />
-                </SettingField>
-              </CardContent>
-            </Card>
-          </motion.div>
-        </TabsContent>
+                {/* Limites */}
+                <div className="py-4">
+                  <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.10em", textTransform: "uppercase", color: T.textFaint, marginBottom: 2 }}>LIMITES E TAXAS</p>
+                </div>
+                <Field label="Concentração máxima (%)" hint={getHint("max_concentration")}>
+                  <SettingsInput type="number" value={get("max_concentration")} onChange={v => set("max_concentration", v)} min={1} max={100} width={80} />
+                </Field>
+                <Field label="Prazo máximo (dias)" hint={getHint("max_term_days")}>
+                  <SettingsInput type="number" value={get("max_term_days")} onChange={v => set("max_term_days", v)} min={1} width={80} />
+                </Field>
+                <Field label="Taxa padrão sugerida (%)" hint={getHint("default_rate")}>
+                  <SettingsInput type="number" value={get("default_rate")} onChange={v => set("default_rate", v)} step="0.1" min={0} width={80} />
+                </Field>
+                <Field label="Limite mínimo de operação (R$)" hint={getHint("min_limit_amount")}>
+                  <SettingsInput type="number" value={get("min_limit_amount")} onChange={v => set("min_limit_amount", v)} min={0} width={140} />
+                </Field>
+              </div>
+            </div>
+          )}
 
-        {/* === GESTÃO AUTOMÁTICA === */}
-        <TabsContent value="automation">
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Bot className="h-5 w-5 text-primary" />
-                  Automações
-                </CardTitle>
-                <CardDescription>
-                  Configure quais processos o sistema executa automaticamente
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <ToggleSetting
-                  label="Verificação automática de Blacklist"
-                  description="Verifica automaticamente se o documento está na blacklist ao criar uma análise"
-                  icon={<Shield className="h-4 w-4" />}
-                  checked={getSettingBool("auto_blacklist_check")}
-                  onChange={(v) => updateSetting("auto_blacklist_check", String(v))}
-                />
-                <Separator />
-                <ToggleSetting
-                  label="Cálculo automático de Score"
-                  description="Calcula o score de crédito automaticamente com base nos dados preenchidos"
-                  icon={<BarChart3 className="h-4 w-4" />}
-                  checked={getSettingBool("auto_score_calculation")}
-                  onChange={(v) => updateSetting("auto_score_calculation", String(v))}
-                />
-                <Separator />
-                <ToggleSetting
-                  label="Envio automático ao Comitê"
-                  description="Envia automaticamente a análise ao comitê quando todos os campos obrigatórios estiverem preenchidos"
-                  icon={<Zap className="h-4 w-4" />}
-                  checked={getSettingBool("auto_send_committee")}
-                  onChange={(v) => updateSetting("auto_send_committee", String(v))}
-                />
-                <Separator />
-                <ToggleSetting
-                  label="Notificar análises pendentes"
-                  description="Alerta membros do comitê sobre análises aguardando votação"
-                  icon={<Bell className="h-4 w-4" />}
-                  checked={getSettingBool("notify_committee_pending")}
-                  onChange={(v) => updateSetting("notify_committee_pending", String(v))}
-                />
-                <Separator />
-                <ToggleSetting
-                  label="Follow-up automático de oportunidades"
-                  description="Cria tarefas automaticamente quando uma oportunidade fica parada no mesmo estágio por X dias"
-                  icon={<CalendarClock className="h-4 w-4" />}
-                  checked={getSettingBool("auto_followup_enabled")}
-                  onChange={(v) => updateSetting("auto_followup_enabled", String(v))}
-                />
-                <Separator />
-                <SettingField
-                  label="Dias para follow-up automático"
-                  description="Número de dias sem movimentação para criar tarefa de follow-up"
-                  icon={<Clock className="h-4 w-4" />}
-                >
-                  <Input
-                    type="number"
-                    min={1}
-                    max={90}
-                    value={getSetting("followup_stale_days")}
-                    onChange={(e) => updateSetting("followup_stale_days", e.target.value)}
-                    className="max-w-[120px]"
-                    placeholder="7"
-                  />
-                </SettingField>
-                <Separator />
-                <SettingField
-                  label="Validade da qualificação de prospects (dias)"
-                  description="Número de dias que a pré-qualificação automática de um prospect permanece válida antes de expirar"
-                  icon={<UserSearch className="h-4 w-4" />}
-                >
-                  <Input
-                    type="number"
-                    min={1}
-                    max={365}
-                    value={getSetting("prospect_qualification_validity_days")}
-                    onChange={(e) => updateSetting("prospect_qualification_validity_days", e.target.value)}
-                    className="max-w-[120px]"
-                    placeholder="30"
-                  />
-                </SettingField>
-                <Separator />
-                <SettingField
-                  label="Dias para expirar análise sem movimentação"
-                  description={getDescription("days_to_expire_analysis")}
-                  icon={<CalendarClock className="h-4 w-4" />}
-                >
-                  <Input
-                    type="number"
-                    min={1}
-                    value={getSetting("days_to_expire_analysis")}
-                    onChange={(e) => updateSetting("days_to_expire_analysis", e.target.value)}
-                    className="max-w-[120px]"
-                  />
-                </SettingField>
-              </CardContent>
-            </Card>
-          </motion.div>
-        </TabsContent>
+          {/* ── Comitê — campos obrigatórios ──────────────────────── */}
+          {section === "comite" && (() => {
+            const raw = get("committee_required_fields");
+            let required: string[] = DEFAULT_REQUIRED_FIELDS;
+            try {
+              if (raw) required = JSON.parse(raw);
+            } catch { /* keep default */ }
 
-        {/* === ACESSOS === */}
-        <TabsContent value="access">
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5 text-primary" />
-                  Controle de Acesso
-                </CardTitle>
-                <CardDescription>
-                  Gerencie usuários e permissões do sistema
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-col items-center justify-center py-12 text-center space-y-4">
-                  <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center">
-                    <Users className="h-8 w-8 text-muted-foreground" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-lg">Autenticação não configurada</h3>
-                    <p className="text-sm text-muted-foreground max-w-md mt-1">
-                      Para gerenciar acessos e permissões de usuários, é necessário ativar a autenticação do sistema.
-                      Com ela, você poderá criar contas de analistas, membros do comitê e administradores com diferentes níveis de acesso.
-                    </p>
-                  </div>
-                  <div className="flex gap-2 flex-wrap justify-center pt-2">
-                    <Badge variant="secondary" className="gap-1">
-                      <Shield className="h-3 w-3" /> Admin
-                    </Badge>
-                    <Badge variant="secondary" className="gap-1">
-                      <BarChart3 className="h-3 w-3" /> Analista
-                    </Badge>
-                    <Badge variant="secondary" className="gap-1">
-                      <Users className="h-3 w-3" /> Comitê
-                    </Badge>
-                    <Badge variant="secondary" className="gap-1">
-                      <Building2 className="h-3 w-3" /> Comercial
-                    </Badge>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Solicite a ativação da autenticação para habilitar este recurso.
+            const toggleField = (key: string) => {
+              const next = required.includes(key)
+                ? required.filter(k => k !== key)
+                : [...required, key];
+              set("committee_required_fields", JSON.stringify(next));
+            };
+
+            const toggleBlock = (block: string, allChecked: boolean) => {
+              const blockKeys = COMMITTEE_FIELD_OPTIONS.filter(o => o.block === block).map(o => o.key);
+              const next = allChecked
+                ? required.filter(k => !blockKeys.includes(k))
+                : Array.from(new Set([...required, ...blockKeys]));
+              set("committee_required_fields", JSON.stringify(next));
+            };
+
+            const blocks = Array.from(new Set(COMMITTEE_FIELD_OPTIONS.map(o => o.block)));
+
+            return (
+              <div>
+                <div className="px-6 py-5" style={{ borderBottom: `1px solid ${T.border}`, background: T.paper }}>
+                  <SectionTitle>Requisitos do comitê</SectionTitle>
+                  <p style={{ fontSize: 14, fontWeight: 600, color: T.text }}>O que precisa estar preenchido para enviar uma análise ao comitê</p>
+                  <p style={{ fontSize: 12, color: T.textMute, marginTop: 4 }}>
+                    {required.length} {required.length === 1 ? "campo marcado" : "campos marcados"} como obrigatórios.
+                    Análises sem esses campos preenchidos não conseguem avançar para votação.
                   </p>
                 </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        </TabsContent>
-        {/* === INTEGRAÇÕES === */}
-        <TabsContent value="integrations">
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-            <IntegrationsTab />
-          </motion.div>
-        </TabsContent>
-      </Tabs>
+                <div className="px-6 py-4 space-y-5">
+                  {blocks.map(block => {
+                    const blockOptions = COMMITTEE_FIELD_OPTIONS.filter(o => o.block === block);
+                    const blockChecked = blockOptions.filter(o => required.includes(o.key)).length;
+                    const allChecked = blockChecked === blockOptions.length;
+                    return (
+                      <div key={block} className="rounded-[12px]" style={{ border: `1px solid ${T.border}`, background: T.paper }}>
+                        <div
+                          className="flex items-center justify-between px-4 py-2.5"
+                          style={{ borderBottom: `1px solid ${T.border}`, background: allChecked ? "rgba(0,212,154,0.06)" : T.white }}
+                        >
+                          <div className="flex items-center gap-2">
+                            <p style={{ fontSize: 13, fontWeight: 600, color: T.text }}>{block}</p>
+                            <span
+                              style={{
+                                fontFamily: "var(--font-mono)", fontSize: 10,
+                                padding: "2px 8px", borderRadius: 999,
+                                background: blockChecked === 0 ? T.cinza : "rgba(0,212,154,0.12)",
+                                color: blockChecked === 0 ? T.textMute : T.esmeralda,
+                              }}
+                            >
+                              {blockChecked}/{blockOptions.length}
+                            </span>
+                          </div>
+                          <button
+                            onClick={() => toggleBlock(block, allChecked)}
+                            className="text-[11px] font-medium px-2 py-1 rounded-[6px] hover:bg-[rgba(10,21,56,0.04)]"
+                            style={{ color: T.textMute, fontFamily: "var(--font-mono)" }}
+                          >
+                            {allChecked ? "Desmarcar todos" : "Marcar todos"}
+                          </button>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 p-2">
+                          {blockOptions.map(opt => {
+                            const checked = required.includes(opt.key);
+                            return (
+                              <label
+                                key={opt.key}
+                                className="flex items-center gap-2.5 px-3 py-2 rounded-[8px] cursor-pointer transition-colors text-[12.5px] select-none"
+                                style={{
+                                  background: checked ? "rgba(0,212,154,0.06)" : "transparent",
+                                  border: `1px solid ${checked ? "rgba(0,212,154,0.25)" : "transparent"}`,
+                                }}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={checked}
+                                  onChange={() => toggleField(opt.key)}
+                                  className="h-3.5 w-3.5 accent-sink-mint"
+                                  style={{ accentColor: T.esmeralda }}
+                                />
+                                <span style={{ color: checked ? T.text : T.textMute, fontWeight: checked ? 500 : 400 }}>
+                                  {opt.label}
+                                </span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  <div
+                    className="rounded-[10px] px-4 py-3 text-[12px]"
+                    style={{ background: "rgba(0,212,154,0.06)", border: "1px solid rgba(0,212,154,0.20)", color: T.textMute }}
+                  >
+                    <span style={{ fontWeight: 600, color: T.text }}>Como aplica:</span>{" "}
+                    O analista vê esses campos no card "Prontidão para Comitê" do dossiê.
+                    O botão "Enviar ao Comitê" só destrava quando 100% deles está preenchido.
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* ── Automação ─────────────────────────────────────────── */}
+          {section === "automacao" && (
+            <div>
+              <div className="px-6 py-5" style={{ borderBottom: `1px solid ${T.border}`, background: T.paper }}>
+                <SectionTitle>Automações</SectionTitle>
+                <p style={{ fontSize: 14, fontWeight: 600, color: T.text }}>Processos executados automaticamente pelo sistema</p>
+              </div>
+              <div className="px-6 divide-y" style={{ borderColor: T.border }}>
+                <Toggle label="Verificação de blacklist" hint="Verifica automaticamente ao criar uma análise" checked={getBool("auto_blacklist_check")} onChange={v => set("auto_blacklist_check", String(v))} />
+                <Toggle label="Cálculo automático de score" hint="Calcula com base nos dados preenchidos" checked={getBool("auto_score_calculation")} onChange={v => set("auto_score_calculation", String(v))} />
+                <Toggle label="Envio automático ao comitê" hint="Envia quando todos os campos obrigatórios estão preenchidos" checked={getBool("auto_send_committee")} onChange={v => set("auto_send_committee", String(v))} />
+                <Toggle label="Notificar análises pendentes" hint="Alerta membros sobre análises aguardando votação" checked={getBool("notify_committee_pending")} onChange={v => set("notify_committee_pending", String(v))} />
+                <Toggle label="Follow-up automático de oportunidades" hint="Cria tarefas para deals parados no mesmo estágio" checked={getBool("auto_followup_enabled")} onChange={v => set("auto_followup_enabled", String(v))} />
+                <Field label="Dias para follow-up automático" hint="Dias sem movimentação antes de criar tarefa">
+                  <SettingsInput type="number" value={get("followup_stale_days")} onChange={v => set("followup_stale_days", v)} min={1} max={90} placeholder="7" width={80} />
+                </Field>
+                <Field label="Validade da qualificação de prospects (dias)" hint="Dias antes da pré-qualificação expirar">
+                  <SettingsInput type="number" value={get("prospect_qualification_validity_days")} onChange={v => set("prospect_qualification_validity_days", v)} min={1} max={365} placeholder="30" width={80} />
+                </Field>
+                <Field label="Dias para expirar análise sem movimentação" hint={getHint("days_to_expire_analysis")}>
+                  <SettingsInput type="number" value={get("days_to_expire_analysis")} onChange={v => set("days_to_expire_analysis", v)} min={1} width={80} />
+                </Field>
+              </div>
+            </div>
+          )}
+
+          {/* ── Integrações ───────────────────────────────────────── */}
+          {section === "integracoes" && <IntegrationsSection />}
+
+          {/* ── Acessos ───────────────────────────────────────────── */}
+          {section === "acessos" && (
+            <div>
+              <div className="px-6 py-5" style={{ borderBottom: `1px solid ${T.border}`, background: T.paper }}>
+                <SectionTitle>Controle de acesso</SectionTitle>
+                <p style={{ fontSize: 14, fontWeight: 600, color: T.text }}>Usuários e permissões</p>
+              </div>
+              <div className="flex flex-col items-center justify-center py-16 px-6 text-center gap-4">
+                <div style={{ width: 56, height: 56, borderRadius: 16, background: T.cinza, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <Users style={{ width: 26, height: 26, color: T.textMute }} />
+                </div>
+                <p style={{ fontSize: 15, fontWeight: 600, color: T.text }}>Gerenciamento de acessos</p>
+                <p style={{ fontSize: 13, color: T.textMute, maxWidth: 380, lineHeight: 1.6 }}>
+                  Gerencie usuários, papéis e permissões diretamente no painel do Supabase enquanto este módulo está em desenvolvimento.
+                </p>
+                <div className="flex gap-2 flex-wrap justify-center mt-2">
+                  {["Admin", "Analista", "Comitê", "Comercial"].map(role => (
+                    <span key={role} className="px-3 py-1 rounded-full text-[12px] font-medium" style={{ background: T.cinza, color: T.textMute }}>
+                      {role}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+        </div>
+      </div>
     </div>
   );
 }
 
-/* ---- Integrations Tab ---- */
+/* ── Integrations section ──────────────────────────────────────────── */
 
 interface IntegrationForm {
-  name: string;
-  integration_type: string;
-  api_url: string;
-  auth_type: string;
-  auth_secret_name: string;
-  notes: string;
-  is_active: boolean;
+  name: string; integration_type: string; api_url: string;
+  auth_type: string; auth_secret_name: string; notes: string; is_active: boolean;
 }
 
-const emptyIntegrationForm: IntegrationForm = {
-  name: "",
-  integration_type: "export_cadastro",
-  api_url: "",
-  auth_type: "bearer",
-  auth_secret_name: "",
-  notes: "",
-  is_active: false,
+const emptyForm: IntegrationForm = {
+  name: "", integration_type: "export_cadastro", api_url: "",
+  auth_type: "bearer", auth_secret_name: "", notes: "", is_active: false,
 };
 
-function IntegrationsTab() {
+const TYPE_LABELS: Record<string, string> = {
+  export_cadastro: "Exportar Cadastro",
+  webhook: "Webhook",
+  api_sync: "Sincronização API",
+};
+
+function IntegrationsSection() {
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [form, setForm] = useState<IntegrationForm>(emptyIntegrationForm);
+  const [form, setForm] = useState<IntegrationForm>(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  const { data: integrations, isLoading } = useQuery({
+  const { data: integrations = [], isLoading } = useQuery({
     queryKey: ["integration-configs"],
     queryFn: async () => {
       const { data, error } = await supabase.from("integration_configs").select("*").order("created_at");
@@ -682,13 +528,10 @@ function IntegrationsTab() {
   const saveMutation = useMutation({
     mutationFn: async () => {
       const payload = {
-        name: form.name,
-        integration_type: form.integration_type,
-        api_url: form.api_url || null,
-        auth_type: form.auth_type,
+        name: form.name, integration_type: form.integration_type,
+        api_url: form.api_url || null, auth_type: form.auth_type,
         auth_secret_name: form.auth_secret_name || null,
-        notes: form.notes || null,
-        is_active: form.is_active,
+        notes: form.notes || null, is_active: form.is_active,
       };
       if (editingId) {
         const { error } = await supabase.from("integration_configs").update(payload).eq("id", editingId);
@@ -699,14 +542,12 @@ function IntegrationsTab() {
       }
     },
     onSuccess: () => {
-      toastHook({ title: editingId ? "Integração atualizada!" : "Integração criada!" });
+      toast.success(editingId ? "Integração atualizada!" : "Integração criada!");
       queryClient.invalidateQueries({ queryKey: ["integration-configs"] });
       queryClient.invalidateQueries({ queryKey: ["integration-configs-count"] });
-      setDialogOpen(false);
-      setForm(emptyIntegrationForm);
-      setEditingId(null);
+      setDialogOpen(false); setForm(emptyForm); setEditingId(null);
     },
-    onError: () => toastHook({ title: "Erro ao salvar", variant: "destructive" }),
+    onError: () => toast.error("Erro ao salvar"),
   });
 
   const deleteMutation = useMutation({
@@ -715,209 +556,153 @@ function IntegrationsTab() {
       if (error) throw error;
     },
     onSuccess: () => {
-      toastHook({ title: "Integração removida" });
+      toast.success("Integração removida");
       queryClient.invalidateQueries({ queryKey: ["integration-configs"] });
       queryClient.invalidateQueries({ queryKey: ["integration-configs-count"] });
     },
   });
 
   const openEdit = (item: any) => {
-    setForm({
-      name: item.name,
-      integration_type: item.integration_type,
-      api_url: item.api_url || "",
-      auth_type: item.auth_type || "bearer",
-      auth_secret_name: item.auth_secret_name || "",
-      notes: item.notes || "",
-      is_active: item.is_active,
-    });
-    setEditingId(item.id);
-    setDialogOpen(true);
-  };
-
-  const typeLabels: Record<string, string> = {
-    export_cadastro: "Exportar Cadastro",
-    webhook: "Webhook",
-    api_sync: "Sincronização API",
+    setForm({ name: item.name, integration_type: item.integration_type, api_url: item.api_url || "", auth_type: item.auth_type || "bearer", auth_secret_name: item.auth_secret_name || "", notes: item.notes || "", is_active: item.is_active });
+    setEditingId(item.id); setDialogOpen(true);
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="flex items-center gap-2">
-              <Plug className="h-5 w-5 text-primary" />
-              Integrações
-            </CardTitle>
-            <CardDescription>Configure conexões com sistemas externos via API e Webhooks</CardDescription>
-          </div>
-          <Dialog open={dialogOpen} onOpenChange={(o) => { setDialogOpen(o); if (!o) { setForm(emptyIntegrationForm); setEditingId(null); } }}>
-            <DialogTrigger asChild>
-              <Button size="sm"><Plus className="mr-2 h-4 w-4" /> Nova Integração</Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-lg">
-              <DialogHeader><DialogTitle>{editingId ? "Editar" : "Nova"} Integração</DialogTitle></DialogHeader>
-              <div className="grid gap-4">
-                <div>
-                  <Label>Nome do Sistema *</Label>
-                  <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Ex: Sistema de Operações XYZ" />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Label>Tipo</Label>
-                    <Select value={form.integration_type} onValueChange={(v) => setForm({ ...form, integration_type: v })}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="export_cadastro">Exportar Cadastro</SelectItem>
-                        <SelectItem value="webhook">Webhook</SelectItem>
-                        <SelectItem value="api_sync">Sincronização API</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label>Autenticação</Label>
-                    <Select value={form.auth_type} onValueChange={(v) => setForm({ ...form, auth_type: v })}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="bearer">Bearer Token</SelectItem>
-                        <SelectItem value="basic">Basic Auth</SelectItem>
-                        <SelectItem value="api_key">API Key</SelectItem>
-                        <SelectItem value="none">Nenhuma</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div>
-                  <Label>URL da API</Label>
-                  <Input value={form.api_url} onChange={(e) => setForm({ ...form, api_url: e.target.value })} placeholder="https://api.sistema.com/v1/cadastros" />
-                </div>
-                <div>
-                  <Label>Nome da Secret (token/chave)</Label>
-                  <Input value={form.auth_secret_name} onChange={(e) => setForm({ ...form, auth_secret_name: e.target.value })} placeholder="Ex: SISTEMA_XYZ_API_KEY" />
-                  <p className="text-xs text-muted-foreground mt-1">Nome da variável de ambiente que contém a credencial.</p>
-                </div>
-                <div>
-                  <Label>Observações</Label>
-                  <Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={2} />
-                </div>
-                <div className="flex items-center gap-2">
-                  <Switch checked={form.is_active} onCheckedChange={(v) => setForm({ ...form, is_active: v })} />
-                  <Label>Ativa</Label>
-                </div>
-                <Button onClick={() => saveMutation.mutate()} disabled={!form.name || saveMutation.isPending}>
-                  {saveMutation.isPending ? "Salvando..." : editingId ? "Atualizar" : "Criar"}
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+    <div>
+      <div className="px-6 py-5 flex items-center justify-between" style={{ borderBottom: `1px solid ${T.border}`, background: T.paper }}>
+        <div>
+          <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", color: T.textFaint, marginBottom: 2 }}>INTEGRAÇÕES</p>
+          <p style={{ fontSize: 14, fontWeight: 600, color: T.text }}>Conexões com sistemas externos</p>
         </div>
-      </CardHeader>
-      <CardContent>
+        <Dialog open={dialogOpen} onOpenChange={o => { setDialogOpen(o); if (!o) { setForm(emptyForm); setEditingId(null); } }}>
+          <DialogTrigger asChild>
+            <button
+              className="flex items-center gap-2 px-4 py-[8px] rounded-[999px] text-[12px] font-semibold transition-opacity hover:opacity-90"
+              style={{ background: T.marinho, color: "#FAFAF7" }}
+            >
+              <Plus style={{ width: 13, height: 13 }} />
+              Nova integração
+            </button>
+          </DialogTrigger>
+          <DialogContent className="max-w-lg">
+            <DialogHeader><DialogTitle>{editingId ? "Editar" : "Nova"} integração</DialogTitle></DialogHeader>
+            <div className="space-y-3 pt-1">
+              <div>
+                <label style={{ fontSize: 12, color: T.textMute }}>Nome do sistema</label>
+                <input className="w-full mt-1 px-3 py-2 rounded-[8px] border text-[13px]" style={{ border: `1px solid ${T.border}`, background: T.white }} value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Ex: Sistema de Operações XYZ" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label style={{ fontSize: 12, color: T.textMute }}>Tipo</label>
+                  <Select value={form.integration_type} onValueChange={v => setForm({ ...form, integration_type: v })}>
+                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="export_cadastro">Exportar Cadastro</SelectItem>
+                      <SelectItem value="webhook">Webhook</SelectItem>
+                      <SelectItem value="api_sync">Sincronização API</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label style={{ fontSize: 12, color: T.textMute }}>Autenticação</label>
+                  <Select value={form.auth_type} onValueChange={v => setForm({ ...form, auth_type: v })}>
+                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="bearer">Bearer Token</SelectItem>
+                      <SelectItem value="basic">Basic Auth</SelectItem>
+                      <SelectItem value="api_key">API Key</SelectItem>
+                      <SelectItem value="none">Nenhuma</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div>
+                <label style={{ fontSize: 12, color: T.textMute }}>URL da API</label>
+                <input className="w-full mt-1 px-3 py-2 rounded-[8px] border text-[13px]" style={{ border: `1px solid ${T.border}`, background: T.white }} value={form.api_url} onChange={e => setForm({ ...form, api_url: e.target.value })} placeholder="https://api.sistema.com/v1/..." />
+              </div>
+              <div>
+                <label style={{ fontSize: 12, color: T.textMute }}>Nome da secret (token/chave)</label>
+                <input className="w-full mt-1 px-3 py-2 rounded-[8px] border text-[13px]" style={{ border: `1px solid ${T.border}`, background: T.white }} value={form.auth_secret_name} onChange={e => setForm({ ...form, auth_secret_name: e.target.value })} placeholder="SISTEMA_XYZ_API_KEY" />
+                <p style={{ fontSize: 11, color: T.textFaint, marginTop: 4 }}>Nome da variável de ambiente que contém a credencial.</p>
+              </div>
+              <div>
+                <label style={{ fontSize: 12, color: T.textMute }}>Observações</label>
+                <Textarea className="mt-1" value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} rows={2} />
+              </div>
+              <div className="flex items-center gap-3">
+                <Switch checked={form.is_active} onCheckedChange={v => setForm({ ...form, is_active: v })} />
+                <label style={{ fontSize: 13, color: T.text }}>Ativa</label>
+              </div>
+              <button
+                onClick={() => saveMutation.mutate()}
+                disabled={!form.name || saveMutation.isPending}
+                className="w-full py-[10px] rounded-[10px] text-[13px] font-semibold transition-opacity hover:opacity-90 disabled:opacity-40"
+                style={{ background: T.marinho, color: "#FAFAF7" }}
+              >
+                {saveMutation.isPending ? "Salvando..." : editingId ? "Atualizar" : "Criar integração"}
+              </button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      <div className="p-4">
         {isLoading ? (
-          <div className="text-center py-8 text-muted-foreground">Carregando...</div>
-        ) : !integrations?.length ? (
-          <div className="border-dashed border-2 rounded-lg py-12 text-center">
-            <Plug className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="font-semibold mb-2">Nenhuma integração configurada</h3>
-            <p className="text-sm text-muted-foreground max-w-md mx-auto">
-              Configure integrações para enviar cadastros de cedentes aprovados para seu sistema de operações.
+          <div className="py-8 text-center" style={{ color: T.textMute, fontSize: 13 }}>Carregando...</div>
+        ) : integrations.length === 0 ? (
+          <div className="flex flex-col items-center py-14 gap-3">
+            <div style={{ width: 48, height: 48, borderRadius: 14, background: T.cinza, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Plug style={{ width: 22, height: 22, color: T.textMute }} />
+            </div>
+            <p style={{ fontSize: 14, fontWeight: 600, color: T.text }}>Nenhuma integração</p>
+            <p style={{ fontSize: 13, color: T.textMute, textAlign: "center", maxWidth: 320 }}>
+              Configure conexões para enviar dados a sistemas externos via API ou Webhook.
             </p>
           </div>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid grid-cols-2 gap-3">
             {integrations.map((item: any) => (
-              <Card key={item.id} className={!item.is_active ? "opacity-60" : ""}>
-                <CardHeader className="pb-2">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <Plug className="h-4 w-4" />
-                      {item.name}
-                    </CardTitle>
-                    <div className="flex gap-1">
-                      <Badge variant={item.is_active ? "default" : "secondary"}>
-                        {item.is_active ? "Ativa" : "Inativa"}
-                      </Badge>
-                      <Badge variant="outline">{typeLabels[item.integration_type] || item.integration_type}</Badge>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  {item.api_url && (
-                    <div className="text-sm text-muted-foreground font-mono truncate">{item.api_url}</div>
-                  )}
-                  {item.notes && <p className="text-sm text-muted-foreground">{item.notes}</p>}
-                  <div className="flex gap-2 pt-2">
-                    <Button variant="outline" size="sm" onClick={() => openEdit(item)}>
-                      <Edit className="h-3.5 w-3.5 mr-1" /> Editar
-                    </Button>
-                    <Button variant="outline" size="sm" disabled>
-                      <TestTube className="h-3.5 w-3.5 mr-1" /> Testar
-                    </Button>
-                    <Button variant="ghost" size="sm" className="text-destructive ml-auto" onClick={() => deleteMutation.mutate(item.id)}>
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+              <div
+                key={item.id}
+                className="rounded-[12px] p-4"
+                style={{
+                  border: `1px solid ${T.border}`,
+                  background: item.is_active ? T.paper : T.cinza,
+                  opacity: item.is_active ? 1 : 0.7,
+                }}
+              >
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <p style={{ fontSize: 13, fontWeight: 600, color: T.text }}>{item.name}</p>
+                  <span
+                    className="px-2 py-[2px] rounded-full text-[10px] font-semibold"
+                    style={{ background: item.is_active ? "rgba(0,212,154,0.12)" : T.cinza, color: item.is_active ? T.esmeralda : T.textMute }}
+                  >
+                    {item.is_active ? "Ativa" : "Inativa"}
+                  </span>
+                </div>
+                <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: T.textFaint, marginBottom: 2 }}>
+                  {TYPE_LABELS[item.integration_type] || item.integration_type}
+                </p>
+                {item.api_url && (
+                  <p className="truncate" style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: T.textMute }}>{item.api_url}</p>
+                )}
+                {item.notes && <p style={{ fontSize: 12, color: T.textMute, marginTop: 4 }}>{item.notes}</p>}
+                <div className="flex gap-2 mt-3">
+                  <button onClick={() => openEdit(item)} className="flex items-center gap-1 px-3 py-[5px] rounded-[6px] text-[11px] font-medium transition-colors hover:bg-[rgba(10,21,56,0.06)]" style={{ color: T.textMute, border: `1px solid ${T.border}` }}>
+                    <Edit style={{ width: 11, height: 11 }} /> Editar
+                  </button>
+                  <button disabled className="flex items-center gap-1 px-3 py-[5px] rounded-[6px] text-[11px] font-medium opacity-40" style={{ color: T.textMute, border: `1px solid ${T.border}` }}>
+                    <TestTube style={{ width: 11, height: 11 }} /> Testar
+                  </button>
+                  <button onClick={() => deleteMutation.mutate(item.id)} className="ml-auto flex items-center gap-1 px-3 py-[5px] rounded-[6px] text-[11px] font-medium transition-colors hover:bg-[rgba(176,24,42,0.06)]" style={{ color: T.danger }}>
+                    <Trash2 style={{ width: 11, height: 11 }} />
+                  </button>
+                </div>
+              </div>
             ))}
           </div>
         )}
-      </CardContent>
-    </Card>
-  );
-}
-
-/* ---- Reusable sub-components ---- */
-
-function SettingField({
-  label,
-  description,
-  icon,
-  children,
-}: {
-  label: string;
-  description?: string;
-  icon?: React.ReactNode;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex items-start justify-between gap-4">
-      <div className="space-y-0.5 flex-1">
-        <Label className="flex items-center gap-2 text-sm font-medium">
-          {icon && <span className="text-muted-foreground">{icon}</span>}
-          {label}
-        </Label>
-        {description && <p className="text-xs text-muted-foreground">{description}</p>}
       </div>
-      <div className="shrink-0">{children}</div>
-    </div>
-  );
-}
-
-function ToggleSetting({
-  label,
-  description,
-  icon,
-  checked,
-  onChange,
-}: {
-  label: string;
-  description: string;
-  icon?: React.ReactNode;
-  checked: boolean;
-  onChange: (val: boolean) => void;
-}) {
-  return (
-    <div className="flex items-center justify-between gap-4">
-      <div className="space-y-0.5 flex-1">
-        <Label className="flex items-center gap-2 text-sm font-medium">
-          {icon && <span className="text-muted-foreground">{icon}</span>}
-          {label}
-        </Label>
-        <p className="text-xs text-muted-foreground">{description}</p>
-      </div>
-      <Switch checked={checked} onCheckedChange={onChange} />
     </div>
   );
 }

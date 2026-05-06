@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, History, LayoutGrid, List, FileText, Building2, GripVertical, Pencil, Eye } from "lucide-react";
+import { Plus, Search, History, LayoutGrid, List, FileText, Building2, GripVertical, Pencil, CheckCircle2, XCircle, AlertCircle, RotateCcw } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { formatCNPJorCPF, formatDate, formatBRL } from "@/lib/formatters";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -14,12 +14,13 @@ import { motion } from "framer-motion";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { DragDropContext, Droppable, Draggable, type DropResult } from "@hello-pangea/dnd";
 import { toast } from "sonner";
-import { ClientTagManager, TagFilter, useAllClientTags } from "@/components/ClientTagManager";
+import { ClientTagManager, TagFilter, useAllClientTags } from "@/components/crm/ClientTagManager";
 
-type KanbanStage = "cadastrado" | "draft" | "in_committee" | "approved" | "approved_restricted" | "rejected";
+type ClientTab = "todos" | "em-analise" | "aprovados" | "restricoes" | "reprovados";
+
+type KanbanStage = "draft" | "in_committee" | "approved" | "approved_restricted" | "rejected";
 
 const stages: { key: KanbanStage; label: string; color: string; borderColor: string; headerBg: string }[] = [
-  { key: "cadastrado", label: "Cadastrado", color: "bg-muted/60 text-muted-foreground", borderColor: "border-muted-foreground/30", headerBg: "bg-muted/30" },
   { key: "draft", label: "Em Análise", color: "bg-status-draft/10 text-status-draft", borderColor: "border-status-draft/40", headerBg: "bg-status-draft/5" },
   { key: "in_committee", label: "Em Comitê", color: "bg-status-committee/10 text-status-committee", borderColor: "border-status-committee/40", headerBg: "bg-status-committee/5" },
   { key: "approved", label: "Aprovado", color: "bg-status-approved/10 text-status-approved", borderColor: "border-status-approved/40", headerBg: "bg-status-approved/5" },
@@ -29,7 +30,6 @@ const stages: { key: KanbanStage; label: string; color: string; borderColor: str
 
 // Which transitions are allowed via drag
 const allowedTransitions: Record<KanbanStage, KanbanStage[]> = {
-  cadastrado: ["draft"],
   draft: ["in_committee"],
   in_committee: [], // decided via committee voting only
   approved: [],
@@ -46,7 +46,7 @@ interface ClientWithAnalysis {
   cidade: string | null;
   estado: string | null;
   created_at: string;
-  latestStatus: KanbanStage;
+  latestStatus: KanbanStage | "cadastrado";
   latestAnalysisId: string | null;
   latestLimiteSugerido: number | null;
   latestScore: number | null;
@@ -58,6 +58,7 @@ export default function Clients() {
   const [search, setSearch] = useState("");
   const [view, setView] = useState<"kanban" | "table">("kanban");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [activeTab, setActiveTab] = useState<ClientTab>("todos");
   const { data: clientTagsMap = {} } = useAllClientTags();
 
   const { data: clients = [], isLoading } = useQuery({
@@ -74,7 +75,7 @@ export default function Clients() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("credit_analysis")
-        .select("id, client_id, status, limite_sugerido, credit_score, created_at")
+        .select("id, client_id, status, limite_sugerido, credit_score, created_at, updated_at, analista_credito, committee_result(limite_aprovado, prazo_aprovado, decisao_final, condicoes_adicionais)")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
@@ -82,16 +83,20 @@ export default function Clients() {
   });
 
   const enrichedClients = useMemo<ClientWithAnalysis[]>(() => {
-    return clients.map((c) => {
-      const latest = analyses.filter((a) => a.client_id === c.id)[0];
-      return {
-        ...c,
-        latestStatus: latest ? (latest.status as KanbanStage) : "cadastrado",
-        latestAnalysisId: latest?.id ?? null,
-        latestLimiteSugerido: latest?.limite_sugerido ?? null,
-        latestScore: latest?.credit_score ?? null,
-      };
-    });
+    // Portfólio = só cedentes que já entraram no fluxo de análise.
+    // Cedentes sem análise (status virtual "cadastrado") aparecem em Prospects, não aqui.
+    return clients
+      .map((c) => {
+        const latest = analyses.filter((a) => a.client_id === c.id)[0];
+        return {
+          ...c,
+          latestStatus: latest ? (latest.status as KanbanStage) : ("cadastrado" as const),
+          latestAnalysisId: latest?.id ?? null,
+          latestLimiteSugerido: latest?.limite_sugerido ?? null,
+          latestScore: latest?.credit_score ?? null,
+        };
+      })
+      .filter((c) => c.latestStatus !== "cadastrado");
   }, [clients, analyses]);
 
   const filtered = useMemo(() => {
@@ -237,41 +242,231 @@ export default function Clients() {
     sendToCommitteeMutation.isPending ||
     reanalyzeMutation.isPending;
 
+  const kpiTotals = useMemo(() => ({
+    total: enrichedClients.length,
+    aprovados: enrichedClients.filter(c => c.latestStatus === "approved").length,
+    emAnalise: enrichedClients.filter(c => ["draft", "in_committee"].includes(c.latestStatus)).length,
+    reprovados: enrichedClients.filter(c => c.latestStatus === "rejected").length,
+    restricoes: enrichedClients.filter(c => c.latestStatus === "approved_restricted").length,
+  }), [enrichedClients]);
+
+  const TAB_DEF: { key: ClientTab; label: string; icon: React.ElementType; count: number }[] = [
+    { key: "todos",       label: "Todos",         icon: Building2,     count: kpiTotals.total },
+    { key: "em-analise",  label: "Em Análise",    icon: AlertCircle,   count: kpiTotals.emAnalise },
+    { key: "aprovados",   label: "Aprovados",     icon: CheckCircle2,  count: kpiTotals.aprovados },
+    { key: "restricoes",  label: "Restrições",    icon: AlertCircle,   count: kpiTotals.restricoes },
+    { key: "reprovados",  label: "Reprovados",    icon: XCircle,       count: kpiTotals.reprovados },
+  ];
+
+  // Clients filtered by tab for non-kanban tabs
+  const tabClients = useMemo(() => {
+    const base = search
+      ? enrichedClients.filter(c =>
+          c.razao_social.toLowerCase().includes(search.toLowerCase()) ||
+          c.cnpj_cpf.includes(search)
+        )
+      : enrichedClients;
+    if (activeTab === "aprovados") return base.filter(c => c.latestStatus === "approved");
+    if (activeTab === "restricoes") return base.filter(c => c.latestStatus === "approved_restricted");
+    if (activeTab === "reprovados") return base.filter(c => c.latestStatus === "rejected");
+    if (activeTab === "em-analise") return base.filter(c => ["draft", "in_committee"].includes(c.latestStatus));
+    return base;
+  }, [enrichedClients, search, activeTab]);
+
   return (
     <div className="p-6 space-y-4">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Cedentes</h1>
-          <p className="text-muted-foreground">Arraste os cards para avançar etapas ou clique para abrir</p>
+          <h1 className="text-2xl font-bold tracking-tight">Portfólio</h1>
+          <p className="text-muted-foreground">Cedentes em análise, no comitê ou já decididos</p>
         </div>
         <div className="flex items-center gap-2">
-          <div className="flex items-center rounded-lg border bg-card p-0.5">
-            <Button variant={view === "kanban" ? "default" : "ghost"} size="sm" className="h-8 px-3" onClick={() => setView("kanban")}>
-              <LayoutGrid className="h-4 w-4 mr-1" /> Kanban
-            </Button>
-            <Button variant={view === "table" ? "default" : "ghost"} size="sm" className="h-8 px-3" onClick={() => setView("table")}>
-              <List className="h-4 w-4 mr-1" /> Tabela
-            </Button>
-          </div>
           <Button onClick={() => navigate("/cedentes/novo")}>
             <Plus className="h-4 w-4 mr-1" /> Novo Cedente
           </Button>
         </div>
       </div>
 
+      {/* KPI Strip */}
+      <div className="grid grid-cols-4 gap-3">
+        {[
+          { label: "Total de cedentes", value: kpiTotals.total, color: "text-foreground" },
+          { label: "Aprovados", value: kpiTotals.aprovados, color: "text-status-approved" },
+          { label: "Em análise", value: kpiTotals.emAnalise, color: "text-sink-warn" },
+          { label: "Reprovados", value: kpiTotals.reprovados, color: "text-status-rejected" },
+        ].map(k => (
+          <div key={k.label} className="rounded-lg border bg-card px-4 py-3">
+            <p className="text-xs text-muted-foreground font-mono uppercase tracking-wider">{k.label}</p>
+            <p className={`text-2xl font-bold tabular-nums mt-0.5 ${k.color}`}>{k.value}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Tabs */}
+      <div className="flex items-center gap-1 border-b border-border">
+        {TAB_DEF.map(({ key, label, icon: Icon, count }) => (
+          <button
+            key={key}
+            onClick={() => setActiveTab(key)}
+            className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium border-b-2 transition-all -mb-px ${
+              activeTab === key
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground/40"
+            }`}
+          >
+            <Icon className="h-3.5 w-3.5" />
+            {label}
+            <span className={`ml-1 text-[11px] font-bold px-1.5 rounded-full ${activeTab === key ? "bg-primary/10" : "bg-muted"}`}>
+              {count}
+            </span>
+          </button>
+        ))}
+      </div>
+
+      {/* Search */}
       <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
         <div className="relative max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input placeholder="Buscar por nome ou CNPJ..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
         </div>
-        <TagFilter selectedTags={selectedTags} onChange={setSelectedTags} />
+        {(activeTab === "todos" || activeTab === "em-analise") && (
+          <>
+            <TagFilter selectedTags={selectedTags} onChange={setSelectedTags} />
+            <div className="flex items-center rounded-lg border bg-card p-0.5 ml-auto">
+              <Button variant={view === "kanban" ? "default" : "ghost"} size="sm" className="h-8 px-3" onClick={() => setView("kanban")}>
+                <LayoutGrid className="h-4 w-4 mr-1" /> Kanban
+              </Button>
+              <Button variant={view === "table" ? "default" : "ghost"} size="sm" className="h-8 px-3" onClick={() => setView("table")}>
+                <List className="h-4 w-4 mr-1" /> Tabela
+              </Button>
+            </div>
+          </>
+        )}
       </div>
 
-      {view === "kanban" ? (
+      {/* ── Tab: Aprovados ── */}
+      {activeTab === "aprovados" && (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {tabClients.length === 0 ? (
+            <div className="col-span-3 text-center py-12 text-muted-foreground">Nenhum cedente aprovado</div>
+          ) : tabClients.map(c => {
+            const result = (analyses.find(a => a.client_id === c.id && a.status === "approved") as any)?.committee_result;
+            const tier = c.latestScore ? (c.latestScore >= 800 ? "AAA" : c.latestScore >= 700 ? "AA" : c.latestScore >= 600 ? "A" : "BBB") : null;
+            return (
+              <div key={c.id} className="rounded-lg border bg-card hover:shadow-md transition-shadow cursor-pointer" onClick={() => c.latestAnalysisId && navigate(`/analises/${c.latestAnalysisId}`)}>
+                <div className="px-4 py-3 border-b flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="font-semibold text-sm truncate">{c.razao_social}</p>
+                    <p className="text-xs text-muted-foreground font-mono">{formatCNPJorCPF(c.cnpj_cpf)}</p>
+                  </div>
+                  <CheckCircle2 className="h-5 w-5 text-status-approved shrink-0" />
+                </div>
+                <div className="px-4 py-3 grid grid-cols-2 gap-3">
+                  <div>
+                    <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Score</p>
+                    <p className="font-bold text-sm tabular-nums">{c.latestScore ?? "—"} {tier && <span className="text-xs font-medium text-muted-foreground">{tier}</span>}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Limite Aprovado</p>
+                    <p className="font-bold text-sm tabular-nums text-status-approved">{result?.limite_aprovado ? formatBRL(result.limite_aprovado) : formatBRL(c.latestLimiteSugerido)}</p>
+                  </div>
+                  {result?.prazo_aprovado && (
+                    <div>
+                      <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Prazo</p>
+                      <p className="text-sm font-semibold">{result.prazo_aprovado}d</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* ── Tab: Restrições ── */}
+      {activeTab === "restricoes" && (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {tabClients.length === 0 ? (
+            <div className="col-span-3 text-center py-12 text-muted-foreground">Nenhum cedente com restrição</div>
+          ) : tabClients.map(c => {
+            const result = (analyses.find(a => a.client_id === c.id && a.status === "approved_restricted") as any)?.committee_result;
+            return (
+              <div key={c.id} className="rounded-lg border bg-card hover:shadow-md transition-shadow cursor-pointer" onClick={() => c.latestAnalysisId && navigate(`/analises/${c.latestAnalysisId}`)}>
+                <div className="px-4 py-3 border-b flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="font-semibold text-sm truncate">{c.razao_social}</p>
+                    <p className="text-xs text-muted-foreground font-mono">{formatCNPJorCPF(c.cnpj_cpf)}</p>
+                  </div>
+                  <AlertCircle className="h-5 w-5 text-status-restricted shrink-0" />
+                </div>
+                <div className="px-4 py-3 space-y-2">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Score</p>
+                      <p className="font-bold text-sm tabular-nums">{c.latestScore ?? "—"}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Limite c/ Restrição</p>
+                      <p className="font-bold text-sm tabular-nums text-status-restricted">{result?.limite_aprovado ? formatBRL(result.limite_aprovado) : formatBRL(c.latestLimiteSugerido)}</p>
+                    </div>
+                  </div>
+                  {result?.condicoes_adicionais && (
+                    <p className="text-xs text-muted-foreground border-t pt-2 line-clamp-2">{result.condicoes_adicionais}</p>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* ── Tab: Reprovados ── */}
+      {activeTab === "reprovados" && (
+        <div className="rounded-lg border bg-card">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Razão Social</TableHead>
+                <TableHead>CNPJ</TableHead>
+                <TableHead>Score</TableHead>
+                <TableHead>Data</TableHead>
+                <TableHead>Motivo</TableHead>
+                <TableHead className="w-10" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {tabClients.length === 0 ? (
+                <TableRow><TableCell colSpan={6} className="text-center py-10 text-muted-foreground">Nenhum cedente reprovado</TableCell></TableRow>
+              ) : tabClients.map(c => {
+                const analysis = analyses.find(a => a.client_id === c.id && a.status === "rejected") as any;
+                const result = analysis?.committee_result;
+                return (
+                  <TableRow key={c.id}>
+                    <TableCell className="font-medium">{c.razao_social}</TableCell>
+                    <TableCell className="tabular-nums text-xs">{formatCNPJorCPF(c.cnpj_cpf)}</TableCell>
+                    <TableCell className="tabular-nums">{c.latestScore ?? "—"}</TableCell>
+                    <TableCell className="text-xs">{analysis ? formatDate(analysis.updated_at) : "—"}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate">{result?.condicoes_adicionais || "—"}</TableCell>
+                    <TableCell>
+                      <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => navigate(`/analises/nova?client_id=${c.id}`)}>
+                        <RotateCcw className="h-3 w-3" /> Re-analisar
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+
+      {/* ── Tab: Em Análise / Todos (kanban or table) ── */}
+      {(activeTab === "todos" || activeTab === "em-analise") && (view === "kanban" ? (
         <DragDropContext onDragEnd={handleDragEnd}>
           <ScrollArea className="w-full">
             <div className="flex gap-3 pb-4 min-w-max">
-              {stages.map((stage) => {
+              {stages.filter(s => activeTab === "em-analise" ? ["cadastrado", "draft", "in_committee"].includes(s.key) : true).map((stage) => {
                 const items = grouped[stage.key];
                 const nextLabel = getCardDestinationLabel(stage.key);
                 return (
@@ -466,7 +661,7 @@ export default function Clients() {
             </TableBody>
           </Table>
         </div>
-      )}
+      ))}
     </div>
   );
 }

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <title>Trilho — Favicon</title>
+  <rect width="64" height="64" rx="14" fill="#0A1538"></rect>
+  <rect x="10" y="22" width="44" height="5" rx="2.5" fill="#FAFAF7"></rect>
+  <rect x="10" y="37" width="44" height="5" rx="2.5" fill="#FAFAF7"></rect>
+  <circle cx="44" cy="32" r="6" fill="#00D49A"></circle>
+</svg>

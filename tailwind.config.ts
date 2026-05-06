@@ -8,13 +8,11 @@ export default {
     container: {
       center: true,
       padding: "2rem",
-      screens: {
-        "2xl": "1400px",
-      },
+      screens: { "2xl": "1400px" },
     },
     extend: {
       colors: {
-        // shadcn tokens — mapeados para variáveis CSS (mantidos intactos)
+        // shadcn tokens — mantidos para compatibilidade com componentes ui/
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
@@ -48,75 +46,111 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        sidebar: {
-          DEFAULT: "hsl(var(--sidebar-background))",
-          foreground: "hsl(var(--sidebar-foreground))",
-          primary: "hsl(var(--sidebar-primary))",
-          "primary-foreground": "hsl(var(--sidebar-primary-foreground))",
-          accent: "hsl(var(--sidebar-accent))",
-          "accent-foreground": "hsl(var(--sidebar-accent-foreground))",
-          border: "hsl(var(--sidebar-border))",
-          ring: "hsl(var(--sidebar-ring))",
+
+        // Trilho Design System — tokens diretos
+        marinho: {
+          DEFAULT: "#0A1538",
+          deep: "#070F2B",
         },
-        navbar: {
-          DEFAULT: "hsl(var(--navbar))",
-          foreground: "hsl(var(--navbar-foreground))",
+        esmeralda: {
+          DEFAULT: "#00D49A",
+          dark: "#009E73",
+          soft: "#D6F5E8",
         },
-        status: {
-          draft: "hsl(var(--status-draft))",
-          committee: "hsl(var(--status-committee))",
-          approved: "hsl(var(--status-approved))",
-          restricted: "hsl(var(--status-restricted))",
-          rejected: "hsl(var(--status-rejected))",
+        off: "#F7F7F2",
+        paper: "#FBFBF7",
+        cinza: "#E8E9E2",
+        "cinza-soft": "#F0F1EB",
+        "row-alt": "#F4F5F1",
+
+        // Texto
+        ink: "#0A1538",
+
+        // Status / Tier
+        tier: {
+          aaa: "#D6F5E8",
+          aa:  "#D6F5E8",
+          a:   "#E2F2EC",
+          bbb: "#FFF6DC",
+          bb:  "#FFE9B8",
+          b:   "#FCE3CE",
+          c:   "#FCE3CE",
+          d:   "#F5D6DA",
         },
 
-        // SINK Design System — tokens diretos (use: text-sink-mint, bg-sink-deep, etc.)
-        sink: {
-          // Escala deep (teal escuro)
-          deep:    "#07232A",
-          "deep-2": "#0B2A2E",
-          "deep-3": "#103239",
-          "deep-4": "#18404A",
-          // Escala mint (verde menta)
-          mint:        "#2BD49C",
-          "mint-2":    "#5FE3B5",
-          "mint-3":    "#17A679",
-          "mint-soft": "#D4F5E8",
-          // Neutros quentes
-          cream:    "#F3EFE6",
-          "cream-2": "#EAE4D5",
-          paper:    "#FBF9F3",
-          // Texto
-          ink:      "#0A1F24",
-          fog:      "#D9E3DF",
-          // Semânticos
-          warn:   "#F3B84A",
-          danger: "#E26B5A",
+        // Status operacionais
+        status: {
+          aprovado:  "#D6F5E8",
+          analise:   "#FFF6DC",
+          comite:    "#FFE9B8",
+          restrito:  "#FCE3CE",
+          rejeitado: "#F5D6DA",
+          rascunho:  "#E8E9E2",
+          avencer:   "#E8E9E2",
+          atrasado:  "#FCE3CE",
+          vencido:   "#F5D6DA",
         },
+
+        // Status de análise de crédito (text-status-* / bg-status-* / border-status-*)
+        "status-approved":   "#009E73",
+        "status-committee":  "#7A5B00",
+        "status-restricted": "#8A3B00",
+        "status-rejected":   "#7A0E1E",
+        "status-draft":      "#5A647A",
+        "status-warning":    "#8A6B00",
+
+        // Semânticos
+        warn:   "#D9A300",
+        danger: "#B0182A",
+        "warn-soft":   "#FFF6DC",
+        "danger-soft": "#F5D6DA",
+        "orange-soft": "#FCE3CE",
       },
+
       fontFamily: {
-        // SINK typografia
-        sans: ["Geist", "ui-sans-serif", "system-ui", "-apple-system", "Segoe UI", "sans-serif"],
+        sans: ["Geist", "Inter", "ui-sans-serif", "system-ui", "-apple-system", "sans-serif"],
         mono: ["JetBrains Mono", "ui-monospace", "SF Mono", "Menlo", "monospace"],
       },
+
+      fontSize: {
+        "2xs": ["10px", { lineHeight: "1.4" }],
+        xs:   ["11px", { lineHeight: "1.4" }],
+        sm:   ["12px", { lineHeight: "1.5" }],
+        base: ["13px", { lineHeight: "1.5" }],
+        md:   ["14px", { lineHeight: "1.5" }],
+        lg:   ["18px", { lineHeight: "1.4" }],
+        xl:   ["22px", { lineHeight: "1.3" }],
+        "2xl": ["28px", { lineHeight: "1.2" }],
+        "3xl": ["32px", { lineHeight: "1.1" }],
+        display: ["56px", { lineHeight: "1" }],
+      },
+
+      letterSpacing: {
+        tight:  "-0.03em",
+        snug:   "-0.025em",
+        normal: "0",
+        wide:   "0.08em",
+        wider:  "0.12em",
+      },
+
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
-        // SINK border-radius extras
-        "sink-sm":   "6px",
-        "sink-md":   "10px",
-        "sink-lg":   "16px",
-        "sink-xl":   "24px",
-        "sink-pill": "999px",
+        // Trilho border-radius
+        "t-sm":   "8px",
+        "t-md":   "12px",
+        "t-lg":   "16px",
+        "t-xl":   "20px",
+        "t-pill": "999px",
       },
+
       boxShadow: {
-        // SINK sombras
-        "sink-sm":   "0 1px 2px rgba(7,35,42,0.06), 0 1px 3px rgba(7,35,42,0.04)",
-        "sink-md":   "0 4px 12px rgba(7,35,42,0.08), 0 2px 4px rgba(7,35,42,0.04)",
-        "sink-lg":   "0 12px 32px rgba(7,35,42,0.12), 0 4px 12px rgba(7,35,42,0.06)",
-        "sink-glow": "0 0 0 6px rgba(43,212,156,0.18)",
+        "t-sm": "0 1px 2px rgba(10,21,56,0.04)",
+        "t-md": "0 4px 12px rgba(10,21,56,0.06)",
+        "t-lg": "0 8px 24px rgba(10,21,56,0.08)",
       },
+
       keyframes: {
         "accordion-down": {
           from: { height: "0" },

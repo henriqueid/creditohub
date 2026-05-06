@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
-import { Sparkles, Loader2, RefreshCw, ChevronDown, ChevronUp, AlertTriangle, Info } from "lucide-react";
+import { Sparkles, Loader2, RefreshCw, ChevronDown, ChevronUp, AlertTriangle, Info, KeyRound } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
+import { useNavigate } from "react-router-dom";
 
 interface AIInsightsPanelProps {
   analysisId: string | null;
@@ -24,6 +25,36 @@ const typeLabels: Record<string, { label: string; description: string }> = {
   summary: { label: "Parecer Executivo", description: "Parecer baseado exclusivamente no dossiê" },
 };
 
+// Module-level cache so all panels in the same form share one fetch
+let cachedApiKey: string | null | undefined = undefined;
+let fetchingApiKey = false;
+const apiKeyListeners: Array<(key: string | null) => void> = [];
+
+async function getUserApiKey(): Promise<string | null> {
+  if (cachedApiKey !== undefined) return cachedApiKey;
+  if (fetchingApiKey) {
+    return new Promise((resolve) => { apiKeyListeners.push(resolve); });
+  }
+  fetchingApiKey = true;
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { cachedApiKey = null; return null; }
+    const { data } = await supabase
+      .from("profiles")
+      .select("anthropic_api_key")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    cachedApiKey = data?.anthropic_api_key || null;
+  } catch {
+    cachedApiKey = null;
+  } finally {
+    fetchingApiKey = false;
+    apiKeyListeners.forEach((fn) => fn(cachedApiKey!));
+    apiKeyListeners.length = 0;
+  }
+  return cachedApiKey!;
+}
+
 export function AIInsightsPanel({
   analysisId,
   insightType,
@@ -33,25 +64,44 @@ export function AIInsightsPanel({
   onInsightGenerated,
   className,
 }: AIInsightsPanelProps) {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [content, setContent] = useState<string | null>(existingInsight || null);
   const [expanded, setExpanded] = useState(!!existingInsight);
   const [insufficientData, setInsufficientData] = useState<{ missing: string[]; filled: number; total: number } | null>(null);
   const [coverage, setCoverage] = useState<{ percent: number } | null>(null);
+  const [noApiKey, setNoApiKey] = useState(false);
+
+  // Pre-fetch the API key on mount so the button responds instantly
+  useEffect(() => {
+    getUserApiKey();
+  }, []);
 
   const typeInfo = typeLabels[insightType] || typeLabels.summary;
 
   const generateInsight = async () => {
     setLoading(true);
     setInsufficientData(null);
+    setNoApiKey(false);
     try {
+      const anthropic_api_key = await getUserApiKey();
+
       const { data, error } = await supabase.functions.invoke("generate-insights", {
-        body: { analysisData, clientData, insightType },
+        body: { analysisData, clientData, insightType, anthropic_api_key },
       });
 
       if (error) throw error;
 
-      // Handle insufficient data response
+      if (data?.no_api_key || data?.invalid_key) {
+        setNoApiKey(true);
+        toast({
+          title: "Chave de API não configurada",
+          description: "Acesse Meu Perfil → Configurações de IA para adicionar sua chave Anthropic.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       if (data?.insufficient_data) {
         setInsufficientData({
           missing: data.missing_fields,
@@ -108,6 +158,8 @@ export function AIInsightsPanel({
         ? "border-sink-fog border-l-sink-mint bg-sink-mint/5"
         : insufficientData
         ? "border-sink-danger/30 border-l-sink-danger bg-sink-danger/5"
+        : noApiKey
+        ? "border-sink-warn/30 border-l-sink-warn bg-sink-warn/5"
         : "border-dashed border-sink-fog border-l-sink-fog bg-sink-paper",
       className
     )}>
@@ -115,10 +167,12 @@ export function AIInsightsPanel({
         <div className="flex items-center gap-2.5">
           <div className={cn(
             "p-1.5 rounded-sink-sm",
-            content ? "bg-sink-mint/10" : insufficientData ? "bg-sink-danger/10" : "bg-sink-cream"
+            content ? "bg-sink-mint/10" : insufficientData ? "bg-sink-danger/10" : noApiKey ? "bg-sink-warn/10" : "bg-sink-cream"
           )}>
             {insufficientData ? (
               <AlertTriangle className="h-3.5 w-3.5 text-sink-danger" />
+            ) : noApiKey ? (
+              <KeyRound className="h-3.5 w-3.5 text-sink-warn" />
             ) : (
               <Sparkles className={cn("h-3.5 w-3.5", content ? "text-sink-mint" : "text-sink-ink/40")} />
             )}
@@ -147,7 +201,7 @@ export function AIInsightsPanel({
               Regerar
             </Button>
           )}
-          {!content && (
+          {!content && !noApiKey && (
             <Button
               type="button"
               variant={insufficientData ? "outline" : "default"}
@@ -165,6 +219,18 @@ export function AIInsightsPanel({
               {loading ? "Analisando dossiê..." : "Gerar Insight"}
             </Button>
           )}
+          {noApiKey && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-7 font-mono text-[10px] gap-1 rounded-sink-md border-sink-warn/40 text-sink-warn hover:bg-sink-warn/5"
+              onClick={() => navigate("/perfil")}
+            >
+              <KeyRound className="h-3 w-3" />
+              Configurar Chave
+            </Button>
+          )}
           {content && (
             <Button
               type="button"
@@ -178,6 +244,21 @@ export function AIInsightsPanel({
           )}
         </div>
       </div>
+
+      {/* No API key warning */}
+      {noApiKey && (
+        <div className="px-4 pb-4 border-t border-sink-warn/10">
+          <div className="pt-3 flex items-start gap-2">
+            <KeyRound className="h-4 w-4 text-sink-warn mt-0.5 shrink-0" />
+            <div>
+              <p className="font-sans text-xs font-semibold text-sink-warn">Chave Anthropic não configurada</p>
+              <p className="font-mono text-[10px] text-sink-ink/50 mt-1">
+                Acesse <span className="text-sink-mint cursor-pointer underline" onClick={() => navigate("/perfil")}>Meu Perfil</span> → Configurações de IA e adicione sua chave de API Anthropic para usar os insights.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Insufficient data warning */}
       {insufficientData && !content && (

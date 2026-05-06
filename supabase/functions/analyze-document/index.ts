@@ -9,19 +9,24 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    // TODO: Configure AI_API_KEY in Supabase secrets (Anthropic, OpenAI, or Google)
-    // and update AI_API_URL + model below before deploying
-    const AI_API_KEY = Deno.env.get("AI_API_KEY");
-    if (!AI_API_KEY) throw new Error("AI_API_KEY is not configured");
+    const body = await req.json();
+    const { fileName, fileContent, section, analysisContext, anthropic_api_key: userApiKey } = body;
 
-    const { fileName, fileContent, section, analysisContext } = await req.json();
+    // Use per-user key if provided, otherwise fall back to server secret
+    const apiKey = userApiKey || Deno.env.get("ANTHROPIC_API_KEY") || Deno.env.get("AI_API_KEY");
+    if (!apiKey) {
+      return new Response(JSON.stringify({
+        error: "Chave de API da IA não configurada. Acesse Meu Perfil → Configurações de IA para adicionar sua chave Anthropic.",
+        no_api_key: true,
+      }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
 
     if (!fileContent) throw new Error("fileContent is required");
 
     const systemPrompt = `Você é um analista de crédito sênior especializado em factoring, securitização e FIDC no Brasil.
 Analise o documento fornecido e extraia TODAS as informações relevantes para uma análise de crédito.
 
-Retorne um JSON estruturado com os seguintes campos (preencha apenas os que encontrar):
+Retorne os dados estruturados usando a ferramenta extract_document_data com os campos que encontrar:
 - razao_social: string
 - cnpj_cpf: string
 - nome_fantasia: string
@@ -44,105 +49,97 @@ Se for contrato social, extraia sócios e estrutura societária.
 
 Seção atual da análise: ${section || "geral"}`;
 
-    // TODO: Replace URL and model with chosen provider:
-    // OpenAI:     https://api.openai.com/v1/chat/completions  |  model: "gpt-4o"
-    // Anthropic:  https://api.anthropic.com/v1/messages       |  model: "claude-sonnet-4-6" (different format)
-    // Google:     https://generativelanguage.googleapis.com/v1beta/...
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${AI_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "gpt-4o",
-        messages: [
-          { role: "system", content: systemPrompt },
-          {
-            role: "user",
-            content: `Documento: "${fileName || "documento"}"
+    const userMessage = `Documento: "${fileName || "documento"}"
 
 Contexto da análise atual:
 ${analysisContext ? JSON.stringify(analysisContext) : "Nenhum contexto disponível"}
 
 Conteúdo do documento (base64 ou texto):
-${fileContent.substring(0, 50000)}`,
-          },
-        ],
+${fileContent.substring(0, 50000)}`;
+
+    // Anthropic Claude API with tool_use
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-6",
+        max_tokens: 4096,
+        system: systemPrompt,
         tools: [
           {
-            type: "function",
-            function: {
-              name: "extract_document_data",
-              description: "Extract structured data from a credit analysis document",
-              parameters: {
-                type: "object",
-                properties: {
-                  razao_social: { type: "string" },
-                  cnpj_cpf: { type: "string" },
-                  nome_fantasia: { type: "string" },
-                  segmento: { type: "string" },
-                  faturamento_medio: { type: "number" },
-                  endereco: { type: "string" },
-                  socios: {
-                    type: "array",
-                    items: {
-                      type: "object",
-                      properties: {
-                        nome: { type: "string" },
-                        cpf: { type: "string" },
-                        participacao: { type: "number" },
-                        cargo: { type: "string" },
-                      },
+            name: "extract_document_data",
+            description: "Extract structured data from a credit analysis document",
+            input_schema: {
+              type: "object",
+              properties: {
+                razao_social: { type: "string" },
+                cnpj_cpf: { type: "string" },
+                nome_fantasia: { type: "string" },
+                segmento: { type: "string" },
+                faturamento_medio: { type: "number" },
+                endereco: { type: "string" },
+                socios: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      nome: { type: "string" },
+                      cpf: { type: "string" },
+                      participacao: { type: "number" },
+                      cargo: { type: "string" },
                     },
                   },
-                  protestos: { type: "string" },
-                  pendencias: { type: "string" },
-                  score_credito: { type: "number" },
-                  acoes_judiciais: { type: "string" },
-                  observacoes: { type: "string" },
-                  riscos_identificados: { type: "array", items: { type: "string" } },
-                  pontos_positivos: { type: "array", items: { type: "string" } },
-                  resumo_executivo: { type: "string" },
                 },
-                required: ["resumo_executivo"],
-                additionalProperties: false,
+                protestos: { type: "string" },
+                pendencias: { type: "string" },
+                score_credito: { type: "number" },
+                acoes_judiciais: { type: "string" },
+                observacoes: { type: "string" },
+                riscos_identificados: { type: "array", items: { type: "string" } },
+                pontos_positivos: { type: "array", items: { type: "string" } },
+                resumo_executivo: { type: "string" },
               },
+              required: ["resumo_executivo"],
             },
           },
         ],
-        tool_choice: { type: "function", function: { name: "extract_document_data" } },
+        tool_choice: { type: "tool", name: "extract_document_data" },
+        messages: [
+          { role: "user", content: userMessage },
+        ],
       }),
     });
 
     if (!response.ok) {
       const errText = await response.text();
-      console.error("AI gateway error:", response.status, errText);
-      
+      console.error("Anthropic API error:", response.status, errText);
+
       if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Muitas requisições. Tente novamente em alguns segundos." }), {
+        return new Response(JSON.stringify({ error: "Rate limit atingido. Tente novamente em alguns segundos." }), {
           status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+      if (response.status === 401) {
+        return new Response(JSON.stringify({ error: "Chave de API inválida. Verifique sua chave Anthropic em Meu Perfil → Configurações de IA.", invalid_key: true }), {
+          status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
       if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "Créditos de IA insuficientes." }), {
+        return new Response(JSON.stringify({ error: "Créditos de IA insuficientes na conta Anthropic." }), {
           status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      throw new Error(`AI error: ${response.status}`);
+      throw new Error(`Anthropic API error: ${response.status}`);
     }
 
     const data = await response.json();
-    const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
-    let extracted = {};
-
-    if (toolCall?.function?.arguments) {
-      try {
-        extracted = JSON.parse(toolCall.function.arguments);
-      } catch {
-        extracted = { resumo_executivo: "Não foi possível extrair dados estruturados do documento." };
-      }
-    }
+    // Anthropic returns tool_use in content array
+    const toolUse = data.content?.find((c: any) => c.type === "tool_use" && c.name === "extract_document_data");
+    const extracted = toolUse?.input || { resumo_executivo: "Não foi possível extrair dados estruturados do documento." };
 
     return new Response(JSON.stringify({ success: true, data: extracted }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
