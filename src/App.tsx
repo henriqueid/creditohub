@@ -1,11 +1,18 @@
 import { lazy, Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes, useParams } from "react-router-dom";
+
+// /cedentes/:id agora redireciona pro perfil (edição é inline)
+function CedenteProfileRedirect() {
+  const { id } = useParams<{ id: string }>();
+  return <Navigate to={`/cedentes/${id}/perfil?edit=1`} replace />;
+}
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppLayout } from "@/components/AppLayout";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { ModuleGuard } from "@/components/ModuleGuard";
 import PageLoader from "@/components/PageLoader";
 
 // HOT paths — eager import for instant navigation (no Suspense flash)
@@ -45,6 +52,7 @@ const AuditLog = lazy(() => import("@/pages/AuditLog"));
 const Integrations = lazy(() => import("@/pages/Integrations"));
 const PatrimonialReport = lazy(() => import("@/pages/PatrimonialReport"));
 const BureauSettings = lazy(() => import("@/pages/BureauSettings"));
+const SuperAdmin = lazy(() => import("@/pages/SuperAdmin"));
 
 const queryClient = new QueryClient();
 
@@ -63,40 +71,42 @@ const App = () => (
             {/* Protected routes */}
             <Route element={<ProtectedRoute />}>
               <Route element={<AppLayout />}>
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/cedentes" element={<Clients />} />
-                <Route path="/cedentes/novo" element={<ClientForm />} />
-                <Route path="/cedentes/:id" element={<ClientForm />} />
-                <Route path="/cedentes/:id/historico" element={<ClientHistory />} />
-                <Route path="/cedentes/:id/perfil" element={<CedenteProfile />} />
-                <Route path="/analises" element={<CreditAnalysisList />} />
-                <Route path="/analises/nova" element={<CreditAnalysisForm />} />
-                <Route path="/analises/:id" element={<CreditAnalysisForm />} />
-                <Route path="/comite" element={<CommitteeQueue />} />
-                <Route path="/comite/:id" element={<CommitteeVoting />} />
-                <Route path="/consulta" element={<ConsultaCPFCNPJ />} />
-                <Route path="/prospects" element={<Prospects />} />
-                <Route path="/prospects/:id" element={<ProspectDetail />} />
-                <Route path="/monitoramento-nfs" element={<InvoiceMonitoring />} />
-                <Route path="/falimentar" element={<BankruptcyReport />} />
-                <Route path="/blacklist" element={<Blacklist />} />
+                <Route path="/" element={<ModuleGuard module="dashboard"><Dashboard /></ModuleGuard>} />
+                <Route path="/cedentes" element={<ModuleGuard module="cedentes"><Clients /></ModuleGuard>} />
+                <Route path="/cedentes/novo" element={<ModuleGuard module="cedentes"><ClientForm /></ModuleGuard>} />
+                <Route path="/cedentes/:id" element={<ModuleGuard module="cedentes"><CedenteProfileRedirect /></ModuleGuard>} />
+                <Route path="/cedentes/:id/historico" element={<ModuleGuard module="cedentes"><ClientHistory /></ModuleGuard>} />
+                <Route path="/cedentes/:id/perfil" element={<ModuleGuard module="cedentes"><CedenteProfile /></ModuleGuard>} />
+                <Route path="/analises" element={<ModuleGuard module="credito"><CreditAnalysisList /></ModuleGuard>} />
+                <Route path="/analises/nova" element={<ModuleGuard module="credito"><CreditAnalysisForm /></ModuleGuard>} />
+                <Route path="/analises/:id" element={<ModuleGuard module="credito"><CreditAnalysisForm /></ModuleGuard>} />
+                <Route path="/comite" element={<ModuleGuard module="credito"><CommitteeQueue /></ModuleGuard>} />
+                <Route path="/comite/:id" element={<ModuleGuard module="credito"><CommitteeVoting /></ModuleGuard>} />
+                <Route path="/consulta" element={<ModuleGuard module="consulta"><ConsultaCPFCNPJ /></ModuleGuard>} />
+                <Route path="/prospects" element={<ModuleGuard module="prospects"><Prospects /></ModuleGuard>} />
+                <Route path="/prospects/:id" element={<ModuleGuard module="prospects"><ProspectDetail /></ModuleGuard>} />
+                <Route path="/monitoramento-nfs" element={<ModuleGuard module="credito"><InvoiceMonitoring /></ModuleGuard>} />
+                <Route path="/falimentar" element={<ModuleGuard module="relatorios"><BankruptcyReport /></ModuleGuard>} />
+                <Route path="/blacklist" element={<ModuleGuard module="blacklist"><Blacklist /></ModuleGuard>} />
                 <Route path="/perfil" element={<Profile />} />
-                <Route path="/configuracoes" element={<Settings />} />
-                <Route path="/configuracoes/motor" element={<CreditEngineSettings />} />
-                <Route path="/configuracoes/bureaus" element={<BureauSettings />} />
-                <Route path="/performance" element={<PipelineMetrics />} />
-                <Route path="/monitoramento/performance" element={<PipelinePerformance />} />
-                <Route path="/audit-log" element={<AuditLog />} />
-                <Route path="/integracoes" element={<Integrations />} />
-                <Route path="/patrimonial" element={<PatrimonialReport />} />
+                <Route path="/configuracoes" element={<ModuleGuard module="settings_geral"><Settings /></ModuleGuard>} />
+                <Route path="/configuracoes/motor" element={<ModuleGuard module="credito"><CreditEngineSettings /></ModuleGuard>} />
+                <Route path="/configuracoes/bureaus" element={<ModuleGuard module="credito"><BureauSettings /></ModuleGuard>} />
+                <Route path="/performance" element={<ModuleGuard module="relatorios"><PipelineMetrics /></ModuleGuard>} />
+                <Route path="/monitoramento/performance" element={<ModuleGuard module="relatorios"><PipelinePerformance /></ModuleGuard>} />
+                <Route path="/audit-log" element={<ModuleGuard module="audit_log"><AuditLog /></ModuleGuard>} />
+                <Route path="/integracoes" element={<ModuleGuard module="settings_geral"><Integrations /></ModuleGuard>} />
+                <Route path="/patrimonial" element={<ModuleGuard module="relatorios"><PatrimonialReport /></ModuleGuard>} />
                 {/* CRM */}
-                <Route path="/crm/pipeline" element={<CRMPipeline />} />
-                <Route path="/crm/contatos" element={<CRMContacts />} />
-                <Route path="/crm/atividades" element={<CRMActivities />} />
-                <Route path="/crm/tarefas" element={<CRMTasks />} />
-                <Route path="/crm/dashboard" element={<CRMDashboard />} />
-                <Route path="/crm/cliente/:id" element={<CRMClientProfile />} />
-                <Route path="/crm/deal/:id" element={<DealDetail />} />
+                <Route path="/crm/pipeline" element={<ModuleGuard module="crm"><CRMPipeline /></ModuleGuard>} />
+                <Route path="/crm/contatos" element={<ModuleGuard module="crm"><CRMContacts /></ModuleGuard>} />
+                <Route path="/crm/atividades" element={<ModuleGuard module="crm"><CRMActivities /></ModuleGuard>} />
+                <Route path="/crm/tarefas" element={<ModuleGuard module="crm"><CRMTasks /></ModuleGuard>} />
+                <Route path="/crm/dashboard" element={<ModuleGuard module="crm"><CRMDashboard /></ModuleGuard>} />
+                <Route path="/crm/cliente/:id" element={<ModuleGuard module="cedentes"><CRMClientProfile /></ModuleGuard>} />
+                <Route path="/crm/deal/:id" element={<ModuleGuard module="crm"><DealDetail /></ModuleGuard>} />
+                {/* Super-admin */}
+                <Route path="/super-admin" element={<SuperAdmin />} />
               </Route>
             </Route>
 

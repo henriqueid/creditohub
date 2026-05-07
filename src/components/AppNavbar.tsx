@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User } from "@supabase/supabase-js";
 import { cn } from "@/lib/utils";
@@ -8,8 +8,10 @@ import {
   LogOut, User as UserIcon, Settings, Bell, ChevronDown,
   LayoutGrid, Workflow, Users, Activity, CheckSquare,
   BarChart3, Scale, Building2, Search, Ban, Sparkles, Menu, X as XIcon,
+  ShieldCheck,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { useUserPermissions, type AppModule } from "@/hooks/useUserPermissions";
 
 /* ── Logo SVG ───────────────────────────────────────────────────── */
 
@@ -33,30 +35,33 @@ function Logo() {
 
 /* ── Módulos ────────────────────────────────────────────────────── */
 
-const MODULES = [
-  { label: "Painel",        path: "/" },
-  { label: "Comercial",     path: "/crm/dashboard" },
-  { label: "Crédito",       path: "/analises" },
-  { label: "Monitoramento", path: "/monitoramento-nfs" },
-] as const;
+type ModuleItem = { label: string; path: string; requires: AppModule };
 
-type SubNavItem = { label: string; path: string; icon: LucideIcon };
+const ALL_MODULES: ModuleItem[] = [
+  { label: "Painel",        path: "/",                  requires: "dashboard" },
+  { label: "Comercial",     path: "/crm/dashboard",     requires: "crm" },
+  { label: "Crédito",       path: "/analises",          requires: "credito" },
+  { label: "Monitoramento", path: "/monitoramento-nfs", requires: "credito" },
+];
+
+type SubNavItem = { label: string; path: string; icon: LucideIcon; requires: AppModule };
 
 const CRM_SUBNAV: SubNavItem[] = [
-  { label: "Dashboard",   path: "/crm/dashboard",  icon: LayoutGrid },
-  { label: "Consulta",    path: "/consulta",       icon: Search },
-  { label: "Prospects",   path: "/prospects",      icon: Sparkles },
-  { label: "Pipeline",    path: "/crm/pipeline",   icon: Workflow },
-  { label: "Contatos",    path: "/crm/contatos",   icon: Users },
-  { label: "Atividades",  path: "/crm/atividades", icon: Activity },
-  { label: "Tarefas",     path: "/crm/tarefas",    icon: CheckSquare },
+  { label: "Dashboard",   path: "/crm/dashboard",  icon: LayoutGrid,  requires: "crm" },
+  { label: "Consulta",    path: "/consulta",       icon: Search,      requires: "consulta" },
+  { label: "Prospects",   path: "/prospects",      icon: Sparkles,    requires: "prospects" },
+  { label: "Pipeline",    path: "/crm/pipeline",   icon: Workflow,    requires: "crm" },
+  { label: "Cedentes",    path: "/cedentes",       icon: Building2,   requires: "cedentes" },
+  { label: "Contatos",    path: "/crm/contatos",   icon: Users,       requires: "crm" },
+  { label: "Atividades",  path: "/crm/atividades", icon: Activity,    requires: "crm" },
+  { label: "Tarefas",     path: "/crm/tarefas",    icon: CheckSquare, requires: "crm" },
 ];
 
 const CREDITO_SUBNAV: SubNavItem[] = [
-  { label: "Análises",    path: "/analises",  icon: BarChart3 },
-  { label: "Comitê",      path: "/comite",    icon: Scale },
-  { label: "Portfólio",   path: "/cedentes",  icon: Building2 },
-  { label: "Blacklist",   path: "/blacklist", icon: Ban },
+  { label: "Análises",    path: "/analises",  icon: BarChart3, requires: "credito" },
+  { label: "Comitê",      path: "/comite",    icon: Scale,     requires: "credito" },
+  { label: "Portfólio",   path: "/cedentes",  icon: Building2, requires: "cedentes" },
+  { label: "Blacklist",   path: "/blacklist", icon: Ban,       requires: "blacklist" },
 ];
 
 function getActiveModule(pathname: string): string {
@@ -272,7 +277,7 @@ function NotificationsDropdown({ navigate }: { navigate: (path: string) => void 
 
 /* ── User Dropdown ───────────────────────────────────────────────── */
 
-function UserDropdown({ user, navigate }: { user: User | null; navigate: (path: string) => void }) {
+function UserDropdown({ user, navigate, isSuperAdmin }: { user: User | null; navigate: (path: string) => void; isSuperAdmin: boolean }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -355,6 +360,16 @@ function UserDropdown({ user, navigate }: { user: User | null; navigate: (path: 
               <UserIcon style={{ width: 14, height: 14, opacity: 0.5 }} />
               Meu perfil
             </button>
+            {isSuperAdmin && (
+              <button
+                onClick={() => { navigate("/super-admin"); setOpen(false); }}
+                className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] transition-colors hover:bg-[rgba(10,21,56,0.04)] text-left"
+                style={{ color: "#00D49A", fontWeight: 600 }}
+              >
+                <ShieldCheck style={{ width: 14, height: 14 }} />
+                Super-admin
+              </button>
+            )}
           </div>
 
           <div style={{ borderTop: "1px solid rgba(10,21,56,0.07)" }} className="py-1">
@@ -381,18 +396,24 @@ function MobileDrawer({
   activeModule,
   pathname,
   navigate,
+  modules,
+  crmSubnav,
+  creditoSubnav,
 }: {
   open: boolean;
   onClose: () => void;
   activeModule: string;
   pathname: string;
   navigate: (path: string) => void;
+  modules: ModuleItem[];
+  crmSubnav: SubNavItem[];
+  creditoSubnav: SubNavItem[];
 }) {
   if (!open) return null;
 
   const subItems =
-    activeModule === "Comercial" ? CRM_SUBNAV :
-    activeModule === "Crédito"   ? CREDITO_SUBNAV :
+    activeModule === "Comercial" ? crmSubnav :
+    activeModule === "Crédito"   ? creditoSubnav :
     null;
 
   return (
@@ -416,7 +437,7 @@ function MobileDrawer({
           <p style={{ fontFamily: "var(--font-mono)", fontSize: 9.5, letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(250,250,247,0.40)", padding: "6px 12px 4px" }}>
             Módulos
           </p>
-          {MODULES.map(({ label, path }) => {
+          {modules.map(({ label, path }) => {
             const isActive = activeModule === label;
             return (
               <button
@@ -482,6 +503,7 @@ export function AppNavbar() {
   const [user, setUser] = useState<User | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const activeModule = getActiveModule(location.pathname);
+  const { canAccess, isSuperAdmin } = useUserPermissions();
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUser(data.user));
@@ -491,9 +513,24 @@ export function AppNavbar() {
     return () => subscription.unsubscribe();
   }, []);
 
+  const visibleModules = useMemo(
+    () => ALL_MODULES.filter((m) => canAccess(m.requires)),
+    [canAccess]
+  );
+
+  const visibleCrmSubnav = useMemo(
+    () => CRM_SUBNAV.filter((m) => canAccess(m.requires)),
+    [canAccess]
+  );
+
+  const visibleCreditoSubnav = useMemo(
+    () => CREDITO_SUBNAV.filter((m) => canAccess(m.requires)),
+    [canAccess]
+  );
+
   const subNav =
-    activeModule === "Comercial" ? CRM_SUBNAV :
-    activeModule === "Crédito"   ? CREDITO_SUBNAV :
+    activeModule === "Comercial" ? visibleCrmSubnav :
+    activeModule === "Crédito"   ? visibleCreditoSubnav :
     null;
 
   return (
@@ -523,7 +560,7 @@ export function AppNavbar() {
 
         {/* Módulos — só lg+ */}
         <nav className="hidden lg:flex items-center gap-1 ml-1">
-          {MODULES.map(({ label, path }) => {
+          {visibleModules.map(({ label, path }) => {
             const isActive = activeModule === label;
             return (
               <button
@@ -574,7 +611,7 @@ export function AppNavbar() {
         <NotificationsDropdown navigate={navigate} />
 
         {/* User */}
-        <UserDropdown user={user} navigate={navigate} />
+        <UserDropdown user={user} navigate={navigate} isSuperAdmin={isSuperAdmin} />
       </header>
 
       {/* Mobile drawer */}
@@ -584,6 +621,9 @@ export function AppNavbar() {
         activeModule={activeModule}
         pathname={location.pathname}
         navigate={navigate}
+        modules={visibleModules}
+        crmSubnav={visibleCrmSubnav}
+        creditoSubnav={visibleCreditoSubnav}
       />
 
       {/* Sub-nav condicional */}

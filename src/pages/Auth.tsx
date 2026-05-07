@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -238,11 +238,44 @@ function SinkButton({
 
 export default function Auth() {
   const navigate = useNavigate();
-  const [mode, setMode] = useState<AuthMode>("login");
+  const [searchParams] = useSearchParams();
+  const inviteToken = searchParams.get("invite");
+  const [mode, setMode] = useState<AuthMode>(inviteToken ? "signup" : "login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
+  const [inviteInfo, setInviteInfo] = useState<{
+    valid: boolean;
+    email?: string;
+    role?: string;
+    tenant_name?: string;
+    reason?: string;
+  } | null>(null);
+
+  // Valida convite e pré-preenche email
+  useEffect(() => {
+    if (!inviteToken) return;
+    (async () => {
+      const { data, error } = await (supabase as any).rpc("get_invitation_info", { p_token: inviteToken });
+      if (error) {
+        setInviteInfo({ valid: false, reason: error.message });
+        return;
+      }
+      setInviteInfo(data);
+      if (data?.valid && data.email) setEmail(data.email);
+    })();
+  }, [inviteToken]);
+
+  // Acceita convite após login/signup bem-sucedido
+  const acceptInviteIfNeeded = async () => {
+    if (!inviteToken) return;
+    try {
+      await (supabase as any).rpc("accept_invitation", { p_token: inviteToken });
+    } catch (e: any) {
+      console.warn("Falha ao aceitar convite:", e?.message);
+    }
+  };
 
   /* Handlers (preservados da implementação original) */
 
@@ -250,6 +283,7 @@ export default function Auth() {
     e.preventDefault();
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (!error) await acceptInviteIfNeeded();
     setLoading(false);
     if (error) {
       toast.error(error.message);
@@ -260,6 +294,10 @@ export default function Auth() {
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!inviteToken) {
+      toast.error("Cadastro só por convite. Peça um link de convite ao admin do seu workspace.");
+      return;
+    }
     setLoading(true);
     const { error } = await supabase.auth.signUp({
       email,
@@ -269,11 +307,12 @@ export default function Auth() {
         emailRedirectTo: window.location.origin,
       },
     });
+    if (!error) await acceptInviteIfNeeded();
     setLoading(false);
     if (error) {
       toast.error(error.message);
     } else {
-      toast.success("Conta criada com sucesso!");
+      toast.success("Conta criada e convite aceito!");
       navigate("/");
     }
   };
@@ -377,6 +416,31 @@ export default function Auth() {
                 </p>
               </div>
 
+              {/* Banner de convite */}
+              {inviteInfo && (
+                <div
+                  className="rounded-[10px] px-3 py-2.5 text-[12.5px]"
+                  style={{
+                    background: inviteInfo.valid ? "rgba(0,212,154,0.10)" : "rgba(176,24,42,0.08)",
+                    border: `1px solid ${inviteInfo.valid ? "rgba(0,212,154,0.30)" : "rgba(176,24,42,0.20)"}`,
+                    color: "#0A1538",
+                  }}
+                >
+                  {inviteInfo.valid ? (
+                    <>
+                      <strong>Convite válido:</strong> entrando em <strong>{inviteInfo.tenant_name}</strong> como <strong>{inviteInfo.role}</strong>
+                    </>
+                  ) : (
+                    <>
+                      <strong>Convite inválido:</strong>{" "}
+                      {inviteInfo.reason === "expired" ? "este link expirou"
+                        : inviteInfo.reason === "already_used" ? "este link já foi usado"
+                        : "link não encontrado"}
+                    </>
+                  )}
+                </div>
+              )}
+
               {/* Formulário */}
               <form onSubmit={handleSubmit} className="flex flex-col gap-5">
                 {mode === "signup" && (
@@ -434,16 +498,9 @@ export default function Auth() {
 
               {/* Links secundários */}
               <div className="text-center text-[13px] text-ink/45">
-                {mode === "login" && (
-                  <p>
-                    Não tem conta?{" "}
-                    <button
-                      type="button"
-                      onClick={() => setMode("signup")}
-                      className="text-esmeralda-dark hover:text-esmeralda font-semibold transition-colors"
-                    >
-                      Cadastre-se
-                    </button>
+                {mode === "login" && !inviteToken && (
+                  <p className="text-[11.5px]">
+                    Acesso somente por convite. Se você é admin de uma empresa, entre em contato com a CreditoHub pra liberar seu workspace.
                   </p>
                 )}
                 {mode === "signup" && (

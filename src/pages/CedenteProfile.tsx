@@ -9,18 +9,24 @@
  *   /cedentes/:id/historico → ClientHistory (apenas histórico de análises)
  *   /crm/cliente/:id       → CRMClientProfile (visão CRM, será deprecado)
  */
-import { useQuery } from "@tanstack/react-query";
-import { useParams, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { T } from "@/lib/tokens";
 import { PageHeader } from "@/components/trilho/PageHeader";
 import { StatusBadge } from "@/components/StatusBadge";
-import { formatCNPJorCPF, formatBRL, formatDate, statusLabels } from "@/lib/formatters";
+import { formatCNPJorCPF, formatBRL, formatDate, statusLabels, ESTADOS_BR } from "@/lib/formatters";
 import {
   Building2, Edit, FileText, BarChart3, Users, Receipt, Activity,
   CheckSquare, ExternalLink, MapPin, Calendar, Briefcase, Loader2,
   ArrowRight, AlertTriangle, TrendingUp, Workflow, Sparkles, Contact as ContactIcon,
+  Save, X as XIcon,
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from "sonner";
 import { ContactsSection } from "@/components/cedente/ContactsSection";
 
 function getTier(score: number | null) {
@@ -34,6 +40,18 @@ function getTier(score: number | null) {
 export default function CedenteProfile() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const qc = useQueryClient();
+  const startInEdit = searchParams.get("edit") === "1";
+  const [editing, setEditing] = useState(startInEdit);
+  const [editForm, setEditForm] = useState({
+    razao_social: "",
+    nome_fantasia: "",
+    data_fundacao: "",
+    segmento: "",
+    cidade: "",
+    estado: "",
+  });
 
   // ── Cliente ────────────────────────────────────────────────────────
   const { data: client, isLoading: loadingClient } = useQuery({
@@ -45,6 +63,49 @@ export default function CedenteProfile() {
       if (error) throw error;
       return data;
     },
+  });
+
+  // Hidrata form de edição quando cliente carrega ou ao entrar em edit
+  useEffect(() => {
+    if (client && editing) {
+      setEditForm({
+        razao_social: client.razao_social || "",
+        nome_fantasia: client.nome_fantasia || "",
+        data_fundacao: client.data_fundacao || "",
+        segmento: client.segmento || "",
+        cidade: client.cidade || "",
+        estado: client.estado || "",
+      });
+    }
+  }, [client, editing]);
+
+  const saveCadastral = useMutation({
+    mutationFn: async () => {
+      if (!editForm.razao_social.trim()) throw new Error("Razão social é obrigatória");
+      const { error } = await supabase
+        .from("clients")
+        .update({
+          razao_social: editForm.razao_social,
+          nome_fantasia: editForm.nome_fantasia || null,
+          data_fundacao: editForm.data_fundacao || null,
+          segmento: editForm.segmento || null,
+          cidade: editForm.cidade || null,
+          estado: editForm.estado || null,
+        })
+        .eq("id", id!);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["cedente-profile", id] });
+      qc.invalidateQueries({ queryKey: ["clients"] });
+      toast.success("Cadastro atualizado");
+      setEditing(false);
+      // limpa o ?edit=1 da URL
+      const next = new URLSearchParams(searchParams);
+      next.delete("edit");
+      setSearchParams(next, { replace: true });
+    },
+    onError: (e: any) => toast.error(e?.message || "Erro ao salvar"),
   });
 
   // ── Análises do cliente ────────────────────────────────────────────
@@ -182,13 +243,41 @@ export default function CedenteProfile() {
             >
               <FileText className="h-3.5 w-3.5 mr-1.5 inline" /> Histórico
             </button>
-            <button
-              onClick={() => navigate(`/cedentes/${id}`)}
-              className="px-[14px] py-[8px] rounded-[999px] text-[13px] font-medium transition-colors hover:bg-[#F0F1EB]"
-              style={{ border: `1px solid ${T.borderStrong}`, color: T.text }}
-            >
-              <Edit className="h-3.5 w-3.5 mr-1.5 inline" /> Editar cadastro
-            </button>
+            {editing ? (
+              <>
+                <button
+                  onClick={() => {
+                    setEditing(false);
+                    const next = new URLSearchParams(searchParams);
+                    next.delete("edit");
+                    setSearchParams(next, { replace: true });
+                  }}
+                  className="px-[14px] py-[8px] rounded-[999px] text-[13px] font-medium transition-colors hover:bg-[#F0F1EB]"
+                  style={{ border: `1px solid ${T.borderStrong}`, color: T.text }}
+                >
+                  <XIcon className="h-3.5 w-3.5 mr-1.5 inline" /> Cancelar edição
+                </button>
+                <button
+                  onClick={() => saveCadastral.mutate()}
+                  disabled={saveCadastral.isPending}
+                  className="px-[14px] py-[8px] rounded-[999px] text-[13px] font-medium transition-opacity hover:opacity-90 disabled:opacity-50"
+                  style={{ background: T.esmeralda, color: T.marinho }}
+                >
+                  {saveCadastral.isPending
+                    ? <Loader2 className="h-3.5 w-3.5 mr-1.5 inline animate-spin" />
+                    : <Save className="h-3.5 w-3.5 mr-1.5 inline" />}
+                  Salvar cadastro
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => setEditing(true)}
+                className="px-[14px] py-[8px] rounded-[999px] text-[13px] font-medium transition-colors hover:bg-[#F0F1EB]"
+                style={{ border: `1px solid ${T.borderStrong}`, color: T.text }}
+              >
+                <Edit className="h-3.5 w-3.5 mr-1.5 inline" /> Editar cadastro
+              </button>
+            )}
             {latestAnalysis ? (
               <button
                 onClick={() => navigate(`/analises/${latestAnalysis.id}`)}
@@ -242,12 +331,81 @@ export default function CedenteProfile() {
         {/* Coluna 1: Identificação + Sócios */}
         <div className="space-y-[14px]">
           <Section title="Identificação" icon={Building2}>
-            <Row label="Razão social" value={client.razao_social || "—"} />
-            <Row label="Nome fantasia" value={client.nome_fantasia || "—"} />
-            <Row label="CNPJ/CPF" value={formatCNPJorCPF(client.cnpj_cpf || "")} mono />
-            <Row label="Segmento" value={client.segmento || "—"} />
-            <Row label="Fundação" value={client.data_fundacao ? formatDate(client.data_fundacao) : "—"} />
-            <Row label="Local" value={client.cidade && client.estado ? `${client.cidade}/${client.estado}` : "—"} />
+            {editing ? (
+              <div className="space-y-3 py-2">
+                <div>
+                  <Label className="text-[11px] text-muted-foreground">Razão social *</Label>
+                  <Input
+                    value={editForm.razao_social}
+                    onChange={(e) => setEditForm((p) => ({ ...p, razao_social: e.target.value }))}
+                    className="h-8 text-[13px]"
+                  />
+                </div>
+                <div>
+                  <Label className="text-[11px] text-muted-foreground">Nome fantasia</Label>
+                  <Input
+                    value={editForm.nome_fantasia}
+                    onChange={(e) => setEditForm((p) => ({ ...p, nome_fantasia: e.target.value }))}
+                    className="h-8 text-[13px]"
+                  />
+                </div>
+                <div>
+                  <Label className="text-[11px] text-muted-foreground">CNPJ/CPF</Label>
+                  <p className="text-[13px] py-1.5 font-mono" style={{ color: T.textMute }}>
+                    {formatCNPJorCPF(client.cnpj_cpf || "")} <span className="text-[10px] uppercase tracking-wider ml-2">(não editável)</span>
+                  </p>
+                </div>
+                <div>
+                  <Label className="text-[11px] text-muted-foreground">Segmento</Label>
+                  <Input
+                    value={editForm.segmento}
+                    onChange={(e) => setEditForm((p) => ({ ...p, segmento: e.target.value }))}
+                    className="h-8 text-[13px]"
+                    placeholder="Ex: Indústria têxtil"
+                  />
+                </div>
+                <div>
+                  <Label className="text-[11px] text-muted-foreground">Data de fundação</Label>
+                  <Input
+                    type="date"
+                    value={editForm.data_fundacao}
+                    onChange={(e) => setEditForm((p) => ({ ...p, data_fundacao: e.target.value }))}
+                    className="h-8 text-[13px]"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label className="text-[11px] text-muted-foreground">Cidade</Label>
+                    <Input
+                      value={editForm.cidade}
+                      onChange={(e) => setEditForm((p) => ({ ...p, cidade: e.target.value }))}
+                      className="h-8 text-[13px]"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-[11px] text-muted-foreground">UF</Label>
+                    <Select
+                      value={editForm.estado}
+                      onValueChange={(v) => setEditForm((p) => ({ ...p, estado: v }))}
+                    >
+                      <SelectTrigger className="h-8 text-[13px]"><SelectValue placeholder="—" /></SelectTrigger>
+                      <SelectContent>
+                        {ESTADOS_BR.map((uf) => (<SelectItem key={uf} value={uf}>{uf}</SelectItem>))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <>
+                <Row label="Razão social" value={client.razao_social || "—"} />
+                <Row label="Nome fantasia" value={client.nome_fantasia || "—"} />
+                <Row label="CNPJ/CPF" value={formatCNPJorCPF(client.cnpj_cpf || "")} mono />
+                <Row label="Segmento" value={client.segmento || "—"} />
+                <Row label="Fundação" value={client.data_fundacao ? formatDate(client.data_fundacao) : "—"} />
+                <Row label="Local" value={client.cidade && client.estado ? `${client.cidade}/${client.estado}` : "—"} />
+              </>
+            )}
           </Section>
 
           <Section title="Contatos" icon={ContactIcon}>

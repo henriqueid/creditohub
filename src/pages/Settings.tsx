@@ -18,6 +18,7 @@ import {
 import { COMMITTEE_FIELD_OPTIONS, DEFAULT_REQUIRED_FIELDS } from "@/hooks/useCommitteeRequirements";
 import CommitteeMembersSection from "@/components/settings/CommitteeMembersSection";
 import { TeamSection } from "@/components/settings/TeamSection";
+import { PermissionsMatrix } from "@/components/settings/PermissionsMatrix";
 
 /* ── Types ────────────────────────────────────────────────────────── */
 
@@ -28,7 +29,7 @@ function parseValue(val: any): string {
   return JSON.stringify(val);
 }
 
-type Section = "empresa" | "aprovacao" | "comite" | "membros_comite" | "automacao" | "integracoes" | "acessos";
+type Section = "empresa" | "aprovacao" | "comite" | "membros_comite" | "automacao" | "integracoes" | "acessos" | "permissoes";
 
 /* ── Sub-components ────────────────────────────────────────────────── */
 
@@ -159,7 +160,8 @@ export default function Settings() {
     { key: "membros_comite", label: "Membros do comitê", icon: Users },
     { key: "automacao",    label: "Automações",          icon: Zap },
     { key: "integracoes",  label: "Integrações",         icon: Plug, badge: totalIntegrations > 0 ? `${activeIntegrations}/${totalIntegrations}` : undefined },
-    { key: "acessos",      label: "Acessos",             icon: Users },
+    { key: "acessos",      label: "Equipe",              icon: Users },
+    { key: "permissoes",   label: "Permissões",          icon: Shield },
   ];
 
   if (isLoading) {
@@ -488,11 +490,24 @@ export default function Settings() {
           {section === "acessos" && (
             <div>
               <div className="px-6 py-5" style={{ borderBottom: `1px solid ${T.border}`, background: T.paper }}>
-                <SectionTitle>Controle de acesso</SectionTitle>
-                <p style={{ fontSize: 14, fontWeight: 600, color: T.text }}>Equipe do workspace e permissões</p>
+                <SectionTitle>Equipe</SectionTitle>
+                <p style={{ fontSize: 14, fontWeight: 600, color: T.text }}>Usuários do workspace e suas permissões</p>
               </div>
               <div className="px-6 py-5">
                 <TeamSection />
+              </div>
+            </div>
+          )}
+
+          {/* ── Permissões (matriz role x módulo) ───────────────── */}
+          {section === "permissoes" && (
+            <div>
+              <div className="px-6 py-5" style={{ borderBottom: `1px solid ${T.border}`, background: T.paper }}>
+                <SectionTitle>Permissões por role</SectionTitle>
+                <p style={{ fontSize: 14, fontWeight: 600, color: T.text }}>Defina o que cada perfil pode acessar no workspace</p>
+              </div>
+              <div className="px-6 py-5">
+                <PermissionsMatrix />
               </div>
             </div>
           )}
