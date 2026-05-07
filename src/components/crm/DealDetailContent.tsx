@@ -49,6 +49,7 @@ interface CreditAnalysis {
   credit_score: number | null;
   limite_sugerido: number | null;
   created_at: string;
+  committee_result?: { limite_aprovado: number | null }[];
 }
 
 interface Activity {
@@ -120,7 +121,7 @@ export function DealDetailContent({ dealId, variant = "page" }: DealDetailConten
       if (!deal?.client_id) return [];
       const { data } = await supabase
         .from("credit_analysis")
-        .select("id, status, credit_score, limite_sugerido, created_at")
+        .select("id, status, credit_score, limite_sugerido, created_at, committee_result(limite_aprovado)")
         .eq("client_id", deal.client_id)
         .order("created_at", { ascending: false });
       return (data || []) as CreditAnalysis[];
@@ -306,7 +307,7 @@ export function DealDetailContent({ dealId, variant = "page" }: DealDetailConten
         {/* KPIs inline */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3" style={{ borderTop: `1px solid ${T.border}` }}>
           <div>
-            <p style={sectionLabel}>Limite</p>
+            <p style={sectionLabel}>Limite estimado</p>
             <Input
               type="number"
               value={(edit.value ?? "") as number | string}
@@ -438,9 +439,26 @@ export function DealDetailContent({ dealId, variant = "page" }: DealDetailConten
                   {STATUS_CONFIG[linkedAnalysis.status]?.label || linkedAnalysis.status}
                 </p>
                 <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: T.textMute, marginTop: 2 }}>
-                  {linkedAnalysis.credit_score != null && <>SCORE {linkedAnalysis.credit_score} · </>}
-                  {linkedAnalysis.limite_sugerido != null && formatBRL(linkedAnalysis.limite_sugerido)}
+                  {linkedAnalysis.credit_score != null && <>SCORE {linkedAnalysis.credit_score}</>}
                 </p>
+                {(() => {
+                  const aprovado = linkedAnalysis.committee_result?.[0]?.limite_aprovado;
+                  if (aprovado != null && aprovado > 0) {
+                    return (
+                      <p style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: T.esmeralda, marginTop: 4 }}>
+                        {formatBRL(aprovado)} <span style={{ fontSize: 9, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>aprovado</span>
+                      </p>
+                    );
+                  }
+                  if (linkedAnalysis.limite_sugerido != null) {
+                    return (
+                      <p style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600, color: T.text, marginTop: 4 }}>
+                        {formatBRL(linkedAnalysis.limite_sugerido)} <span style={{ fontSize: 9, fontWeight: 600, color: T.textFaint, textTransform: "uppercase", letterSpacing: "0.04em" }}>sugerido</span>
+                      </p>
+                    );
+                  }
+                  return null;
+                })()}
               </div>
               <ExternalLink style={{ width: 14, height: 14, color: T.textMute, flexShrink: 0 }} />
             </button>

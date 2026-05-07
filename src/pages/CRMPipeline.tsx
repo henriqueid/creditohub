@@ -168,28 +168,16 @@ export default function CRMPipeline() {
     return latestAnalysisByClient[deal.client_id] || null;
   };
 
-  // Limite efetivo do deal:
-  //   - se análise vinculada já passou pelo comitê e tem limite_aprovado → usa o aprovado
-  //   - senão → usa o limite estimado do deal (deal.value)
-  const getEffectiveLimit = (deal: Deal): { value: number; isApproved: boolean } => {
-    const a = getAnalysis(deal);
-    const approved = a?.committee_result?.[0]?.limite_aprovado;
-    if (approved && approved > 0) return { value: approved, isApproved: true };
-    return { value: deal.value || 0, isApproved: false };
-  };
-
-  const limitsBreakdown = activeDeals.reduce(
-    (acc, d) => {
-      const { value, isApproved } = getEffectiveLimit(d);
-      if (isApproved) acc.approved += value;
-      else acc.estimated += value;
-      return acc;
-    },
-    { approved: 0, estimated: 0 }
-  );
-  const totalPipeline = limitsBreakdown.approved + limitsBreakdown.estimated;
+  // Limite estimado: soma de deal.value (sempre — é o cap que o comercial pretende liberar).
+  // Limite aprovado: soma de committee_result.limite_aprovado quando comitê já decidiu —
+  // entra como informação adicional (não substitui o estimado).
+  const totalPipeline = activeDeals.reduce((s, d) => s + (d.value || 0), 0);
+  const totalApproved = activeDeals.reduce((s, d) => {
+    const aprovado = getAnalysis(d)?.committee_result?.[0]?.limite_aprovado;
+    return s + (aprovado && aprovado > 0 ? aprovado : 0);
+  }, 0);
   const totalMonthlyVolume = activeDeals.reduce((s, d) => s + (d.monthly_volume || 0), 0);
-  const wonTotal = wonDeals.reduce((s, d) => s + (getEffectiveLimit(d).value), 0);
+  const wonTotal = wonDeals.reduce((s, d) => s + (d.value || 0), 0);
   const conversionRate = (wonDeals.length + lostDeals.length) > 0
     ? Math.round((wonDeals.length / (wonDeals.length + lostDeals.length)) * 100)
     : 0;
@@ -223,11 +211,11 @@ export default function CRMPipeline() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-3 mb-4">
           {[
             {
-              label: "Limite total",
+              label: "Limite estimado total",
               value: formatBRL(totalPipeline),
-              sub: limitsBreakdown.approved > 0
-                ? `${formatBRL(limitsBreakdown.approved)} aprovado · ${formatBRL(limitsBreakdown.estimated)} estimado`
-                : `${activeDeals.length} deals · estimado (sem comitê ainda)`,
+              sub: totalApproved > 0
+                ? `${formatBRL(totalApproved)} já aprovado em comitê`
+                : `${activeDeals.length} deals · cap pretendido`,
               icon: TrendingUp,
             },
             { label: "Volume/mês ativo", value: formatBRL(totalMonthlyVolume), sub: "fluxo esperado mensal", icon: TrendingUp },
@@ -715,38 +703,29 @@ function DealCard({
         {/* Limite + Volume mensal + data */}
         <div className="flex items-center justify-between gap-2">
           <div className="flex flex-col min-w-0">
+            {deal.value != null && deal.value > 0 ? (
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: T.text, lineHeight: 1.1 }}>
+                {formatBRL(deal.value)}
+                <span style={{ fontSize: 9, fontWeight: 600, color: T.textFaint, marginLeft: 4, textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                  estimado
+                </span>
+              </span>
+            ) : (
+              <span style={{ fontSize: 11, color: T.textFaint }}>Sem limite</span>
+            )}
             {(() => {
               const aprovado = analysis?.committee_result?.[0]?.limite_aprovado;
-              const usaAprovado = aprovado != null && aprovado > 0;
-              const valor = usaAprovado ? aprovado : deal.value;
-              if (valor == null || valor === 0) {
-                return <span style={{ fontSize: 11, color: T.textFaint }}>Sem limite</span>;
-              }
-              return (
-                <span
-                  style={{
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 13,
-                    fontWeight: 700,
-                    color: usaAprovado ? T.esmeralda : T.text,
-                    lineHeight: 1.1,
-                  }}
-                >
-                  {formatBRL(valor)}
-                  <span
-                    style={{
-                      fontSize: 9,
-                      fontWeight: 600,
-                      color: usaAprovado ? T.esmeralda : T.textFaint,
-                      marginLeft: 4,
-                      textTransform: "uppercase",
-                      letterSpacing: "0.04em",
-                    }}
-                  >
-                    {usaAprovado ? "aprovado" : "estimado"}
+              if (aprovado != null && aprovado > 0) {
+                return (
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: T.esmeralda, marginTop: 1 }}>
+                    {formatBRL(aprovado)}
+                    <span style={{ fontSize: 9, fontWeight: 600, color: T.esmeralda, marginLeft: 4, textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                      aprovado
+                    </span>
                   </span>
-                </span>
-              );
+                );
+              }
+              return null;
             })()}
             {deal.monthly_volume != null && deal.monthly_volume > 0 && (
               <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: T.esmeralda, marginTop: 1 }}>
