@@ -289,7 +289,7 @@ export default function CommitteeVoting() {
       });
       if (error) throw error;
 
-      // Cria committee_result + deal CRM (efeitos colaterais que continuam aqui — não é trivial mover pro banco).
+      // Cria committee_result — falha aqui é crítica (perde limite_aprovado/prazo/condições).
       const { error: resultError } = await supabase.from("committee_result").insert({
         credit_analysis_id: id!,
         limite_aprovado: limiteAprovado ? parseFloat(limiteAprovado) : null,
@@ -298,40 +298,44 @@ export default function CommitteeVoting() {
         condicoes_adicionais: condicoesAdicionais || null,
         decisao_final: finalDecision,
       });
-      if (resultError) console.warn("Falha ao registrar committee_result:", resultError);
+      if (resultError) {
+        throw new Error(`Decisão registrada mas resultado do comitê falhou ao salvar: ${resultError.message}`);
+      }
 
-      // Auto-create CRM deal on approval
+      // Cria deal CRM em aprovação. Falha aqui não trava a finalização — sinaliza pra UI.
+      let dealCreationWarning: string | null = null;
       if (finalDecision === "approved" || finalDecision === "approved_restricted") {
-        try {
-          const { data: firstStage } = await supabase
-            .from("deal_stages")
-            .select("id")
-            .eq("is_active", true)
-            .eq("is_won", false)
-            .eq("is_lost", false)
-            .order("order")
-            .limit(1)
-            .single();
+        const { data: firstStage, error: stageError } = await supabase
+          .from("deal_stages")
+          .select("id")
+          .eq("is_active", true)
+          .eq("is_won", false)
+          .eq("is_lost", false)
+          .order("order")
+          .limit(1)
+          .maybeSingle();
 
-          if (firstStage && analysis) {
-            const clientName = client?.razao_social || "Cliente";
-            const dealTitle = `${finalDecision === "approved" ? "Crédito aprovado" : "Crédito aprovado c/ restrição"} — ${clientName}`;
-            await supabase.from("deals").insert({
-              client_id: analysis.client_id,
-              stage_id: firstStage.id,
-              title: dealTitle,
-              value: limiteAprovado ? parseFloat(limiteAprovado) : (analysis.limite_sugerido || null),
-              responsible: analysis.responsavel_comercial || analysis.analista_credito || null,
-              credit_analysis_id: id!,
-              notes: condicoesAdicionais || null,
-            });
+        if (stageError || !firstStage) {
+          dealCreationWarning = "Aprovação registrada, mas não encontrou estágio inicial ativo no Pipeline";
+        } else if (analysis) {
+          const clientName = client?.razao_social || "Cliente";
+          const dealTitle = `${finalDecision === "approved" ? "Crédito aprovado" : "Crédito aprovado c/ restrição"} — ${clientName}`;
+          const { error: dealError } = await supabase.from("deals").insert({
+            client_id: analysis.client_id,
+            stage_id: firstStage.id,
+            title: dealTitle,
+            value: limiteAprovado ? parseFloat(limiteAprovado) : (analysis.limite_sugerido || null),
+            responsible: analysis.responsavel_comercial || analysis.analista_credito || null,
+            credit_analysis_id: id!,
+            notes: condicoesAdicionais || null,
+          });
+          if (dealError) {
+            dealCreationWarning = `Aprovação registrada, mas criação automática de deal falhou: ${dealError.message}`;
           }
-        } catch (e) {
-          console.warn("Falha ao criar deal CRM automaticamente:", e);
         }
       }
 
-      return data as { ok: boolean; was_override: boolean; calculated: string; final: string };
+      return { ...(data as { ok: boolean; was_override: boolean; calculated: string; final: string }), dealCreationWarning };
     },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["committee-queue"] });
@@ -346,6 +350,13 @@ export default function CommitteeVoting() {
         });
       } else {
         toast({ title: "Decisão do comitê finalizada" });
+      }
+      if (result?.dealCreationWarning) {
+        toast({
+          title: "Atenção",
+          description: result.dealCreationWarning,
+          variant: "destructive",
+        });
       }
       setOverrideOpen(false);
       setOverrideDecision("");

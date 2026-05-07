@@ -618,18 +618,32 @@ export default function CreditAnalysisForm() {
         analysisId = data.id;
       }
 
-      if (isEditing) await supabase.from("credit_analysis_sacados").delete().eq("credit_analysis_id", analysisId!);
+      if (isEditing) {
+        const { error: delSacadosError } = await supabase
+          .from("credit_analysis_sacados")
+          .delete()
+          .eq("credit_analysis_id", analysisId!);
+        if (delSacadosError) throw new Error(`Falha ao limpar sacados anteriores: ${delSacadosError.message}`);
+      }
       if (sacados.length > 0) {
-        await supabase.from("credit_analysis_sacados").insert(
+        const { error: insSacadosError } = await supabase.from("credit_analysis_sacados").insert(
           sacados.map((s) => ({ credit_analysis_id: analysisId!, sacado_nome: s.sacado_nome, percentual_faturamento: s.percentual_faturamento, prazo_medio: s.prazo_medio }))
         );
+        if (insSacadosError) throw new Error(`Falha ao salvar sacados: ${insSacadosError.message}`);
       }
 
-      if (isEditing) await supabase.from("credit_analysis_socios").delete().eq("credit_analysis_id", analysisId!);
+      if (isEditing) {
+        const { error: delSociosError } = await supabase
+          .from("credit_analysis_socios")
+          .delete()
+          .eq("credit_analysis_id", analysisId!);
+        if (delSociosError) throw new Error(`Falha ao limpar sócios anteriores: ${delSociosError.message}`);
+      }
       if (socios.length > 0) {
-        await supabase.from("credit_analysis_socios").insert(
+        const { error: insSociosError } = await supabase.from("credit_analysis_socios").insert(
           socios.map((s) => ({ credit_analysis_id: analysisId!, nome: s.nome, cpf: s.cpf || null, participacao: s.participacao, cargo: s.cargo || null }))
         );
+        if (insSociosError) throw new Error(`Falha ao salvar sócios: ${insSociosError.message}`);
       }
       return analysisId;
     },

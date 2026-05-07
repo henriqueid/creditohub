@@ -14,6 +14,7 @@ import { Sparkline } from "@/components/trilho/Sparkline";
 import { differenceInDays, parseISO } from "date-fns";
 import { AlertTriangle, Clock, CheckSquare, Activity, ChevronRight, Calendar, X } from "lucide-react";
 import { OnboardingChecklist } from "@/components/dashboard/OnboardingChecklist";
+import { getTier } from "@/lib/credit-calculations";
 
 const DISMISSED_ALERTS_KEY = "dashboard.dismissedAlerts";
 
@@ -34,14 +35,6 @@ function loadDismissed(): Record<string, number> {
 
 function saveDismissed(d: Record<string, number>) {
   try { localStorage.setItem(DISMISSED_ALERTS_KEY, JSON.stringify(d)); } catch { /* ignora */ }
-}
-
-function getTier(score: number) {
-  if (score >= 800) return "AAA";
-  if (score >= 700) return "AA";
-  if (score >= 600) return "A";
-  if (score >= 500) return "BBB";
-  return "BB";
 }
 
 function daysSince(d: string) {

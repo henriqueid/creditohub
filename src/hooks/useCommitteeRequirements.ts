@@ -103,7 +103,8 @@ export function evaluateReadiness(
       ok = (c as number) > 0;
     } else {
       const v = analysis[key];
-      ok = v !== null && v !== undefined && v !== "" && v !== 0;
+      // Aceita 0 explícito (ex: numero_funcionarios=0 em MEI). Só rejeita ausência.
+      ok = v !== null && v !== undefined && v !== "";
     }
     return { label: COMMITTEE_FIELD_LABELS[key] || key, ok };
   });
