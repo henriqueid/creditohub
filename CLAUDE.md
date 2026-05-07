@@ -1,6 +1,10 @@
 # CLAUDE.md — Contexto Permanente · CreditoHub
 
 > Leia este arquivo no início de qualquer sessão. Ele substitui a necessidade de re-explicar o projeto.
+>
+> **Pra referência operacional rápida** (rotas, schema, edge functions, comandos, pendências), consulte [`RUNBOOK.md`](./RUNBOOK.md) — fonte da verdade mantida pelo agente `runbook-keeper`.
+>
+> **Após qualquer feature/fix relevante**, dispatch o `runbook-keeper` pra atualizar o RUNBOOK. Critério de "relevante": nova rota, nova tabela, nova edge function, decisão de produto, mudança de fluxo, deprecation. Bug fix pontual e refactor cosmético NÃO disparam.
 
 ---
 
