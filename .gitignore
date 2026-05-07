@@ -12,6 +12,11 @@ dist
 dist-ssr
 *.local
 
+# Env files (todos protegidos — só *.example pode ir pro git)
+.env
+.env.production
+.env.development
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
