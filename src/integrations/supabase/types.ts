@@ -10,7 +10,32 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.4"
+    PostgrestVersion: "14.5"
+  }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
   }
   public: {
     Tables: {
@@ -457,6 +482,41 @@ export type Database = {
           },
         ]
       }
+      committee_members: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          role: string
+          tenant_id: string
+          user_id: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          role?: string
+          tenant_id?: string
+          user_id: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          role?: string
+          tenant_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "committee_members_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       committee_result: {
         Row: {
           concentracao_maxima: number | null
@@ -576,13 +636,19 @@ export type Database = {
           capital_social: number | null
           cheques_sem_fundo: string | null
           client_id: string
+          committee_calculated_decision:
+            | Database["public"]["Enums"]["credit_status"]
+            | null
+          committee_override_at: string | null
+          committee_override_by: string | null
+          committee_override_reason: string | null
           concentracao_maxima: number | null
           condicoes_especiais: string | null
           created_at: string
           credit_score: number | null
           data_analise: string | null
           dependencia_clientes: string | null
-          endividamento: string | null
+          endividamento: number | null
           estrutura_financeira: string | null
           faturamento_detalhado: string | null
           faturamento_medio: number | null
@@ -591,9 +657,9 @@ export type Database = {
           historico_pagamentos: string | null
           historico_socios: string | null
           id: string
-          indice_liquidez: string | null
+          indice_liquidez: number | null
           limite_sugerido: number | null
-          margem_liquida: string | null
+          margem_liquida: number | null
           modalidade_operacao: string | null
           numero_funcionarios: number | null
           observacoes_credito: string | null
@@ -602,6 +668,7 @@ export type Database = {
           pontos_positivos: string | null
           prazo_medio_permitido: number | null
           prazo_medio_titulos: number | null
+          prospect_id: string | null
           protestos: string | null
           receita_liquida: number | null
           recommendation:
@@ -627,13 +694,19 @@ export type Database = {
           capital_social?: number | null
           cheques_sem_fundo?: string | null
           client_id: string
+          committee_calculated_decision?:
+            | Database["public"]["Enums"]["credit_status"]
+            | null
+          committee_override_at?: string | null
+          committee_override_by?: string | null
+          committee_override_reason?: string | null
           concentracao_maxima?: number | null
           condicoes_especiais?: string | null
           created_at?: string
           credit_score?: number | null
           data_analise?: string | null
           dependencia_clientes?: string | null
-          endividamento?: string | null
+          endividamento?: number | null
           estrutura_financeira?: string | null
           faturamento_detalhado?: string | null
           faturamento_medio?: number | null
@@ -642,9 +715,9 @@ export type Database = {
           historico_pagamentos?: string | null
           historico_socios?: string | null
           id?: string
-          indice_liquidez?: string | null
+          indice_liquidez?: number | null
           limite_sugerido?: number | null
-          margem_liquida?: string | null
+          margem_liquida?: number | null
           modalidade_operacao?: string | null
           numero_funcionarios?: number | null
           observacoes_credito?: string | null
@@ -653,6 +726,7 @@ export type Database = {
           pontos_positivos?: string | null
           prazo_medio_permitido?: number | null
           prazo_medio_titulos?: number | null
+          prospect_id?: string | null
           protestos?: string | null
           receita_liquida?: number | null
           recommendation?:
@@ -678,13 +752,19 @@ export type Database = {
           capital_social?: number | null
           cheques_sem_fundo?: string | null
           client_id?: string
+          committee_calculated_decision?:
+            | Database["public"]["Enums"]["credit_status"]
+            | null
+          committee_override_at?: string | null
+          committee_override_by?: string | null
+          committee_override_reason?: string | null
           concentracao_maxima?: number | null
           condicoes_especiais?: string | null
           created_at?: string
           credit_score?: number | null
           data_analise?: string | null
           dependencia_clientes?: string | null
-          endividamento?: string | null
+          endividamento?: number | null
           estrutura_financeira?: string | null
           faturamento_detalhado?: string | null
           faturamento_medio?: number | null
@@ -693,9 +773,9 @@ export type Database = {
           historico_pagamentos?: string | null
           historico_socios?: string | null
           id?: string
-          indice_liquidez?: string | null
+          indice_liquidez?: number | null
           limite_sugerido?: number | null
-          margem_liquida?: string | null
+          margem_liquida?: number | null
           modalidade_operacao?: string | null
           numero_funcionarios?: number | null
           observacoes_credito?: string | null
@@ -704,6 +784,7 @@ export type Database = {
           pontos_positivos?: string | null
           prazo_medio_permitido?: number | null
           prazo_medio_titulos?: number | null
+          prospect_id?: string | null
           protestos?: string | null
           receita_liquida?: number | null
           recommendation?:
@@ -728,6 +809,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credit_analysis_prospect_id_fkey"
+            columns: ["prospect_id"]
+            isOneToOne: false
+            referencedRelation: "prospects"
             referencedColumns: ["id"]
           },
           {
@@ -841,6 +929,51 @@ export type Database = {
           },
         ]
       }
+      credit_analysis_revenue: {
+        Row: {
+          analysis_id: string
+          created_at: string
+          id: string
+          month: number
+          revenue: number
+          tenant_id: string
+          year: number
+        }
+        Insert: {
+          analysis_id: string
+          created_at?: string
+          id?: string
+          month: number
+          revenue: number
+          tenant_id?: string
+          year: number
+        }
+        Update: {
+          analysis_id?: string
+          created_at?: string
+          id?: string
+          month?: number
+          revenue?: number
+          tenant_id?: string
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_analysis_revenue_analysis_id_fkey"
+            columns: ["analysis_id"]
+            isOneToOne: false
+            referencedRelation: "credit_analysis"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credit_analysis_revenue_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       credit_analysis_sacados: {
         Row: {
           credit_analysis_id: string
@@ -933,34 +1066,40 @@ export type Database = {
           created_at: string
           credit_analysis_id: string
           id: string
+          is_locked: boolean
           member_name: string
           member_role: string | null
           observation: string | null
           tenant_id: string
           vote: Database["public"]["Enums"]["committee_vote"]
           vote_date: string
+          voter_id: string | null
         }
         Insert: {
           created_at?: string
           credit_analysis_id: string
           id?: string
+          is_locked?: boolean
           member_name: string
           member_role?: string | null
           observation?: string | null
           tenant_id?: string
           vote: Database["public"]["Enums"]["committee_vote"]
           vote_date?: string
+          voter_id?: string | null
         }
         Update: {
           created_at?: string
           credit_analysis_id?: string
           id?: string
+          is_locked?: boolean
           member_name?: string
           member_role?: string | null
           observation?: string | null
           tenant_id?: string
           vote?: Database["public"]["Enums"]["committee_vote"]
           vote_date?: string
+          voter_id?: string | null
         }
         Relationships: [
           {
@@ -1149,8 +1288,10 @@ export type Database = {
           expected_close_date: string | null
           id: string
           loss_reason: string | null
+          monthly_volume: number | null
           notes: string | null
           probability: number | null
+          prospect_id: string | null
           responsible: string | null
           stage_id: string
           tenant_id: string
@@ -1166,8 +1307,10 @@ export type Database = {
           expected_close_date?: string | null
           id?: string
           loss_reason?: string | null
+          monthly_volume?: number | null
           notes?: string | null
           probability?: number | null
+          prospect_id?: string | null
           responsible?: string | null
           stage_id: string
           tenant_id?: string
@@ -1183,8 +1326,10 @@ export type Database = {
           expected_close_date?: string | null
           id?: string
           loss_reason?: string | null
+          monthly_volume?: number | null
           notes?: string | null
           probability?: number | null
+          prospect_id?: string | null
           responsible?: string | null
           stage_id?: string
           tenant_id?: string
@@ -1212,6 +1357,13 @@ export type Database = {
             columns: ["credit_analysis_id"]
             isOneToOne: false
             referencedRelation: "credit_analysis"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deals_prospect_id_fkey"
+            columns: ["prospect_id"]
+            isOneToOne: false
+            referencedRelation: "prospects"
             referencedColumns: ["id"]
           },
           {
@@ -1537,6 +1689,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          anthropic_api_key: string | null
           avatar_url: string | null
           cargo: string | null
           created_at: string
@@ -1547,6 +1700,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          anthropic_api_key?: string | null
           avatar_url?: string | null
           cargo?: string | null
           created_at?: string
@@ -1557,6 +1711,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          anthropic_api_key?: string | null
           avatar_url?: string | null
           cargo?: string | null
           created_at?: string
@@ -1782,6 +1937,23 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      finalize_committee: {
+        Args: {
+          p_analysis_id: string
+          p_final_decision: Database["public"]["Enums"]["credit_status"]
+          p_override_reason?: string
+        }
+        Returns: Json
+      }
+      get_tenant_colleagues: {
+        Args: never
+        Returns: {
+          avatar_url: string
+          cargo: string
+          full_name: string
+          user_id: string
+        }[]
+      }
       get_user_tenant_id: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {
@@ -1938,6 +2110,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       app_role: ["admin", "analista", "comite", "leitor"],
