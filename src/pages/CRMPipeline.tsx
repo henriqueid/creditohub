@@ -55,6 +55,7 @@ interface CreditAnalysis {
   credit_score: number | null;
   limite_sugerido: number | null;
   recommendation: string | null;
+  committee_result?: { limite_aprovado: number | null; prazo_aprovado: number | null }[];
 }
 
 const STATUS_CONFIG: Record<string, { label: string; bg: string; fg: string; icon: React.ElementType }> = {
@@ -109,7 +110,7 @@ export default function CRMPipeline() {
     queryFn: async () => {
       const { data } = await supabase
         .from("credit_analysis")
-        .select("id, client_id, status, credit_score, limite_sugerido, recommendation")
+        .select("id, client_id, status, credit_score, limite_sugerido, recommendation, committee_result(limite_aprovado, prazo_aprovado)")
         .order("created_at", { ascending: false });
       return (data || []) as CreditAnalysis[];
     },
@@ -162,17 +163,36 @@ export default function CRMPipeline() {
   const lostDeals = lostStage ? dealsByStage.get(lostStage.id) ?? [] : [];
   const activeDeals = activeStages.flatMap(s => dealsByStage.get(s.id) ?? []);
 
-  const totalPipeline = activeDeals.reduce((s, d) => s + (d.value || 0), 0);
-  const totalMonthlyVolume = activeDeals.reduce((s, d) => s + (d.monthly_volume || 0), 0);
-  const wonTotal = wonDeals.reduce((s, d) => s + (d.value || 0), 0);
-  const conversionRate = (wonDeals.length + lostDeals.length) > 0
-    ? Math.round((wonDeals.length / (wonDeals.length + lostDeals.length)) * 100)
-    : 0;
-
   const getAnalysis = (deal: Deal): CreditAnalysis | null => {
     if (deal.credit_analysis_id && analysisById[deal.credit_analysis_id]) return analysisById[deal.credit_analysis_id];
     return latestAnalysisByClient[deal.client_id] || null;
   };
+
+  // Limite efetivo do deal:
+  //   - se análise vinculada já passou pelo comitê e tem limite_aprovado → usa o aprovado
+  //   - senão → usa o limite estimado do deal (deal.value)
+  const getEffectiveLimit = (deal: Deal): { value: number; isApproved: boolean } => {
+    const a = getAnalysis(deal);
+    const approved = a?.committee_result?.[0]?.limite_aprovado;
+    if (approved && approved > 0) return { value: approved, isApproved: true };
+    return { value: deal.value || 0, isApproved: false };
+  };
+
+  const limitsBreakdown = activeDeals.reduce(
+    (acc, d) => {
+      const { value, isApproved } = getEffectiveLimit(d);
+      if (isApproved) acc.approved += value;
+      else acc.estimated += value;
+      return acc;
+    },
+    { approved: 0, estimated: 0 }
+  );
+  const totalPipeline = limitsBreakdown.approved + limitsBreakdown.estimated;
+  const totalMonthlyVolume = activeDeals.reduce((s, d) => s + (d.monthly_volume || 0), 0);
+  const wonTotal = wonDeals.reduce((s, d) => s + (getEffectiveLimit(d).value), 0);
+  const conversionRate = (wonDeals.length + lostDeals.length) > 0
+    ? Math.round((wonDeals.length / (wonDeals.length + lostDeals.length)) * 100)
+    : 0;
 
   const getClientAnalyses = (clientId: string): CreditAnalysis[] =>
     creditAnalyses.filter(a => a.client_id === clientId);
@@ -202,7 +222,14 @@ export default function CRMPipeline() {
         {/* ── KPI strip ──────────────────────────────────────────── */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-3 mb-4">
           {[
-            { label: "Limite ativo",    value: formatBRL(totalPipeline),  sub: `${activeDeals.length} deals · cap de crédito`, icon: TrendingUp },
+            {
+              label: "Limite total",
+              value: formatBRL(totalPipeline),
+              sub: limitsBreakdown.approved > 0
+                ? `${formatBRL(limitsBreakdown.approved)} aprovado · ${formatBRL(limitsBreakdown.estimated)} estimado`
+                : `${activeDeals.length} deals · estimado (sem comitê ainda)`,
+              icon: TrendingUp,
+            },
             { label: "Volume/mês ativo", value: formatBRL(totalMonthlyVolume), sub: "fluxo esperado mensal", icon: TrendingUp },
             { label: "Taxa de conversão", value: `${conversionRate}%`,   sub: `${wonDeals.length + lostDeals.length} finalizados`, icon: Trophy },
             { label: "Sem análise",     value: String(activeDeals.filter(d => !getAnalysis(d)).length), sub: "oportunidades em risco", icon: AlertTriangle },
@@ -688,14 +715,39 @@ function DealCard({
         {/* Limite + Volume mensal + data */}
         <div className="flex items-center justify-between gap-2">
           <div className="flex flex-col min-w-0">
-            {deal.value != null ? (
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: T.text, lineHeight: 1.1 }}>
-                {formatBRL(deal.value)}
-                <span style={{ fontSize: 9, fontWeight: 400, color: T.textFaint, marginLeft: 4 }}>limite</span>
-              </span>
-            ) : (
-              <span style={{ fontSize: 11, color: T.textFaint }}>Sem limite</span>
-            )}
+            {(() => {
+              const aprovado = analysis?.committee_result?.[0]?.limite_aprovado;
+              const usaAprovado = aprovado != null && aprovado > 0;
+              const valor = usaAprovado ? aprovado : deal.value;
+              if (valor == null || valor === 0) {
+                return <span style={{ fontSize: 11, color: T.textFaint }}>Sem limite</span>;
+              }
+              return (
+                <span
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 13,
+                    fontWeight: 700,
+                    color: usaAprovado ? T.esmeralda : T.text,
+                    lineHeight: 1.1,
+                  }}
+                >
+                  {formatBRL(valor)}
+                  <span
+                    style={{
+                      fontSize: 9,
+                      fontWeight: 600,
+                      color: usaAprovado ? T.esmeralda : T.textFaint,
+                      marginLeft: 4,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.04em",
+                    }}
+                  >
+                    {usaAprovado ? "aprovado" : "estimado"}
+                  </span>
+                </span>
+              );
+            })()}
             {deal.monthly_volume != null && deal.monthly_volume > 0 && (
               <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: T.esmeralda, marginTop: 1 }}>
                 {formatBRL(deal.monthly_volume)}<span style={{ color: T.textFaint }}>/mês</span>

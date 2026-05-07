@@ -374,7 +374,7 @@ export default function Clients() {
                 key={c.id}
                 className="rounded-[14px] cursor-pointer transition-all hover:shadow-[0_2px_8px_rgba(10,21,56,0.08),0_8px_22px_-6px_rgba(10,21,56,0.10)]"
                 style={{ background: T.white, border: `1px solid ${T.border}`, boxShadow: "0 1px 3px rgba(10,21,56,0.05), 0 4px 12px -4px rgba(10,21,56,0.06)" }}
-                onClick={() => c.latestAnalysisId && navigate(`/analises/${c.latestAnalysisId}`)}
+                onClick={() => navigate(`/cedentes/${c.id}/perfil`)}
               >
                 <div className="px-4 py-3 flex items-center justify-between gap-2" style={{ borderBottom: `1px solid ${T.border}` }}>
                   <div className="min-w-0">
@@ -421,7 +421,7 @@ export default function Clients() {
                 key={c.id}
                 className="rounded-[14px] cursor-pointer transition-all hover:shadow-[0_2px_8px_rgba(10,21,56,0.08),0_8px_22px_-6px_rgba(10,21,56,0.10)]"
                 style={{ background: T.white, border: `1px solid ${T.border}`, boxShadow: "0 1px 3px rgba(10,21,56,0.05), 0 4px 12px -4px rgba(10,21,56,0.06)" }}
-                onClick={() => c.latestAnalysisId && navigate(`/analises/${c.latestAnalysisId}`)}
+                onClick={() => navigate(`/cedentes/${c.id}/perfil`)}
               >
                 <div className="px-4 py-3 flex items-center justify-between gap-2" style={{ borderBottom: `1px solid ${T.border}` }}>
                   <div className="min-w-0">
@@ -537,7 +537,7 @@ export default function Clients() {
                                           ? "shadow-lg ring-2 ring-primary/30 rotate-1 scale-[1.02]"
                                           : "hover:shadow-md hover:border-primary/30"
                                       }`}
-                                      onClick={() => !dragSnapshot.isDragging && navigate(`/crm/cliente/${client.id}`)}
+                                      onClick={() => !dragSnapshot.isDragging && navigate(`/cedentes/${client.id}/perfil`)}
                                     >
                                       <CardContent className="p-3 space-y-2">
                                         <div className="flex items-start justify-between gap-1">
@@ -664,7 +664,7 @@ export default function Clients() {
                 </TableRow>
               ) : (
                 filtered.map((client) => (
-                  <TableRow key={client.id} className="cursor-pointer" onClick={() => navigate(`/crm/cliente/${client.id}`)}>
+                  <TableRow key={client.id} className="cursor-pointer" onClick={() => navigate(`/cedentes/${client.id}/perfil`)}>
                     <TableCell className="font-medium">{client.razao_social}</TableCell>
                     <TableCell className="tabular-nums">{formatCNPJorCPF(client.cnpj_cpf)}</TableCell>
                     <TableCell>{client.segmento || "—"}</TableCell>
