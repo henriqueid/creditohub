@@ -143,7 +143,7 @@ export default function CRMClientProfile() {
   const totalPatrimonialValue = patrimonial.reduce((s, p) => s + (p.valor_estimado || 0), 0);
 
   return (
-    <div className="p-6 space-y-5 max-w-7xl mx-auto">
+    <div className="p-7 space-y-5 w-full">
       {/* Back + Header */}
       <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
         <ArrowLeft className="h-4 w-4 mr-1" /> Voltar

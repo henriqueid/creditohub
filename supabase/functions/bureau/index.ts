@@ -4,7 +4,7 @@
 // Body esperado:
 //   { documento: string, tipo_consulta: 'score'|'protestos'|..., force_refresh?: boolean, provider_id?: string }
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { runConsulta, OrchestratorRequest } from "./orchestrator.ts";
 
 const corsHeaders = {

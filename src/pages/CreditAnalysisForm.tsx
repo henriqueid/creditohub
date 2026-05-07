@@ -769,7 +769,7 @@ export default function CreditAnalysisForm() {
       const requiredOk = s.required.every(f => f && String(f).trim() !== "");
       return { ...s, filled, total, pct, requiredOk };
     });
-  }, [clientId, dataAnalise, responsavelComercial, analistaCredito, tempoAtividade, tipoImovelSede, numeroFuncionarios, faturamentoMedio, volumeEstimado, prazoMedioTitulos, faturamentoDetalhado, receitaLiquida, capitalSocial, historicoSocios, socios.length, creditScore, protestos, pendencias, chequesSemFundo, acoesJudiciais, observacoesCredito, restricoesCnpj, historicoPagamentos, referenciasBancarias, referenciasComerciais, fonteInformacao, analiseFaturamento, estruturaFinanceira, endividamento, dependenciaClientes, margemLiquida, indiceLiquidez, riscos, pontosPositivos, limiteSugerido, prazoMedioPermitido, concentracaoMaxima, garantias, modalidadeOperacao, taxaSugerida, condicoesEspeciais]);
+  }, [clientId, dataAnalise, responsavelComercial, analistaCredito, tempoAtividade, tipoImovelSede, numeroFuncionarios, faturamentoMedio, volumeEstimado, prazoMedioTitulos, faturamentoDetalhado, receitaLiquida, capitalSocial, historicoSocios, socios.length, creditScore, protestos, pendencias, chequesSemFundo, acoesJudiciais, observacoesCredito, restricoesCnpj, historicoPagamentos, referenciasBancarias, referenciasComerciais, fonteInformacao, analiseFaturamento, estruturaFinanceira, endividamento, dependenciaClientes, margemLiquida, indiceLiquidez, riscos, pontosPositivos, limiteSugerido, prazoMedioPermitido, concentracaoMaxima, garantias, modalidadesOperacao, taxaSugerida, condicoesEspeciais]);
 
   const overallProgress = useMemo(() => {
     const totalFilled = sectionProgress.reduce((a, s) => a + s.filled, 0);

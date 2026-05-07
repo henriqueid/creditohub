@@ -190,6 +190,15 @@ export default function CommitteeVoting() {
     const counts = { approve: 0, restrict: 0, reject: 0 };
     votes.forEach((v) => counts[v.vote]++);
     const max = Math.max(counts.approve, counts.restrict, counts.reject);
+    // Regra de empate: se nenhum voto tem maioria estrita (> totalMembers/2),
+    // OU se há empate entre os top votos, decisão prudente é aprovar com restrição.
+    // Comitê deve revotar caso queira approve/reject puro.
+    const tied = Object.values(counts).filter((v) => v === max).length > 1;
+    const hasStrictMajority = max > totalMembers / 2;
+    if (tied || !hasStrictMajority) {
+      console.warn("[CommitteeVoting] Sem maioria estrita ou empate detectado — aplicando decisão prudente (approved_restricted)", { counts, totalMembers });
+      return "approved_restricted";
+    }
     if (counts.reject === max) return "rejected";
     if (counts.restrict === max) return "approved_restricted";
     if (counts.approve === max) return "approved";

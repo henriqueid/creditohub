@@ -107,6 +107,19 @@ export function SectionFileUpload({
 
   const handleAnalyze = async (index: number) => {
     const att = attachments[index];
+    // Guard de tamanho — edge function tem MAX_FILE_CONTENT_BYTES = 5MB.
+    // base64 incha ~33%, então arquivo bruto > 3.5MB já estoura.
+    // Além disso, btoa(String.fromCharCode(...big)) estoura stack.
+    const MAX_RAW_BYTES = 3_500_000;
+    if (att.file_size && att.file_size > MAX_RAW_BYTES) {
+      toast({
+        title: "Arquivo muito grande",
+        description: `${(att.file_size / 1_000_000).toFixed(1)}MB excede o limite de ${MAX_RAW_BYTES / 1_000_000}MB pra análise via IA. Reduza o arquivo ou converta pra texto.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     setAnalyzing(true);
 
     try {
@@ -117,16 +130,26 @@ export function SectionFileUpload({
 
       if (downloadErr) throw downloadErr;
 
-      // Convert to base64 for AI
-      const buffer = await fileData.arrayBuffer();
-      const base64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
+      // Convert to base64 for AI (em chunks pra não estourar stack com arquivos médios)
+      const isText = att.file_type?.startsWith("text/");
+      let fileContent: string;
+      if (isText) {
+        fileContent = await fileData.text();
+      } else {
+        const buffer = await fileData.arrayBuffer();
+        const bytes = new Uint8Array(buffer);
+        const CHUNK = 0x8000; // 32KB chunks
+        let binary = "";
+        for (let i = 0; i < bytes.length; i += CHUNK) {
+          binary += String.fromCharCode.apply(null, bytes.subarray(i, i + CHUNK) as unknown as number[]);
+        }
+        fileContent = btoa(binary);
+      }
 
       const { data: result, error: fnError } = await supabase.functions.invoke("analyze-document", {
         body: {
           fileName: att.file_name,
-          fileContent: att.file_type?.startsWith("text/") 
-            ? await fileData.text() 
-            : base64,
+          fileContent,
           section,
           analysisContext,
         },

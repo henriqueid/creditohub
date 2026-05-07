@@ -150,7 +150,7 @@ export function NewDealDialog({ open, onOpenChange, onCreated, defaultMode = "ne
         notes: deal.notes || null,
       };
       let dealRes = await supabase.from("deals").insert(dealPayload as { client_id: string; stage_id: string; title: string });
-      if (dealRes.error) {
+      if (dealRes.error && dealRes.error.message?.includes("monthly_volume")) {
         // Coluna monthly_volume ainda não existe no banco — retry sem ela
         delete dealPayload.monthly_volume;
         dealRes = await supabase.from("deals").insert(dealPayload as { client_id: string; stage_id: string; title: string });

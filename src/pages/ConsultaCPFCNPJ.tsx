@@ -224,7 +224,7 @@ export default function ConsultaCPFCNPJ() {
       .catch(err => console.error("Qualification error:", err))
       .finally(() => { if (!cancelled) setQualifyingInProgress(false); });
     return () => { cancelled = true; };
-  }, [hasSearched, isLoading, digits]);
+  }, [hasSearched, isLoading, digits, client?.id, latestAnalysis?.id, blacklistEntry?.documento]);
 
   // Salvar como prospect
   const createProspectMutation = useMutation({

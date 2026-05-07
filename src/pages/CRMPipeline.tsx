@@ -235,7 +235,10 @@ export default function CRMPipeline() {
 
             const targetStage = stages.find(s => s.id === destination.droppableId);
             const linked = analysisById[deals.find(d => d.id === draggableId)?.credit_analysis_id || ""];
-            const requiresApproval = !!targetStage && /proposta|negocia|fechamento/i.test(targetStage.name);
+            const requiresApproval = !!targetStage && (
+              /proposta|negocia|fechamento/i.test(targetStage.name)
+              || targetStage.is_won // mover pra "Ganho" sem análise aprovada também precisa confirmação
+            );
             const isApproved = linked && (linked.status === "approved" || linked.status === "approved_restricted");
 
             if (requiresApproval && !isApproved) {

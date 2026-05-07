@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": Deno.env.get("ALLOWED_ORIGIN") || "*",
@@ -69,7 +69,9 @@ serve(async (req) => {
     // Adjust path, method, headers and body to match your API contract
     const endpoint = `${apiUrl.replace(/\/$/, "")}/${cleanDoc}`;
 
-    console.log(`[consulta-externa] Calling external API: ${endpoint}`);
+    // Mask document in logs to avoid leaking PII
+    const maskedDoc = cleanDoc.slice(0, 4) + "***";
+    console.log("[consulta-externa] Calling external API for", maskedDoc);
 
     const externalResponse = await fetch(endpoint, {
       method: "GET",

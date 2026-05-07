@@ -129,6 +129,13 @@ export default function CreditAnalysisList() {
     if (!destination) return;
     if (destination.droppableId === source.droppableId) return;
 
+    // Defesa: se dealStages ainda não carregou, bloqueia o drag para evitar
+    // sync silenciosamente pulado entre análise e Pipeline (deal.stage_id).
+    if (dealStages.length === 0) {
+      toast.warning("Pipeline ainda carregando, aguarde um instante e tente novamente");
+      return;
+    }
+
     const targetStatus = destination.droppableId as AnalysisStatus;
     const analysis = analyses.find(a => a.id === draggableId);
     if (!analysis) return;

@@ -1,6 +1,6 @@
 // Orchestrator: decide cache vs consulta, escolhe provider, faz fallback.
 
-import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import type { BureauAdapter, AdapterResult } from "./adapters/base.ts";
 import { mockAdapter } from "./adapters/mock.ts";
 import { serasaAdapter } from "./adapters/serasa.ts";

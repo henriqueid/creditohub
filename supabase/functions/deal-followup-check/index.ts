@@ -2,7 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": Deno.env.get("ALLOWED_ORIGIN") || "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-cron-secret",
 };
 
 Deno.serve(async (req) => {
@@ -11,8 +11,23 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // --- AUTH: aceita APENAS service_role ou x-cron-secret (chamada via cron interno).
+    // ANON_KEY é público e qualquer authenticated user poderia disparar — não aceitar.
+    const authHeader = req.headers.get("Authorization") || "";
+    const cronSecretHeader = req.headers.get("x-cron-secret") || "";
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const cronSecret = Deno.env.get("CRON_SECRET");
+
+    const isService = authHeader === `Bearer ${supabaseKey}`;
+    const isCron = cronSecret && cronSecretHeader === cronSecret;
+    if (!isService && !isCron) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Get threshold from system_settings

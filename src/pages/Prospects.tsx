@@ -55,7 +55,7 @@ export default function Prospects() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
-  const [busyId, setBusyId] = useState<string | null>(null);
+  const [busyAction, setBusyAction] = useState<{ id: string; action: "pipeline" | "analise" | "discard" } | null>(null);
 
   const { data: prospects = [], isLoading } = useQuery({
     queryKey: ["prospects"],
@@ -88,7 +88,7 @@ export default function Prospects() {
   // 1. Mover para Pipeline → cria client + deal estágio inicial. NÃO cria análise.
   const moveToPipeline = useMutation({
     mutationFn: async (prospect: Prospect) => {
-      setBusyId(prospect.id);
+      setBusyAction({ id: prospect.id, action: "pipeline" });
       const clientId = await ensureClient(prospect);
 
       const { data: firstStage } = await supabase
@@ -121,14 +121,14 @@ export default function Prospects() {
       navigate("/crm/pipeline");
     },
     onError: (e: any) => toast.error(e?.message || "Erro ao mover para Pipeline"),
-    onSettled: () => setBusyId(null),
+    onSettled: () => setBusyAction(null),
   });
 
   // 2. Iniciar análise direta → cria client + análise draft. NÃO cria deal.
   // Se o cliente já tiver análise em andamento (draft/in_committee), reusa.
   const startAnalysis = useMutation({
     mutationFn: async (prospect: Prospect) => {
-      setBusyId(prospect.id);
+      setBusyAction({ id: prospect.id, action: "analise" });
       const clientId = await ensureClient(prospect);
       const snapshot = (prospect.qualification_data?.snapshot ?? null) as ConsultaSnapshot | null;
 
@@ -173,13 +173,13 @@ export default function Prospects() {
       navigate(`/analises/${analysisId}`);
     },
     onError: (e: any) => toast.error(e?.message || "Erro ao iniciar análise"),
-    onSettled: () => setBusyId(null),
+    onSettled: () => setBusyAction(null),
   });
 
   // 3. Descartar — remove prospect e (opcionalmente) cascateia pro cliente vinculado
   const discard = useMutation({
     mutationFn: async ({ prospect, cascade }: { prospect: Prospect; cascade: boolean }) => {
-      setBusyId(prospect.id);
+      setBusyAction({ id: prospect.id, action: "discard" });
 
       if (cascade && prospect.client_id) {
         // FKs ON DELETE CASCADE em deals/credit_analysis/contacts já cuidam do resto
@@ -204,7 +204,7 @@ export default function Prospects() {
       toast.success(vars.cascade ? "Prospect e cedente vinculado removidos" : "Prospect descartado");
     },
     onError: (e: any) => toast.error(e?.message || "Erro ao descartar"),
-    onSettled: () => setBusyId(null),
+    onSettled: () => setBusyAction(null),
   });
 
   // Confirmação de descarte com cascade
@@ -305,7 +305,9 @@ export default function Prospects() {
               key={p.id}
               prospect={p}
               index={i}
-              busy={busyId === p.id}
+              busyMove={busyAction?.id === p.id && busyAction?.action === "pipeline"}
+              busyAnalysis={busyAction?.id === p.id && busyAction?.action === "analise"}
+              busyDiscard={busyAction?.id === p.id && busyAction?.action === "discard"}
               onMoveToPipeline={() => moveToPipeline.mutate(p)}
               onStartAnalysis={() => startAnalysis.mutate(p)}
               onDiscard={() => requestDiscard(p)}
@@ -414,7 +416,9 @@ function EmptyState({ onConsult }: { onConsult: () => void }) {
 function ProspectCard({
   prospect: p,
   index,
-  busy,
+  busyMove,
+  busyAnalysis,
+  busyDiscard,
   onMoveToPipeline,
   onStartAnalysis,
   onDiscard,
@@ -423,13 +427,16 @@ function ProspectCard({
 }: {
   prospect: Prospect;
   index: number;
-  busy: boolean;
+  busyMove: boolean;
+  busyAnalysis: boolean;
+  busyDiscard: boolean;
   onMoveToPipeline: () => void;
   onStartAnalysis: () => void;
   onDiscard: () => void;
   onReconsult: () => void;
   onSeeClient?: () => void;
 }) {
+  const anyBusy = busyMove || busyAnalysis || busyDiscard;
   const status = STATUS_CFG[p.qualification_status] || STATUS_CFG.pending;
   const risk = RISK_CFG[p.risk_level || "unknown"] || RISK_CFG.unknown;
   const expired = !!(p.expires_at && new Date(p.expires_at) < new Date());
@@ -554,17 +561,17 @@ function ProspectCard({
           <>
             <button
               onClick={onMoveToPipeline}
-              disabled={busy}
+              disabled={anyBusy}
               className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-[10px] text-[12.5px] font-medium transition-opacity hover:opacity-90 disabled:opacity-50"
               style={{ background: T.marinho, color: "#FAFAF7" }}
               title="Move o prospect para o Pipeline comercial — comercial vai começar a abordagem"
             >
-              {busy ? <Loader2 className="animate-spin" style={{ width: 13, height: 13 }} /> : <Briefcase style={{ width: 13, height: 13 }} />}
+              {busyMove ? <Loader2 className="animate-spin" style={{ width: 13, height: 13 }} /> : <Briefcase style={{ width: 13, height: 13 }} />}
               Mover p/ Pipeline
             </button>
             <button
               onClick={onStartAnalysis}
-              disabled={busy}
+              disabled={anyBusy}
               className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-[10px] text-[12.5px] font-medium transition-all hover:opacity-90 disabled:opacity-50"
               style={{
                 background: "rgba(0,212,154,0.10)",
@@ -573,14 +580,14 @@ function ProspectCard({
               }}
               title="Pula o pipeline e cria análise direto — útil quando cliente já topou ou é indicação direta"
             >
-              {busy ? <Loader2 className="animate-spin" style={{ width: 13, height: 13 }} /> : <FileSearch style={{ width: 13, height: 13 }} />}
+              {busyAnalysis ? <Loader2 className="animate-spin" style={{ width: 13, height: 13 }} /> : <FileSearch style={{ width: 13, height: 13 }} />}
               Iniciar análise
             </button>
             <ActionIconButton onClick={onReconsult} title="Reconsultar">
               <RefreshCw style={{ width: 13, height: 13 }} />
             </ActionIconButton>
             <ActionIconButton onClick={onDiscard} title="Descartar" danger>
-              <Trash2 style={{ width: 13, height: 13 }} />
+              {busyDiscard ? <Loader2 className="animate-spin" style={{ width: 13, height: 13 }} /> : <Trash2 style={{ width: 13, height: 13 }} />}
             </ActionIconButton>
           </>
         )}
