@@ -17,19 +17,19 @@ interface KPIProps {
 export function KPI({ label, value, sub, trend, trendDir = "up", spark, gauge, icon, onClick }: KPIProps) {
   return (
     <Card
-      padding={22}
+      padding={20}
       className={onClick ? "cursor-pointer hover:border-[rgba(10,21,56,0.18)]" : ""}
       style={onClick ? { transition: "box-shadow 150ms, border-color 150ms" } : undefined}
       onClick={onClick}
     >
       {/* Header */}
-      <div className="flex justify-between items-start mb-[14px]">
+      <div className="flex justify-between items-start mb-[12px]">
         <div
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: 10,
             color: "var(--text-mute)",
-            letterSpacing: "0.12em",
+            letterSpacing: "0.10em",
             textTransform: "uppercase",
             fontWeight: 500,
           }}
@@ -51,9 +51,9 @@ export function KPI({ label, value, sub, trend, trendDir = "up", spark, gauge, i
         <div className="min-w-0">
           {value !== undefined && (
             <div
+              className="text-[26px] sm:text-[30px]"
               style={{
                 fontFamily: "var(--font-sans)",
-                fontSize: 32,
                 fontWeight: 500,
                 color: "var(--text)",
                 letterSpacing: "-0.03em",
@@ -79,12 +79,12 @@ export function KPI({ label, value, sub, trend, trendDir = "up", spark, gauge, i
       {/* Trend */}
       {trend && (
         <div
-          className="mt-[14px] inline-flex items-center gap-1 px-[10px] py-[3px] rounded-full"
+          className="mt-[12px] inline-flex items-center gap-1 px-[10px] py-[3px] rounded-full"
           style={{
-            background: trendDir === "up" ? "#D6F5E8" : "#F5D6DA",
-            color: trendDir === "up" ? "#009E73" : "#7A0E1E",
+            background: trendDir === "up" ? "rgba(0,212,154,0.12)" : "rgba(176,24,42,0.10)",
+            color: trendDir === "up" ? "#009E73" : "#B0182A",
             fontFamily: "var(--font-mono)",
-            fontSize: 11,
+            fontSize: 10.5,
             fontWeight: 500,
             letterSpacing: "0.04em",
           }}

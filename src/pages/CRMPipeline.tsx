@@ -163,7 +163,7 @@ export default function CRMPipeline() {
     <div className="flex flex-col" style={{ minHeight: "calc(100vh - 68px)", background: "var(--off)" }}>
 
       {/* ── Header ─────────────────────────────────────────────────── */}
-      <div className="px-4 sm:px-7 pt-6 pb-0">
+      <div className="px-4 sm:px-7 pt-4 sm:pt-7 pb-0">
         <PageHeader
           title="Pipeline comercial"
           subtitle={`${deals.length} OPORTUNIDADES · ${formatBRL(totalPipeline)} EM ABERTO`}
@@ -182,46 +182,45 @@ export default function CRMPipeline() {
         <NewDealDialog open={newDealOpen} onOpenChange={setNewDealOpen} />
 
         {/* ── KPI strip ──────────────────────────────────────────── */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-5 mb-5">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-3 mb-4">
           {[
             { label: "Limite ativo",    value: formatBRL(totalPipeline),  sub: `${activeDeals.length} deals · cap de crédito`, icon: TrendingUp },
             { label: "Volume/mês ativo", value: formatBRL(totalMonthlyVolume), sub: "fluxo esperado mensal", icon: TrendingUp },
             { label: "Taxa de conversão", value: `${conversionRate}%`,   sub: `${wonDeals.length + lostDeals.length} finalizados`, icon: Trophy },
             { label: "Sem análise",     value: String(activeDeals.filter(d => !getAnalysis(d)).length), sub: "oportunidades em risco", icon: AlertTriangle },
-          ].map((k, i) => (
-            <div
-              key={i}
-              className="flex items-center gap-3 px-4 py-3 rounded-[14px]"
-              style={{
-                background: T.white,
-                border: `1px solid ${T.border}`,
-                boxShadow: "var(--shadow-sm)",
-              }}
-            >
+          ].map((k, i) => {
+            const isAlert = i === 3 && activeDeals.filter(d => !getAnalysis(d)).length > 0;
+            return (
               <div
+                key={i}
+                className="flex items-center gap-3 px-4 py-3 rounded-[14px]"
                 style={{
-                  width: 36, height: 36, borderRadius: 10, flexShrink: 0,
-                  background: i === 3 && activeDeals.filter(d => !getAnalysis(d)).length > 0
-                    ? "rgba(176,24,42,0.08)" : "rgba(0,212,154,0.1)",
-                  display: "flex", alignItems: "center", justifyContent: "center",
+                  background: T.white,
+                  border: `1px solid ${T.border}`,
+                  boxShadow: "0 1px 3px rgba(10,21,56,0.05), 0 4px 12px -4px rgba(10,21,56,0.06)",
                 }}
               >
-                <k.icon style={{
-                  width: 16, height: 16,
-                  color: i === 3 && activeDeals.filter(d => !getAnalysis(d)).length > 0 ? T.danger : T.esmeralda,
-                }} />
+                <div
+                  className="flex-shrink-0 flex items-center justify-center"
+                  style={{
+                    width: 34, height: 34, borderRadius: 10,
+                    background: isAlert ? "rgba(176,24,42,0.08)" : "rgba(0,212,154,0.10)",
+                  }}
+                >
+                  <k.icon style={{ width: 15, height: 15, color: isAlert ? T.danger : T.esmeralda }} />
+                </div>
+                <div className="min-w-0">
+                  <p style={{ fontFamily: "var(--font-mono)", fontSize: 9.5, textTransform: "uppercase", letterSpacing: "0.10em", color: T.textMute, marginBottom: 2 }}>
+                    {k.label}
+                  </p>
+                  <p className="tabular-nums truncate" style={{ fontFamily: "var(--font-mono)", fontSize: 15, fontWeight: 700, color: T.text, lineHeight: 1.1 }}>
+                    {k.value}
+                  </p>
+                  <p className="truncate" style={{ fontSize: 11, color: T.textMute, marginTop: 2 }}>{k.sub}</p>
+                </div>
               </div>
-              <div>
-                <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, textTransform: "uppercase", letterSpacing: "0.10em", color: T.textMute, marginBottom: 2 }}>
-                  {k.label}
-                </p>
-                <p style={{ fontFamily: "var(--font-mono)", fontSize: 16, fontWeight: 700, color: T.text, lineHeight: 1 }}>
-                  {k.value}
-                </p>
-                <p style={{ fontSize: 11, color: T.textMute, marginTop: 2 }}>{k.sub}</p>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 

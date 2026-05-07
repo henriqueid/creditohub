@@ -254,7 +254,7 @@ export default function CreditAnalysisList() {
                                     fontSize: 12,
                                     boxShadow: dragSnapshot.isDragging
                                       ? "0 12px 28px -8px rgba(10,21,56,0.25)"
-                                      : "var(--shadow-sm)",
+                                      : "0 1px 2px rgba(10,21,56,0.04)",
                                     opacity: dragSnapshot.isDragging ? 0.95 : 1,
                                   }}
                                 >

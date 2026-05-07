@@ -93,7 +93,7 @@ function SubNav({
 }) {
   return (
     <div
-      className="flex items-center px-3 sm:px-6 flex-shrink-0 overflow-x-auto"
+      className="flex items-center px-3 sm:px-6 flex-shrink-0 overflow-x-auto [&::-webkit-scrollbar]:hidden"
       style={{
         height: 44,
         background: "rgba(8,17,46,0.96)",
@@ -101,6 +101,7 @@ function SubNav({
         boxShadow: "inset 0 1px 0 rgba(255,255,255,0.04)",
         fontFamily: "var(--font-sans)",
         scrollbarWidth: "none",
+        msOverflowStyle: "none",
       }}
     >
       <nav className="flex items-center gap-1 relative">
@@ -378,14 +379,22 @@ function MobileDrawer({
   open,
   onClose,
   activeModule,
+  pathname,
   navigate,
 }: {
   open: boolean;
   onClose: () => void;
   activeModule: string;
+  pathname: string;
   navigate: (path: string) => void;
 }) {
   if (!open) return null;
+
+  const subItems =
+    activeModule === "Comercial" ? CRM_SUBNAV :
+    activeModule === "Crédito"   ? CREDITO_SUBNAV :
+    null;
+
   return (
     <div
       className="fixed inset-0 z-[200] lg:hidden"
@@ -393,17 +402,20 @@ function MobileDrawer({
     >
       <div className="absolute inset-0 bg-black/50" />
       <aside
-        className="absolute top-0 left-0 h-full w-[280px] flex flex-col"
+        className="absolute top-0 left-0 h-full w-[290px] flex flex-col"
         style={{ background: "var(--marinho)" }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
           <Logo />
-          <button onClick={onClose} className="p-1 rounded-md hover:bg-white/10" style={{ color: "rgba(250,250,247,0.7)" }}>
+          <button onClick={onClose} className="p-1.5 rounded-md hover:bg-white/10 transition-colors" style={{ color: "rgba(250,250,247,0.7)" }}>
             <XIcon style={{ width: 18, height: 18 }} />
           </button>
         </div>
-        <nav className="flex flex-col p-3 gap-1">
+        <nav className="flex flex-col p-3 gap-1 overflow-y-auto flex-1">
+          <p style={{ fontFamily: "var(--font-mono)", fontSize: 9.5, letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(250,250,247,0.40)", padding: "6px 12px 4px" }}>
+            Módulos
+          </p>
           {MODULES.map(({ label, path }) => {
             const isActive = activeModule === label;
             return (
@@ -411,24 +423,50 @@ function MobileDrawer({
                 key={label}
                 onClick={() => { navigate(path); onClose(); }}
                 className={cn(
-                  "w-full text-left px-4 py-3 rounded-[10px] text-[14px] font-medium transition-colors",
+                  "w-full text-left px-4 py-[11px] rounded-[10px] text-[14px] font-medium transition-colors",
                   isActive
                     ? "bg-[rgba(250,250,247,0.13)] text-[#FAFAF7] border border-[rgba(250,250,247,0.18)]"
-                    : "text-[rgba(250,250,247,0.7)] hover:bg-[rgba(255,255,255,0.06)] border border-transparent"
+                    : "text-[rgba(250,250,247,0.72)] hover:bg-[rgba(255,255,255,0.06)] border border-transparent"
                 )}
               >
                 {label}
               </button>
             );
           })}
+
+          {subItems && (
+            <>
+              <p style={{ fontFamily: "var(--font-mono)", fontSize: 9.5, letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(250,250,247,0.40)", padding: "14px 12px 4px" }}>
+                {activeModule}
+              </p>
+              {subItems.map(({ label, path, icon: Icon }) => {
+                const isActive = pathname === path || (path !== "/" && pathname.startsWith(path));
+                return (
+                  <button
+                    key={path}
+                    onClick={() => { navigate(path); onClose(); }}
+                    className={cn(
+                      "w-full text-left flex items-center gap-2.5 px-4 py-[10px] rounded-[10px] text-[13px] transition-colors",
+                      isActive
+                        ? "bg-[#00D49A] text-[#0A1538] font-semibold"
+                        : "text-[rgba(250,250,247,0.65)] hover:bg-[rgba(255,255,255,0.06)]"
+                    )}
+                  >
+                    <Icon style={{ width: 14, height: 14 }} strokeWidth={2.2} />
+                    {label}
+                  </button>
+                );
+              })}
+            </>
+          )}
         </nav>
         <div className="mt-auto p-3" style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
           <button
             onClick={() => { navigate("/consulta"); onClose(); }}
-            className="w-full flex items-center justify-center gap-1.5 py-[10px] rounded-[999px] text-[13px] font-semibold transition-opacity hover:opacity-90"
+            className="w-full flex items-center justify-center gap-1.5 py-[11px] rounded-[999px] text-[13px] font-semibold transition-opacity hover:opacity-90"
             style={{ background: "#00D49A", color: "#0A1538" }}
           >
-            + Nova Consulta
+            + Nova consulta
           </button>
         </div>
       </aside>
@@ -544,6 +582,7 @@ export function AppNavbar() {
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         activeModule={activeModule}
+        pathname={location.pathname}
         navigate={navigate}
       />
 

@@ -46,21 +46,26 @@ function Section({ title, sub, icon: Icon, children }: {
 }) {
   return (
     <div
-      className="rounded-[16px]"
-      style={{ background: T.white, border: `1px solid ${T.border}`, boxShadow: "var(--shadow-sm)", overflow: "hidden" }}
+      className="rounded-[14px]"
+      style={{
+        background: T.white,
+        border: `1px solid ${T.border}`,
+        boxShadow: "0 1px 3px rgba(10,21,56,0.05), 0 4px 12px -4px rgba(10,21,56,0.06)",
+        overflow: "hidden",
+      }}
     >
-      <div className="px-6 py-5" style={{ borderBottom: `1px solid ${T.border}`, background: T.paper }}>
+      <div className="px-5 sm:px-6 py-4" style={{ borderBottom: `1px solid ${T.border}`, background: T.paper }}>
         <div className="flex items-center gap-3">
-          <div style={{ width: 34, height: 34, borderRadius: 10, background: "rgba(0,212,154,0.12)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <Icon style={{ width: 16, height: 16, color: T.esmeralda }} />
+          <div style={{ width: 32, height: 32, borderRadius: 10, background: "rgba(0,212,154,0.12)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <Icon style={{ width: 15, height: 15, color: T.esmeralda }} />
           </div>
-          <div>
+          <div className="min-w-0">
             <p style={{ fontSize: 14, fontWeight: 600, color: T.text, lineHeight: 1.2 }}>{title}</p>
-            {sub && <p style={{ fontSize: 12, color: T.textMute, marginTop: 1 }}>{sub}</p>}
+            {sub && <p style={{ fontSize: 12, color: T.textMute, marginTop: 2 }}>{sub}</p>}
           </div>
         </div>
       </div>
-      <div className="px-6 py-5">{children}</div>
+      <div className="px-5 sm:px-6 py-5">{children}</div>
     </div>
   );
 }
@@ -149,8 +154,11 @@ export default function Profile() {
 
       {/* Avatar + resumo */}
       <div
-        className="rounded-[16px] flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 px-5 sm:px-7 py-5 sm:py-6"
-        style={{ background: T.marinho, boxShadow: "var(--shadow-md)" }}
+        className="rounded-[14px] flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 px-5 sm:px-6 py-5"
+        style={{
+          background: T.marinho,
+          boxShadow: "0 4px 14px -6px rgba(10,21,56,0.30)",
+        }}
       >
         <div
           className="flex items-center justify-center rounded-full flex-shrink-0 text-[26px] font-semibold"

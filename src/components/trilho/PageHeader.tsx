@@ -6,10 +6,10 @@ interface PageHeaderProps {
 
 export function PageHeader({ title, subtitle, actions }: PageHeaderProps) {
   return (
-    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-3 mb-6">
+    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-3 mb-2">
       <div className="min-w-0">
         <h1
-          className="text-[22px] sm:text-[28px]"
+          className="text-[20px] sm:text-[26px]"
           style={{
             fontFamily: "var(--font-sans)",
             fontWeight: 500,
@@ -25,10 +25,11 @@ export function PageHeader({ title, subtitle, actions }: PageHeaderProps) {
             className="mt-[6px]"
             style={{
               fontFamily: "var(--font-mono)",
-              fontSize: 11,
+              fontSize: 10.5,
               color: "var(--text-mute)",
-              letterSpacing: "0.08em",
+              letterSpacing: "0.10em",
               textTransform: "uppercase",
+              fontWeight: 500,
             }}
           >
             {subtitle}

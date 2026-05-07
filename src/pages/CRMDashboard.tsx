@@ -131,15 +131,15 @@ export default function CRMDashboard() {
         actions={
           <>
             <button
-              className="px-[14px] py-[6px] rounded-[999px] text-[12px] font-medium border transition-colors hover:bg-[#F0F1EB]"
-              style={{ border: "1px solid var(--border-strong)", color: "var(--text)" }}
+              className="hidden sm:flex px-[14px] py-[8px] rounded-[999px] text-[12.5px] font-medium border transition-colors hover:bg-[#F0F1EB]"
+              style={{ border: `1px solid ${T.borderMed}`, color: T.text, background: T.white }}
             >
               Filtrar
             </button>
             <button
               onClick={() => setNewDealOpen(true)}
               className="px-[16px] py-[9px] rounded-[999px] text-[13px] font-medium text-white transition-opacity hover:opacity-90"
-              style={{ background: "var(--marinho)" }}
+              style={{ background: T.marinho }}
             >
               + Nova oportunidade
             </button>

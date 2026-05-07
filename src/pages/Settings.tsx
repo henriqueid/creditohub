@@ -168,7 +168,7 @@ export default function Settings() {
   }
 
   return (
-    <div className="p-4 sm:p-7 space-y-5">
+    <div className="p-4 sm:p-7 space-y-[14px]">
       <PageHeader
         title="Configurações"
         subtitle="SISTEMA E OPERAÇÕES"
@@ -191,7 +191,10 @@ export default function Settings() {
       <button
         onClick={() => navigate("/configuracoes/motor")}
         className="w-full flex items-center justify-between px-5 py-4 rounded-[14px] text-left transition-opacity hover:opacity-90"
-        style={{ background: T.marinho, boxShadow: "var(--shadow-md)" }}
+        style={{
+          background: T.marinho,
+          boxShadow: "0 4px 14px -6px rgba(10,21,56,0.30)",
+        }}
       >
         <div className="flex items-center gap-4">
           <div style={{ width: 40, height: 40, borderRadius: 12, background: "rgba(0,212,154,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -206,12 +209,17 @@ export default function Settings() {
       </button>
 
       {/* Sidebar + content */}
-      <div className="grid gap-5 grid-cols-1 lg:grid-cols-[200px_1fr]">
+      <div className="grid gap-[14px] grid-cols-1 lg:grid-cols-[200px_1fr]">
 
         {/* Sidebar nav (desktop) / Tabs horizontais (mobile) */}
         <div
-          className="rounded-[16px] py-2 h-fit overflow-x-auto lg:overflow-visible"
-          style={{ background: T.white, border: `1px solid ${T.border}`, boxShadow: "var(--shadow-sm)", scrollbarWidth: "none" }}
+          className="rounded-[14px] py-2 h-fit overflow-x-auto lg:overflow-visible"
+          style={{
+            background: T.white,
+            border: `1px solid ${T.border}`,
+            boxShadow: "0 1px 3px rgba(10,21,56,0.05), 0 4px 12px -4px rgba(10,21,56,0.06)",
+            scrollbarWidth: "none",
+          }}
         >
           <div className="flex lg:flex-col">
             {NAV.map(item => {
@@ -240,7 +248,15 @@ export default function Settings() {
         </div>
 
         {/* Content */}
-        <div className="rounded-[16px]" style={{ background: T.white, border: `1px solid ${T.border}`, boxShadow: "var(--shadow-sm)", overflow: "hidden" }}>
+        <div
+          className="rounded-[14px]"
+          style={{
+            background: T.white,
+            border: `1px solid ${T.border}`,
+            boxShadow: "0 1px 3px rgba(10,21,56,0.05), 0 4px 12px -4px rgba(10,21,56,0.06)",
+            overflow: "hidden",
+          }}
+        >
 
           {/* ── Empresa ──────────────────────────────────────────── */}
           {section === "empresa" && (

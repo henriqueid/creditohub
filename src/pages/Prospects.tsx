@@ -322,19 +322,21 @@ export default function Prospects() {
       </div>
 
       {/* Search */}
-      <div className="relative max-w-md">
+      <div className="relative w-full sm:max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: T.textFaint }} />
         <input
           placeholder="Buscar por documento ou nome..."
           value={search}
           onChange={e => setSearch(e.target.value)}
-          className="w-full pl-9 pr-3 py-[9px] rounded-[10px] text-[14px] outline-none"
+          className="w-full pl-9 pr-3 py-[9px] rounded-[10px] text-[14px] outline-none transition-all"
           style={{
             background: T.white,
             border: `1px solid ${T.border}`,
             color: T.text,
-            boxShadow: "var(--shadow-sm)",
+            boxShadow: "0 1px 2px rgba(10,21,56,0.04)",
           }}
+          onFocus={(e) => (e.target.style.borderColor = T.esmeralda)}
+          onBlur={(e) => (e.target.style.borderColor = T.border)}
         />
       </div>
 
@@ -429,11 +431,15 @@ export default function Prospects() {
 function Kpi({ label, value, color }: { label: string; value: number; color: string }) {
   return (
     <div
-      className="rounded-[12px] px-4 py-3"
-      style={{ background: T.white, border: `1px solid ${T.border}`, boxShadow: "var(--shadow-sm)" }}
+      className="rounded-[14px] px-4 py-3"
+      style={{
+        background: T.white,
+        border: `1px solid ${T.border}`,
+        boxShadow: "0 1px 3px rgba(10,21,56,0.05), 0 4px 12px -4px rgba(10,21,56,0.06)",
+      }}
     >
       <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.10em", textTransform: "uppercase", color: T.textMute }}>{label}</p>
-      <p className="font-bold tabular-nums mt-0.5" style={{ fontSize: 24, color, lineHeight: 1.1 }}>{value}</p>
+      <p className="font-bold tabular-nums mt-1" style={{ fontSize: 24, color, lineHeight: 1.1 }}>{value}</p>
     </div>
   );
 }
@@ -488,20 +494,21 @@ function ProspectCard({
   const risk = RISK_CFG[p.risk_level || "unknown"] || RISK_CFG.unknown;
   const expired = !!(p.expires_at && new Date(p.expires_at) < new Date());
 
-  // Extrai dados do snapshot pra exibir
+  // Extrai dados do snapshot — estrutura é flat (não aninhada em cadastral/restritivos)
   const snapshot = (p.qualification_data?.snapshot ?? null) as ConsultaSnapshot | null;
-  const cadastral = snapshot?.cadastral || null;
-  const restritivos = snapshot?.restritivos || null;
 
-  const cidade = cadastral?.cidade;
-  const uf = cadastral?.uf;
-  const segmento = cadastral?.cnae_descricao || cadastral?.segmento;
-  const fantasia = cadastral?.nome_fantasia;
-  const capitalSocial = cadastral?.capital_social;
+  const cidade = snapshot?.cidade;
+  const uf = snapshot?.estado;
+  const segmento = snapshot?.segmento;
+  const fantasia = snapshot?.nome_fantasia;
+  const capitalSocial = snapshot?.capital_social;
 
-  const hasProtestos = !!restritivos?.protestos && restritivos.protestos !== "Nada consta";
-  const hasPendencias = !!restritivos?.pendencias && restritivos.pendencias !== "Nada consta";
-  const hasAcoes = !!restritivos?.acoes_judiciais && restritivos.acoes_judiciais !== "Nada consta";
+  const hasProtestos = (snapshot?.protestos_qtd ?? 0) > 0
+    || (!!snapshot?.protestos_texto && snapshot.protestos_texto !== "Nada consta");
+  const hasPendencias = (snapshot?.pendencias_qtd ?? 0) > 0
+    || (!!snapshot?.pendencias_texto && snapshot.pendencias_texto !== "Nada consta");
+  const hasAcoes = (snapshot?.acoes_judiciais_qtd ?? 0) > 0
+    || (!!snapshot?.acoes_judiciais_texto && snapshot.acoes_judiciais_texto !== "Nada consta");
   const restritivosCount = [hasProtestos, hasPendencias, hasAcoes].filter(Boolean).length;
 
   const promotedAlready = !!p.client_id;
@@ -515,7 +522,7 @@ function ProspectCard({
       style={{
         background: T.white,
         border: `1px solid ${expired ? T.borderMed : T.border}`,
-        boxShadow: "var(--shadow-sm)",
+        boxShadow: "0 1px 3px rgba(10,21,56,0.05), 0 4px 12px -4px rgba(10,21,56,0.06)",
         opacity: expired ? 0.78 : 1,
       }}
     >

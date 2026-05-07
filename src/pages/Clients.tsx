@@ -10,6 +10,8 @@ import { Plus, Search, History, LayoutGrid, List, FileText, Building2, GripVerti
 import { useNavigate } from "react-router-dom";
 import { formatCNPJorCPF, formatDate, formatBRL } from "@/lib/formatters";
 import { StatusBadge } from "@/components/StatusBadge";
+import { T } from "@/lib/tokens";
+import { PageHeader } from "@/components/trilho/PageHeader";
 import { motion } from "framer-motion";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { DragDropContext, Droppable, Draggable, type DropResult } from "@hello-pangea/dnd";
@@ -274,31 +276,41 @@ export default function Clients() {
   }, [enrichedClients, search, activeTab]);
 
   return (
-    <div className="p-4 sm:p-6 space-y-4">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Portfólio</h1>
-          <p className="text-muted-foreground">Cedentes em análise, no comitê ou já decididos</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button onClick={() => navigate("/cedentes/novo")}>
-            <Plus className="h-4 w-4 mr-1" /> Novo Cedente
-          </Button>
-        </div>
-      </div>
+    <div className="p-4 sm:p-7 space-y-[14px]">
+      <PageHeader
+        title="Portfólio"
+        subtitle={`${kpiTotals.total} CEDENTES · EM ANÁLISE, COMITÊ OU DECIDIDOS`}
+        actions={
+          <button
+            onClick={() => navigate("/cedentes/novo")}
+            className="flex items-center gap-2 px-[16px] py-[9px] rounded-[999px] text-[13px] font-medium text-white transition-opacity hover:opacity-90"
+            style={{ background: T.marinho }}
+          >
+            <Plus style={{ width: 14, height: 14 }} />
+            Novo cedente
+          </button>
+        }
+      />
 
       {/* KPI Strip */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          { label: "Total de cedentes", value: kpiTotals.total, color: "text-foreground" },
-          { label: "Aprovados", value: kpiTotals.aprovados, color: "text-status-approved" },
-          { label: "Em análise", value: kpiTotals.emAnalise, color: "text-sink-warn" },
-          { label: "Reprovados", value: kpiTotals.reprovados, color: "text-status-rejected" },
+          { label: "Total de cedentes", value: kpiTotals.total, color: T.text },
+          { label: "Aprovados", value: kpiTotals.aprovados, color: T.esmeralda },
+          { label: "Em análise", value: kpiTotals.emAnalise, color: T.amber },
+          { label: "Reprovados", value: kpiTotals.reprovados, color: T.danger },
         ].map(k => (
-          <div key={k.label} className="rounded-lg border bg-card px-4 py-3">
-            <p className="text-xs text-muted-foreground font-mono uppercase tracking-wider">{k.label}</p>
-            <p className={`text-2xl font-bold tabular-nums mt-0.5 ${k.color}`}>{k.value}</p>
+          <div
+            key={k.label}
+            className="rounded-[14px] px-4 py-3"
+            style={{
+              background: T.white,
+              border: `1px solid ${T.border}`,
+              boxShadow: "0 1px 3px rgba(10,21,56,0.05), 0 4px 12px -4px rgba(10,21,56,0.06)",
+            }}
+          >
+            <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.10em", textTransform: "uppercase", color: T.textMute }}>{k.label}</p>
+            <p className="font-bold tabular-nums mt-1" style={{ fontSize: 24, color: k.color, lineHeight: 1.1 }}>{k.value}</p>
           </div>
         ))}
       </div>
@@ -347,34 +359,43 @@ export default function Clients() {
 
       {/* ── Tab: Aprovados ── */}
       {activeTab === "aprovados" && (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
           {tabClients.length === 0 ? (
-            <div className="col-span-3 text-center py-12 text-muted-foreground">Nenhum cedente aprovado</div>
+            <EmptyTabState
+              icon={CheckCircle2}
+              title="Nenhum cedente aprovado"
+              hint="Cedentes que tiverem decisão final 'aprovado' no comitê aparecem aqui."
+            />
           ) : tabClients.map(c => {
             const result = (analyses.find(a => a.client_id === c.id && a.status === "approved") as any)?.committee_result;
             const tier = c.latestScore ? (c.latestScore >= 800 ? "AAA" : c.latestScore >= 700 ? "AA" : c.latestScore >= 600 ? "A" : "BBB") : null;
             return (
-              <div key={c.id} className="rounded-lg border bg-card hover:shadow-md transition-shadow cursor-pointer" onClick={() => c.latestAnalysisId && navigate(`/analises/${c.latestAnalysisId}`)}>
-                <div className="px-4 py-3 border-b flex items-center justify-between gap-2">
+              <div
+                key={c.id}
+                className="rounded-[14px] cursor-pointer transition-all hover:shadow-[0_2px_8px_rgba(10,21,56,0.08),0_8px_22px_-6px_rgba(10,21,56,0.10)]"
+                style={{ background: T.white, border: `1px solid ${T.border}`, boxShadow: "0 1px 3px rgba(10,21,56,0.05), 0 4px 12px -4px rgba(10,21,56,0.06)" }}
+                onClick={() => c.latestAnalysisId && navigate(`/analises/${c.latestAnalysisId}`)}
+              >
+                <div className="px-4 py-3 flex items-center justify-between gap-2" style={{ borderBottom: `1px solid ${T.border}` }}>
                   <div className="min-w-0">
-                    <p className="font-semibold text-sm truncate">{c.razao_social}</p>
-                    <p className="text-xs text-muted-foreground font-mono">{formatCNPJorCPF(c.cnpj_cpf)}</p>
+                    <p className="font-semibold text-[13.5px] truncate" style={{ color: T.text }}>{c.razao_social}</p>
+                    <p style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: T.textMute, marginTop: 2 }}>{formatCNPJorCPF(c.cnpj_cpf)}</p>
                   </div>
                   <CheckCircle2 className="h-5 w-5 text-status-approved shrink-0" />
                 </div>
                 <div className="px-4 py-3 grid grid-cols-2 gap-3">
                   <div>
-                    <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Score</p>
-                    <p className="font-bold text-sm tabular-nums">{c.latestScore ?? "—"} {tier && <span className="text-xs font-medium text-muted-foreground">{tier}</span>}</p>
+                    <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.10em", textTransform: "uppercase", color: T.textMute }}>Score</p>
+                    <p className="font-bold text-[14px] tabular-nums mt-0.5" style={{ color: T.text }}>{c.latestScore ?? "—"} {tier && <span className="text-[11px] font-medium" style={{ color: T.textMute }}>{tier}</span>}</p>
                   </div>
                   <div>
-                    <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Limite Aprovado</p>
-                    <p className="font-bold text-sm tabular-nums text-status-approved">{result?.limite_aprovado ? formatBRL(result.limite_aprovado) : formatBRL(c.latestLimiteSugerido)}</p>
+                    <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.10em", textTransform: "uppercase", color: T.textMute }}>Limite aprovado</p>
+                    <p className="font-bold text-[14px] tabular-nums text-status-approved mt-0.5">{result?.limite_aprovado ? formatBRL(result.limite_aprovado) : formatBRL(c.latestLimiteSugerido)}</p>
                   </div>
                   {result?.prazo_aprovado && (
                     <div>
-                      <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Prazo</p>
-                      <p className="text-sm font-semibold">{result.prazo_aprovado}d</p>
+                      <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.10em", textTransform: "uppercase", color: T.textMute }}>Prazo</p>
+                      <p className="text-[14px] font-semibold mt-0.5" style={{ color: T.text }}>{result.prazo_aprovado}d</p>
                     </div>
                   )}
                 </div>
@@ -386,33 +407,42 @@ export default function Clients() {
 
       {/* ── Tab: Restrições ── */}
       {activeTab === "restricoes" && (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
           {tabClients.length === 0 ? (
-            <div className="col-span-3 text-center py-12 text-muted-foreground">Nenhum cedente com restrição</div>
+            <EmptyTabState
+              icon={AlertCircle}
+              title="Nenhum cedente com restrição"
+              hint="Aprovações com condicionantes aparecem aqui — os condicionais ficam no card."
+            />
           ) : tabClients.map(c => {
             const result = (analyses.find(a => a.client_id === c.id && a.status === "approved_restricted") as any)?.committee_result;
             return (
-              <div key={c.id} className="rounded-lg border bg-card hover:shadow-md transition-shadow cursor-pointer" onClick={() => c.latestAnalysisId && navigate(`/analises/${c.latestAnalysisId}`)}>
-                <div className="px-4 py-3 border-b flex items-center justify-between gap-2">
+              <div
+                key={c.id}
+                className="rounded-[14px] cursor-pointer transition-all hover:shadow-[0_2px_8px_rgba(10,21,56,0.08),0_8px_22px_-6px_rgba(10,21,56,0.10)]"
+                style={{ background: T.white, border: `1px solid ${T.border}`, boxShadow: "0 1px 3px rgba(10,21,56,0.05), 0 4px 12px -4px rgba(10,21,56,0.06)" }}
+                onClick={() => c.latestAnalysisId && navigate(`/analises/${c.latestAnalysisId}`)}
+              >
+                <div className="px-4 py-3 flex items-center justify-between gap-2" style={{ borderBottom: `1px solid ${T.border}` }}>
                   <div className="min-w-0">
-                    <p className="font-semibold text-sm truncate">{c.razao_social}</p>
-                    <p className="text-xs text-muted-foreground font-mono">{formatCNPJorCPF(c.cnpj_cpf)}</p>
+                    <p className="font-semibold text-[13.5px] truncate" style={{ color: T.text }}>{c.razao_social}</p>
+                    <p style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: T.textMute, marginTop: 2 }}>{formatCNPJorCPF(c.cnpj_cpf)}</p>
                   </div>
                   <AlertCircle className="h-5 w-5 text-status-restricted shrink-0" />
                 </div>
                 <div className="px-4 py-3 space-y-2">
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Score</p>
-                      <p className="font-bold text-sm tabular-nums">{c.latestScore ?? "—"}</p>
+                      <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.10em", textTransform: "uppercase", color: T.textMute }}>Score</p>
+                      <p className="font-bold text-[14px] tabular-nums mt-0.5" style={{ color: T.text }}>{c.latestScore ?? "—"}</p>
                     </div>
                     <div>
-                      <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Limite c/ Restrição</p>
-                      <p className="font-bold text-sm tabular-nums text-status-restricted">{result?.limite_aprovado ? formatBRL(result.limite_aprovado) : formatBRL(c.latestLimiteSugerido)}</p>
+                      <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.10em", textTransform: "uppercase", color: T.textMute }}>Limite c/ restrição</p>
+                      <p className="font-bold text-[14px] tabular-nums text-status-restricted mt-0.5">{result?.limite_aprovado ? formatBRL(result.limite_aprovado) : formatBRL(c.latestLimiteSugerido)}</p>
                     </div>
                   </div>
                   {result?.condicoes_adicionais && (
-                    <p className="text-xs text-muted-foreground border-t pt-2 line-clamp-2">{result.condicoes_adicionais}</p>
+                    <p className="text-[12px] line-clamp-2 pt-2" style={{ color: T.textMute, borderTop: `1px solid ${T.border}` }}>{result.condicoes_adicionais}</p>
                   )}
                 </div>
               </div>
@@ -423,7 +453,7 @@ export default function Clients() {
 
       {/* ── Tab: Reprovados ── */}
       {activeTab === "reprovados" && (
-        <div className="rounded-lg border bg-card overflow-x-auto">
+        <div className="rounded-[14px] overflow-x-auto" style={{ background: T.white, border: `1px solid ${T.border}`, boxShadow: "0 1px 3px rgba(10,21,56,0.05), 0 4px 12px -4px rgba(10,21,56,0.06)" }}>
           <Table>
             <TableHeader>
               <TableRow>
@@ -609,7 +639,7 @@ export default function Clients() {
           </ScrollArea>
         </DragDropContext>
       ) : (
-        <div className="rounded-lg border bg-card overflow-x-auto">
+        <div className="rounded-[14px] overflow-x-auto" style={{ background: T.white, border: `1px solid ${T.border}`, boxShadow: "0 1px 3px rgba(10,21,56,0.05), 0 4px 12px -4px rgba(10,21,56,0.06)" }}>
           <Table>
             <TableHeader>
               <TableRow>
@@ -662,6 +692,34 @@ export default function Clients() {
           </Table>
         </div>
       ))}
+    </div>
+  );
+}
+
+function EmptyTabState({
+  icon: Icon,
+  title,
+  hint,
+}: {
+  icon: React.ElementType;
+  title: string;
+  hint?: string;
+}) {
+  return (
+    <div
+      className="col-span-full flex flex-col items-center justify-center py-14 px-6 rounded-[14px] gap-3"
+      style={{ background: T.white, border: `1px dashed ${T.borderMed}` }}
+    >
+      <div
+        className="flex items-center justify-center rounded-full"
+        style={{ width: 44, height: 44, background: T.cinza }}
+      >
+        <Icon style={{ width: 20, height: 20, color: T.textFaint }} />
+      </div>
+      <p className="text-center" style={{ fontSize: 14, fontWeight: 600, color: T.text }}>{title}</p>
+      {hint && (
+        <p className="text-center max-w-sm" style={{ fontSize: 12.5, color: T.textMute, lineHeight: 1.5 }}>{hint}</p>
+      )}
     </div>
   );
 }

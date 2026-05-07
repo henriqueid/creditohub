@@ -63,14 +63,14 @@ function deriveRiskLevel(score: number | null): "low" | "medium" | "high" | "unk
 
 function StatCard({ icon: Icon, label, value, sub }: { icon: React.ElementType; label: string; value: string; sub?: string }) {
   return (
-    <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
-      <div className="p-2 rounded-md bg-primary/10">
-        <Icon className="h-4 w-4 text-primary" />
+    <div className="flex items-start gap-2.5 p-3 rounded-[10px] bg-muted/50">
+      <div className="p-1.5 rounded-[8px] bg-primary/10 flex-shrink-0">
+        <Icon className="h-3.5 w-3.5 text-primary" />
       </div>
       <div className="min-w-0">
-        <p className="text-xs text-muted-foreground">{label}</p>
-        <p className="text-sm font-semibold truncate">{value}</p>
-        {sub && <p className="text-xs text-muted-foreground">{sub}</p>}
+        <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">{label}</p>
+        <p className="text-[13px] font-semibold truncate mt-0.5">{value}</p>
+        {sub && <p className="text-[11px] text-muted-foreground">{sub}</p>}
       </div>
     </div>
   );
@@ -275,27 +275,27 @@ export default function ConsultaCPFCNPJ() {
   }
 
   return (
-    <div className="p-7 space-y-[14px]">
+    <div className="p-4 sm:p-7 space-y-[14px]">
       <PageHeader
         title="Consulta CPF / CNPJ"
         subtitle="VISÃO 360° · BASE INTERNA E FONTES EXTERNAS"
       />
 
       {/* Search Bar */}
-      <Card>
-        <CardContent className="p-4">
-          <form onSubmit={handleSearch} className="flex gap-3">
-            <div className="relative flex-1 max-w-md">
+      <Card className="rounded-[14px] shadow-none border-border">
+        <CardContent className="p-4 sm:p-5">
+          <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1 sm:max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Digite o CPF ou CNPJ..."
                 value={inputValue}
                 onChange={(e) => setInputValue(formatInputDocument(e.target.value))}
-                className="pl-9 font-mono"
+                className="pl-9 font-mono rounded-[10px]"
                 maxLength={18}
               />
             </div>
-            <Button type="submit" disabled={cleanDocument(inputValue).length < 11}>
+            <Button type="submit" disabled={cleanDocument(inputValue).length < 11} className="rounded-[999px] px-5">
               {isLoading ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Search className="h-4 w-4 mr-1" />}
               Consultar
             </Button>
@@ -345,33 +345,33 @@ export default function ConsultaCPFCNPJ() {
             )}
 
             {/* Identity Header */}
-            <Card>
-              <CardContent className="p-5">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="p-3 rounded-xl bg-primary/10">
-                      {isPJ ? <Building2 className="h-6 w-6 text-primary" /> : <User className="h-6 w-6 text-primary" />}
+            <Card className="rounded-[14px] shadow-none border-border">
+              <CardContent className="p-4 sm:p-5">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                  <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                    <div className="p-2.5 sm:p-3 rounded-[12px] bg-primary/10 flex-shrink-0">
+                      {isPJ ? <Building2 className="h-5 w-5 sm:h-6 sm:w-6 text-primary" /> : <User className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />}
                     </div>
-                    <div>
-                      <p className="font-mono text-lg font-semibold">{formatCNPJorCPF(digits)}</p>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-mono text-[15px] sm:text-lg font-semibold truncate">{formatCNPJorCPF(digits)}</p>
                       {client ? (
                         <>
-                          <p className="text-base font-medium">{client.razao_social}</p>
-                          {client.nome_fantasia && <p className="text-sm text-muted-foreground">{client.nome_fantasia}</p>}
+                          <p className="text-[14px] sm:text-base font-medium truncate">{client.razao_social}</p>
+                          {client.nome_fantasia && <p className="text-[12.5px] sm:text-sm text-muted-foreground truncate">{client.nome_fantasia}</p>}
                         </>
                       ) : socioRecords.length > 0 ? (
-                        <p className="text-base font-medium">{socioRecords[0].nome}</p>
+                        <p className="text-[14px] sm:text-base font-medium truncate">{socioRecords[0].nome}</p>
                       ) : externalName ? (
                         <>
-                          <p className="text-base font-medium">{externalName}</p>
+                          <p className="text-[14px] sm:text-base font-medium truncate">{externalName}</p>
                           <p className="text-xs text-muted-foreground">Dados da Receita Federal (não cadastrado)</p>
                         </>
                       ) : (
-                        <p className="text-sm text-muted-foreground">Não encontrado na base interna</p>
+                        <p className="text-[12.5px] sm:text-sm text-muted-foreground">Não encontrado na base interna</p>
                       )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-shrink-0">
                     {found && <RiskBadge level={deriveRiskLevel(bestScore)} />}
                     {!found && hasSearched && !isLoading && (
                       <Badge variant="outline" className="bg-muted text-muted-foreground">Sem registros</Badge>
@@ -381,7 +381,7 @@ export default function ConsultaCPFCNPJ() {
 
                 {/* Quick stats */}
                 {client && (
-                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 mt-5">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3 mt-5">
                     <StatCard icon={MapPin} label="Localização" value={client.cidade && client.estado ? `${client.cidade}/${client.estado}` : "—"} />
                     <StatCard icon={Calendar} label="Cadastro" value={formatDate(client.created_at)} />
                     <StatCard icon={Shield} label="Melhor Score" value={bestScore ? String(bestScore) : "—"} />
