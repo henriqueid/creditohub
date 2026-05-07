@@ -2,9 +2,9 @@
 
 > Leia este arquivo no início de qualquer sessão. Ele substitui a necessidade de re-explicar o projeto.
 >
-> **Pra referência operacional rápida** (rotas, schema, edge functions, comandos, pendências), consulte [`RUNBOOK.md`](./RUNBOOK.md) — fonte da verdade mantida pelo agente `runbook-keeper`.
+> **Pra referência operacional rápida** (rotas, schema, edge functions, comandos, pendências), consulte [`runbook/README.md`](./runbook/README.md) — pasta com 1 arquivo por tópico, mantida pelo agente `runbook-keeper`. Cada agente lê apenas os arquivos do seu domínio (mapa em `runbook/README.md`).
 >
-> **Após qualquer feature/fix relevante**, dispatch o `runbook-keeper` pra atualizar o RUNBOOK. Critério de "relevante": nova rota, nova tabela, nova edge function, decisão de produto, mudança de fluxo, deprecation. Bug fix pontual e refactor cosmético NÃO disparam.
+> **Após qualquer feature/fix relevante**, dispatch o `runbook-keeper` pra atualizar o arquivo correto do runbook. Critério de "relevante": nova rota, nova tabela, nova edge function, decisão de produto, mudança de fluxo, deprecation. Bug fix pontual e refactor cosmético NÃO disparam.
 
 ---
 
