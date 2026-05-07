@@ -13,6 +13,7 @@ import { PageHeader } from "@/components/trilho/PageHeader";
 import { Sparkline } from "@/components/trilho/Sparkline";
 import { differenceInDays, parseISO } from "date-fns";
 import { AlertTriangle, Clock, CheckSquare, Activity, ChevronRight, Calendar, X } from "lucide-react";
+import { OnboardingChecklist } from "@/components/dashboard/OnboardingChecklist";
 
 const DISMISSED_ALERTS_KEY = "dashboard.dismissedAlerts";
 
@@ -296,6 +297,9 @@ export default function Dashboard() {
           </button>
         }
       />
+
+      {/* ── Onboarding (mostra só quando workspace incompleto) ──── */}
+      <OnboardingChecklist />
 
       {/* ── Alert strip ──────────────────────────────────────────── */}
       {visibleAlerts.length > 0 && (

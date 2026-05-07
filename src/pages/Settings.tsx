@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { COMMITTEE_FIELD_OPTIONS, DEFAULT_REQUIRED_FIELDS } from "@/hooks/useCommitteeRequirements";
 import CommitteeMembersSection from "@/components/settings/CommitteeMembersSection";
+import { TeamSection } from "@/components/settings/TeamSection";
 
 /* ── Types ────────────────────────────────────────────────────────── */
 
@@ -483,28 +484,15 @@ export default function Settings() {
           {/* ── Integrações ───────────────────────────────────────── */}
           {section === "integracoes" && <IntegrationsSection />}
 
-          {/* ── Acessos ───────────────────────────────────────────── */}
+          {/* ── Acessos / Equipe ─────────────────────────────────── */}
           {section === "acessos" && (
             <div>
               <div className="px-6 py-5" style={{ borderBottom: `1px solid ${T.border}`, background: T.paper }}>
                 <SectionTitle>Controle de acesso</SectionTitle>
-                <p style={{ fontSize: 14, fontWeight: 600, color: T.text }}>Usuários e permissões</p>
+                <p style={{ fontSize: 14, fontWeight: 600, color: T.text }}>Equipe do workspace e permissões</p>
               </div>
-              <div className="flex flex-col items-center justify-center py-16 px-6 text-center gap-4">
-                <div style={{ width: 56, height: 56, borderRadius: 16, background: T.cinza, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <Users style={{ width: 26, height: 26, color: T.textMute }} />
-                </div>
-                <p style={{ fontSize: 15, fontWeight: 600, color: T.text }}>Gerenciamento de acessos</p>
-                <p style={{ fontSize: 13, color: T.textMute, maxWidth: 380, lineHeight: 1.6 }}>
-                  Gerencie usuários, papéis e permissões diretamente no painel do Supabase enquanto este módulo está em desenvolvimento.
-                </p>
-                <div className="flex gap-2 flex-wrap justify-center mt-2">
-                  {["Admin", "Analista", "Comitê", "Comercial"].map(role => (
-                    <span key={role} className="px-3 py-1 rounded-full text-[12px] font-medium" style={{ background: T.cinza, color: T.textMute }}>
-                      {role}
-                    </span>
-                  ))}
-                </div>
+              <div className="px-6 py-5">
+                <TeamSection />
               </div>
             </div>
           )}

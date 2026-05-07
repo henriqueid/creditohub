@@ -361,7 +361,8 @@ export default function Prospects() {
               onStartAnalysis={() => startAnalysis.mutate(p)}
               onDiscard={() => requestDiscard(p)}
               onReconsult={() => navigate(`/consulta?doc=${p.documento}`)}
-              onSeeClient={p.client_id ? () => navigate(`/crm/cliente/${p.client_id}`) : undefined}
+              onSeeClient={p.client_id ? () => navigate(`/cedentes/${p.client_id}/perfil`) : undefined}
+              onOpenDetail={() => navigate(`/prospects/${p.id}`)}
             />
           ))}
         </div>
@@ -477,6 +478,7 @@ function ProspectCard({
   onDiscard,
   onReconsult,
   onSeeClient,
+  onOpenDetail,
 }: {
   prospect: Prospect;
   index: number;
@@ -488,6 +490,7 @@ function ProspectCard({
   onDiscard: () => void;
   onReconsult: () => void;
   onSeeClient?: () => void;
+  onOpenDetail?: () => void;
 }) {
   const anyBusy = busyMove || busyAnalysis || busyDiscard;
   const status = STATUS_CFG[p.qualification_status] || STATUS_CFG.pending;
@@ -526,8 +529,12 @@ function ProspectCard({
         opacity: expired ? 0.78 : 1,
       }}
     >
-      {/* Header */}
-      <div className="px-5 pt-4 pb-3 flex items-start gap-3" style={{ borderBottom: `1px solid ${T.border}` }}>
+      {/* Header — clica no nome pra abrir detalhe */}
+      <div
+        className={`px-5 pt-4 pb-3 flex items-start gap-3 ${onOpenDetail ? "cursor-pointer hover:bg-[rgba(10,21,56,0.02)]" : ""} transition-colors`}
+        style={{ borderBottom: `1px solid ${T.border}` }}
+        onClick={onOpenDetail}
+      >
         <div
           className="rounded-[10px] flex items-center justify-center flex-shrink-0"
           style={{ width: 38, height: 38, background: `${status.color}15`, color: status.color }}

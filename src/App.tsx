@@ -22,6 +22,7 @@ import ConsultaCPFCNPJ from "@/pages/ConsultaCPFCNPJ";
 import Blacklist from "@/pages/Blacklist";
 import Settings from "@/pages/Settings";
 import Prospects from "@/pages/Prospects";
+import ProspectDetail from "@/pages/ProspectDetail";
 import Profile from "@/pages/Profile";
 import CRMPipeline from "@/pages/CRMPipeline";
 import CRMContacts from "@/pages/CRMContacts";
@@ -75,6 +76,7 @@ const App = () => (
                 <Route path="/comite/:id" element={<CommitteeVoting />} />
                 <Route path="/consulta" element={<ConsultaCPFCNPJ />} />
                 <Route path="/prospects" element={<Prospects />} />
+                <Route path="/prospects/:id" element={<ProspectDetail />} />
                 <Route path="/monitoramento-nfs" element={<InvoiceMonitoring />} />
                 <Route path="/falimentar" element={<BankruptcyReport />} />
                 <Route path="/blacklist" element={<Blacklist />} />
