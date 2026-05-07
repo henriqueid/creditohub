@@ -9,7 +9,7 @@
 > - `README.md` → setup e overview pra humano
 > - `RUNBOOK.md` (este) → mapa operacional do projeto
 
-**Última atualização:** 2026-05-09
+**Última atualização:** 2026-05-07
 
 ---
 
@@ -22,6 +22,8 @@
 - [RLS & Multi-tenancy](#rls--multi-tenancy)
 - [Rotas & Mapa de telas](#rotas--mapa-de-telas)
 - [Fluxo do funil](#fluxo-do-funil)
+- [Pipeline CRM](#pipeline-crm)
+- [Dossiê de análise](#dossiê-de-análise)
 - [Edge functions](#edge-functions)
 - [AI integration (Claude)](#ai-integration-claude)
 - [External APIs](#external-apis)
@@ -144,7 +146,9 @@ supabase/
 | `credit_analysis_socios` | Sócios da análise | credit_analysis_id (CASCADE) |
 | `credit_analysis_attachments` | Anexos | credit_analysis_id (CASCADE) |
 | `credit_analysis_insights` | Insights da IA Claude | credit_analysis_id (CASCADE) |
-| `credit_committee` | Votos individuais do comitê | credit_analysis_id (CASCADE) |
+| `credit_analysis_revenue` | Faturamento mensal estruturado (year, month, revenue numeric(15,2)) | credit_analysis_id (CASCADE), tenant_id via trigger |
+| `credit_committee` | Votos individuais do comitê (com `voter_id`, `is_locked`) | credit_analysis_id (CASCADE), voter_id → auth.users |
+| `committee_members` | Membros do comitê por tenant (role: voter/chair/observer, active) | tenant_id, user_id |
 | `committee_result` | Decisão final do comitê (limite, prazo) | credit_analysis_id (CASCADE) |
 | `contacts` | Contatos do cliente | tenant_id, client_id |
 | `activities` | Atividades CRM | tenant_id, client_id |
@@ -175,6 +179,20 @@ supabase/
 import { ANALYSIS_STATUS } from "@/lib/analysis-status";
 // Use ANALYSIS_STATUS.draft em vez de "draft" (string literal)
 ```
+
+### Migrations 20260507 (pacotes 4 e 5) — pendentes de aplicação manual
+
+`supabase/migrations/20260507_pacote4_campos_financeiros.sql`:
+- `credit_analysis.margem_liquida | indice_liquidez | endividamento`: text → `numeric(8,4)` (decimal: `0.1234` = 12.34%)
+- Antes de rodar, valide: `SELECT margem_liquida FROM credit_analysis WHERE margem_liquida ~ '[^0-9.\-]' AND margem_liquida <> '';`
+- Cria `credit_analysis_revenue` com RLS tenant-scoped + trigger pra preencher `tenant_id` do parent
+- `historico_pagamentos` segue `text` (tradeoff documentado)
+
+`supabase/migrations/20260507_pacote5_comite_profissional.sql`:
+- Cria `committee_members` (admin gerencia)
+- `credit_committee` ganha `voter_id UUID` (auth.users) + `is_locked boolean`. Policy UPDATE: `is_locked = false AND (voter_id = auth.uid() OR is_admin)`
+- `credit_analysis` ganha: `committee_override_by`, `committee_override_reason`, `committee_override_at`, `committee_calculated_decision`
+- RPC `finalize_committee(p_analysis_id, p_final_decision, p_override_reason)` SECURITY DEFINER
 
 ---
 
@@ -233,13 +251,14 @@ CREATE POLICY "<tabela>_delete" ON public.<tabela>
 | `/` | Dashboard | — | Painel inicial: alertas, KPIs, top cedentes |
 | `/auth` | Auth | — | Login/signup/forgot |
 | `/perfil` | Profile | — | Conta + chave Anthropic |
-| `/configuracoes` | Settings | — | Empresa, políticas, requisitos comitê, automações, integrações, acessos |
+| `/configuracoes` | Settings | — | Empresa, políticas, requisitos comitê, automações, integrações, acessos, **membros do comitê** (CRUD admin) |
 | `/configuracoes/motor` | CreditEngineSettings | — | Pesos do motor |
 | `/configuracoes/bureaus` | BureauSettings | — | Bureaus configurados |
 | `/consulta` | ConsultaCPFCNPJ | Comercial | Busca CNPJ (BrasilAPI + bureau + base) |
 | `/prospects` | Prospects | Comercial | Inbox de leads pré-qualificados |
 | `/crm/dashboard` | CRMDashboard | Comercial | Painel comercial (funil + ranking) |
 | `/crm/pipeline` | CRMPipeline | Comercial | Kanban de deals (DnD) |
+| `/crm/deal/:id` | DealDetail | Comercial | Página dedicada de deal (mesmo conteúdo que `DealDetailSheet`) |
 | `/crm/contatos` | CRMContacts | Comercial | Lista de contatos |
 | `/crm/atividades` | CRMActivities | Comercial | Atividades |
 | `/crm/tarefas` | CRMTasks | Comercial | Tarefas |
@@ -289,6 +308,52 @@ Análise (/analises) → arrasta análise entre estágios:
 Sync bidirecional: análise muda status → deal vinculado é movido pro stage correspondente
 (função findDealStageForAnalysisStatus em lib/analysis-status.ts)
 ```
+
+### Comitê — finalização via RPC
+
+- `finalize_committee(p_analysis_id, p_final_decision, p_override_reason)` calcula a decisão dos votos:
+  - reject majoritário → `rejected`
+  - approve majoritário sem restrict → `approved`
+  - approve+restrict > reject → `approved_restricted`
+  - senão → `rejected` (conservador)
+- Se `p_final_decision` diverge do calculado → exige `p_override_reason` (e `is_admin`); grava em `committee_override_*`
+- Trava todos os votos do comitê (`is_locked = true`)
+- Registra evento `'finalize_committee'` em `audit_log` com diff de status + votos
+- Retorna `{ ok, was_override, calculated, final }`
+
+### Edição de voto
+
+- Voto próprio é editável enquanto `is_locked = false` (botão "Editar" em `CommitteeVoting`); badge "Travado" se travado
+- Insert de voto inclui `voter_id: auth.uid()`
+- Após `finalize_committee`, votos ficam imutáveis pra todos
+- Override admin: accordion no UI com `reason` obrigatória; tarja amber no topo se análise teve override
+
+---
+
+## Pipeline CRM
+
+- **LOSS_REASONS** (enum frontend): `preco | prazo | concorrencia | sem_fit | cliente_desistiu | outro`. Dialog obrigatório ao arrastar deal pra estágio "Perdido" — grava `lost_reason` no deal.
+- **Vincular análise**: botão em deal card abre dialog listando análises do mesmo cliente (atribui `credit_analysis_id`).
+- **Probabilidade**: slider 0-100 step 5 em `NewDealDialog` (default 50). Pill colorido no card: mint ≥70, amber ≥40, mute <40.
+- **DealDetail**:
+  - `pages/DealDetail.tsx` em `/crm/deal/:id` (página dedicada)
+  - `DealDetailSheet` (drawer 640px à direita) reusa `DealDetailContent` compartilhado
+  - Abrir do Pipeline = drawer; link direto = página
+
+---
+
+## Dossiê de análise
+
+`CreditAnalysisForm` (`/analises/:id`) — blocos relevantes:
+
+- **Operacional → mini-bloco "Patrimonial"**: `tipo_imovel_sede`
+- **Análise Financeira (ou seção Financeira)**: `capital_social`, `receita_liquida` (migrados pra cá), além de `margem_liquida | indice_liquidez | endividamento` agora numéricos decimais
+- **Tempo de atividade**: derivado de `clients.data_fundacao` (não é mais input livre)
+- **Faturamento mensal**: estruturado via `credit_analysis_revenue` (year, month, revenue) — substitui texto livre
+
+`useCommitteeRequirements.ts`:
+- Bloco "Financeira" inclui `capital_social` e `receita_liquida` na verificação de prontidão
+- `COMMITTEE_FIELD_OPTIONS` reflete a nova organização
 
 ---
 
@@ -437,7 +502,7 @@ T.white        = "#FFFFFF"
 
 1. **Cada transição no funil é decisão humana** — sistema não promove automaticamente (Consulta → Prospect → Pipeline → Análise → Comitê → Portfólio).
 2. **Análise nasce sempre vinculada a um cliente** — botão "Nova análise" foi removido em favor de "+ Nova consulta" com bypass condicional.
-3. **Comitê é inviolável** — análise em status `in_committee+` só muda via tela de votação.
+3. **Comitê é inviolável** — análise em status `in_committee+` só muda via `finalize_committee` (RPC). Override de admin exige `reason` e fica registrado em `committee_override_*` + `audit_log` (evento `'finalize_committee'` com diff de status + votos).
 4. **AI key por usuário** — não há chave compartilhada do tenant. Cada user paga seus créditos.
 5. **Multi-tenancy** — tenant default `00000000-0000-0000-0000-000000000001` pra dev/teste; novos users entram nele automaticamente.
 6. **Mobile** — tablet (768+) é experiência completa; smartphone (<640) é read-only com overlay no dossiê.
@@ -451,9 +516,14 @@ T.white        = "#FFFFFF"
 
 ## Pendências conhecidas
 
+### Migrations a rodar manualmente no Supabase Studio
+
+- `supabase/migrations/20260507_pacote4_campos_financeiros.sql` — campos financeiros numéricos + `credit_analysis_revenue`. **Validar dados não-numéricos antes** (ver query na seção Schema).
+- `supabase/migrations/20260507_pacote5_comite_profissional.sql` — `committee_members`, `voter_id`, `is_locked`, override fields, RPC `finalize_committee`.
+
 ### Bugs/débitos técnicos
 
-- `types.ts` desatualizado — `monthly_volume`, `prospect_id`, `anthropic_api_key` não estão tipados (frontend usa `as any`). Regenerar com `npx supabase gen types typescript`.
+- `types.ts` desatualizado — `monthly_volume`, `prospect_id`, `anthropic_api_key` não estão tipados (frontend usa `as any`). Regenerar com `npx supabase gen types typescript`. Após rodar migrations 20260507, regenerar pra pegar `committee_members`, `credit_analysis_revenue`, novas colunas.
 - Versões mistas de `@supabase/supabase-js` em edge functions — deve estar tudo `2.49.4` agora (padronizado).
 - Bundle size 1.8MB — code splitting com `React.lazy` foi feito pra rotas frias, mas hot paths (Dashboard, CRMPipeline, etc.) são eager.
 - Audit_log RLS — policies tenant-scoped em vigor, mas vale verificar histórico de acesso do período pré-2026-04-28.
