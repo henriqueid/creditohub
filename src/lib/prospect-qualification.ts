@@ -61,7 +61,10 @@ export async function qualifyProspect(input: QualificationInput): Promise<Qualif
 
   const typedRules = (rules || []) as CreditEngineRule[];
 
-  let score = 50; // Base score
+  // Score começa em 0 — só sobe com sinais positivos concretos (creditScore,
+  // análise aprovada, faturamento, cliente já cadastrado). Sem dados,
+  // permanece 0 e cai em "not_qualified" (não em "pending neutro").
+  let score = 0;
   const reasons: string[] = [];
   const positives: string[] = [];
 
@@ -74,6 +77,24 @@ export async function qualifyProspect(input: QualificationInput): Promise<Qualif
       reasons: ["Documento consta na blacklist"],
       positives: [],
       suggestedAction: "Documento bloqueado — não prosseguir",
+    };
+  }
+
+  // Sinais mínimos pra calcular score: creditScore, análise prévia, faturamento OU já é cliente.
+  // Sem nada disso, retorna pending sem score artificial (em vez de fingir um 50 base).
+  const hasAnySignal =
+    input.creditScore != null ||
+    input.analysisStatus != null ||
+    (input.faturamentoMedio != null && input.faturamentoMedio > 0) ||
+    !!input.clientId;
+  if (!hasAnySignal) {
+    return {
+      status: "pending",
+      score: 0,
+      riskLevel: "unknown",
+      reasons: ["Sem dados de crédito — consulte bureau ou aguarde análise"],
+      positives: [],
+      suggestedAction: "Sem score: dispare uma consulta ou inicie análise pra qualificar",
     };
   }
 

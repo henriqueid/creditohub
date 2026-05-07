@@ -441,12 +441,23 @@ export default function CreditAnalysisForm() {
   }, [analysis]);
 
   // Pre-select cedente from URL param (e.g. /analises/nova?client_id=X)
+  // Bloqueia análise vazia: se rota /analises/nova for acessada sem client_id,
+  // redireciona pra Cedentes (precisa selecionar quem analisar antes).
   useEffect(() => {
     if (!isEditing) {
       const cid = searchParams.get("client_id");
-      if (cid) setClientId(cid);
+      if (cid) {
+        setClientId(cid);
+      } else {
+        toast({
+          title: "Análise precisa de um cedente",
+          description: "Escolha um cedente ou cadastre um novo antes de iniciar a análise.",
+          variant: "destructive",
+        });
+        navigate("/cedentes", { replace: true });
+      }
     }
-  }, [isEditing, searchParams]);
+  }, [isEditing, searchParams, navigate]);
 
   // Se o cedente escolhido já tem análise em andamento (draft / em comitê),
   // redireciona pra ela em vez de criar duplicada.

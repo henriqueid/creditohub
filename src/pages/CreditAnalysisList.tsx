@@ -55,7 +55,6 @@ export default function CreditAnalysisList() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [readinessAlert, setReadinessAlert] = useState<{ analysisId: string; missing: string[] } | null>(null);
-  const [bypassConfirmOpen, setBypassConfirmOpen] = useState(false);
   const { data: committeeRequiredFields } = useCommitteeRequirements();
   const requiredKeys = committeeRequiredFields ?? DEFAULT_REQUIRED_FIELDS;
 
@@ -163,20 +162,20 @@ export default function CreditAnalysisList() {
         title="Análises de Crédito"
         subtitle={`${analyses.length} ANÁLISES · ARRASTE PARA MOVER ETAPA`}
         actions={
-          <div className="flex flex-col items-end gap-1">
+          <div className="flex gap-2">
+            <button
+              onClick={() => navigate("/cedentes")}
+              className="px-[14px] py-[9px] rounded-[999px] text-[13px] font-medium transition-colors hover:bg-[#F0F1EB]"
+              style={{ border: `1px solid ${T.borderStrong}`, color: T.text }}
+            >
+              Ver cedentes
+            </button>
             <button
               onClick={() => navigate("/consulta")}
               className="px-[14px] py-[9px] rounded-[999px] text-[13px] font-medium text-white transition-opacity hover:opacity-90"
               style={{ background: "var(--marinho)" }}
             >
               + Nova consulta
-            </button>
-            <button
-              onClick={() => setBypassConfirmOpen(true)}
-              className="text-[10px] font-mono uppercase tracking-wider transition-colors hover:underline"
-              style={{ color: T.textFaint }}
-            >
-              Pular e criar análise vazia
             </button>
           </div>
         }
@@ -343,47 +342,6 @@ export default function CreditAnalysisList() {
           </div>
         </DragDropContext>
       )}
-
-      <AlertDialog open={bypassConfirmOpen} onOpenChange={setBypassConfirmOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Criar análise sem consulta prévia?</AlertDialogTitle>
-            <AlertDialogDescription asChild>
-              <div className="space-y-2 text-[13px]">
-                <p>
-                  Análises normalmente partem de uma consulta de CNPJ. O fluxo padrão é:
-                </p>
-                <p style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: T.textMute, paddingLeft: 12 }}>
-                  Consulta → Prospect (qualificação) → Cedente → Análise
-                </p>
-                <p>
-                  Pular esses passos significa criar a análise <strong>sem dados pré-preenchidos</strong> da Receita/bureau.
-                  Você terá que digitar tudo manualmente.
-                </p>
-                <p style={{ color: T.textMute }}>
-                  Use só quando o cedente já está cadastrado e você quer analisar de novo do zero.
-                </p>
-              </div>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Voltar</AlertDialogCancel>
-            <button
-              onClick={() => { setBypassConfirmOpen(false); navigate("/consulta"); }}
-              className="px-4 py-2 rounded-[8px] text-[13px] font-medium text-white"
-              style={{ background: T.marinho }}
-            >
-              Ir para consulta
-            </button>
-            <AlertDialogAction
-              onClick={() => { setBypassConfirmOpen(false); navigate("/analises/nova"); }}
-              style={{ background: T.amber, color: T.marinho }}
-            >
-              Criar análise vazia
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       <AlertDialog open={!!readinessAlert} onOpenChange={(o) => !o && setReadinessAlert(null)}>
         <AlertDialogContent>

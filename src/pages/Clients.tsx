@@ -681,10 +681,20 @@ export default function Clients() {
                     </TableCell>
                     <TableCell>{formatDate(client.created_at)}</TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-0.5">
-                        <Button variant="ghost" size="icon" className="h-8 w-8" title="Perfil 360°" onClick={(e) => { e.stopPropagation(); navigate(`/cedentes/${client.id}/perfil`); }}>
-                          <Building2 className="h-4 w-4" />
-                        </Button>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); navigate(`/cedentes/${client.id}/perfil`); }}
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-[6px] text-[12px] font-medium transition-colors"
+                          style={{
+                            background: `${T.esmeralda}12`,
+                            color: T.esmeralda,
+                            border: `1px solid ${T.esmeralda}30`,
+                          }}
+                          title="Perfil 360° (cadastro, análises, contatos, deals)"
+                        >
+                          <Building2 className="h-3.5 w-3.5" />
+                          Perfil
+                        </button>
                         <Button variant="ghost" size="icon" className="h-8 w-8" title="Histórico" onClick={(e) => { e.stopPropagation(); navigate(`/cedentes/${client.id}/historico`); }}>
                           <History className="h-4 w-4" />
                         </Button>

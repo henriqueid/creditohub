@@ -19,8 +19,9 @@ import { formatCNPJorCPF, formatBRL, formatDate, statusLabels } from "@/lib/form
 import {
   Building2, Edit, FileText, BarChart3, Users, Receipt, Activity,
   CheckSquare, ExternalLink, MapPin, Calendar, Briefcase, Loader2,
-  ArrowRight, AlertTriangle, TrendingUp, Workflow, Sparkles,
+  ArrowRight, AlertTriangle, TrendingUp, Workflow, Sparkles, Contact as ContactIcon,
 } from "lucide-react";
+import { ContactsSection } from "@/components/cedente/ContactsSection";
 
 function getTier(score: number | null) {
   if (!score) return null;
@@ -247,6 +248,10 @@ export default function CedenteProfile() {
             <Row label="Segmento" value={client.segmento || "—"} />
             <Row label="Fundação" value={client.data_fundacao ? formatDate(client.data_fundacao) : "—"} />
             <Row label="Local" value={client.cidade && client.estado ? `${client.cidade}/${client.estado}` : "—"} />
+          </Section>
+
+          <Section title="Contatos" icon={ContactIcon}>
+            <ContactsSection clientId={id!} />
           </Section>
 
           <Section title={`Sócios (${socios.length})`} icon={Users}>
