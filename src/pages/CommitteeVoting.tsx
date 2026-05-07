@@ -186,28 +186,31 @@ export default function CommitteeVoting() {
     },
   });
 
-  const calculateResult = (): Database["public"]["Enums"]["credit_status"] => {
+  const calculateResult = (): { decision: Database["public"]["Enums"]["credit_status"]; isTie: boolean; counts: { approve: number; restrict: number; reject: number } } => {
     const counts = { approve: 0, restrict: 0, reject: 0 };
     votes.forEach((v) => counts[v.vote]++);
     const max = Math.max(counts.approve, counts.restrict, counts.reject);
-    // Regra de empate: se nenhum voto tem maioria estrita (> totalMembers/2),
-    // OU se há empate entre os top votos, decisão prudente é aprovar com restrição.
-    // Comitê deve revotar caso queira approve/reject puro.
     const tied = Object.values(counts).filter((v) => v === max).length > 1;
     const hasStrictMajority = max > totalMembers / 2;
     if (tied || !hasStrictMajority) {
-      console.warn("[CommitteeVoting] Sem maioria estrita ou empate detectado — aplicando decisão prudente (approved_restricted)", { counts, totalMembers });
-      return "approved_restricted";
+      return { decision: "approved_restricted", isTie: true, counts };
     }
-    if (counts.reject === max) return "rejected";
-    if (counts.restrict === max) return "approved_restricted";
-    if (counts.approve === max) return "approved";
-    return "approved_restricted";
+    if (counts.reject === max) return { decision: "rejected", isTie: false, counts };
+    if (counts.restrict === max) return { decision: "approved_restricted", isTie: false, counts };
+    if (counts.approve === max) return { decision: "approved", isTie: false, counts };
+    return { decision: "approved_restricted", isTie: false, counts };
   };
 
   const finalizeMutation = useMutation({
     mutationFn: async () => {
-      const decision = calculateResult();
+      const { decision, isTie } = calculateResult();
+      if (isTie) {
+        // Aviso explícito ao analista — empate aplica decisão prudente automaticamente
+        toast({
+          title: "Sem maioria estrita — decisão prudente aplicada",
+          description: "Aprovado com restrição por padrão de prudência. Pra revotar, registre mais votos antes de finalizar.",
+        });
+      }
       const { error: resultError } = await supabase.from("committee_result").insert({
         credit_analysis_id: id!,
         limite_aprovado: limiteAprovado ? parseFloat(limiteAprovado) : null,
@@ -657,7 +660,19 @@ export default function CommitteeVoting() {
                       <CheckCircle className="h-4 w-4 text-status-approved" /> Finalizar Decisão
                     </CardTitle>
                     <CardDescription className="text-xs">
-                      Resultado por maioria: <strong>{statusLabels[calculateResult()]}</strong>
+                      {(() => {
+                        const r = calculateResult();
+                        return (
+                          <>
+                            Resultado por maioria: <strong>{statusLabels[r.decision]}</strong>
+                            {r.isTie && (
+                              <span className="block mt-1.5 px-2 py-1 rounded text-[11px]" style={{ background: "rgba(217,163,0,0.10)", color: "#7A5B00", border: "1px solid rgba(217,163,0,0.25)" }}>
+                                ⚠️ Sem maioria estrita ({r.counts.approve}A · {r.counts.restrict}R · {r.counts.reject}X) — decisão prudente aplicada. Registre mais votos pra confirmar.
+                              </span>
+                            )}
+                          </>
+                        );
+                      })()}
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-3">

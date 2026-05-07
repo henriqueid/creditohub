@@ -469,10 +469,10 @@ export default function CRMClientProfile() {
                 {tasks.length === 0 ? <Empty msg="Nenhuma tarefa" /> : tasks.slice(0, 6).map((t) => (
                   <div key={t.id} className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/40 transition-colors">
                     <div className={`h-2 w-2 rounded-full shrink-0 ${
-                      t.status === "done" ? "bg-status-approved" : t.status === "in_progress" ? "bg-status-committee" : "bg-muted-foreground/40"
+                      t.status === "completed" ? "bg-status-approved" : t.status === "in_progress" ? "bg-status-committee" : "bg-muted-foreground/40"
                     }`} />
                     <div className="flex-1 min-w-0">
-                      <p className={`text-sm truncate ${t.status === "done" ? "line-through text-muted-foreground" : "font-medium"}`}>{t.title}</p>
+                      <p className={`text-sm truncate ${t.status === "completed" ? "line-through text-muted-foreground" : "font-medium"}`}>{t.title}</p>
                       <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
                         {t.priority === "high" && <span className="text-destructive font-medium">Alta</span>}
                         {t.due_date && <span>{formatDate(t.due_date)}</span>}

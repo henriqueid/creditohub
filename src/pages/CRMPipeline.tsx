@@ -8,13 +8,19 @@ import { toast } from "sonner";
 import {
   Plus, ChevronRight, Trophy, XCircle, FileSearch,
   ShieldCheck, ShieldAlert, ShieldX, AlertTriangle,
-  Calendar, User, TrendingUp,
+  Calendar, User, TrendingUp, Link2,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import { PageHeader } from "@/components/trilho/PageHeader";
 import { NewDealDialog } from "@/components/crm/NewDealDialog";
+import { DealDetailSheet } from "@/components/crm/DealDetailSheet";
 import { DragDropContext, Droppable, Draggable, type DropResult } from "@hello-pangea/dnd";
+
+const LOSS_REASONS = ["preço", "prazo", "concorrência", "sem fit", "cliente desistiu", "outro"] as const;
+type LossReason = typeof LOSS_REASONS[number];
 
 interface Deal {
   id: string;
@@ -72,6 +78,13 @@ export default function CRMPipeline() {
   const [guardDialog, setGuardDialog] = useState<{
     open: boolean; dealId: string; stageId: string; stageName: string; reason: string;
   } | null>(null);
+  const [lossDialog, setLossDialog] = useState<{
+    open: boolean; dealId: string; stageId: string; stageName: string;
+  } | null>(null);
+  const [lossReason, setLossReason] = useState<LossReason>("preço");
+  const [lossNote, setLossNote] = useState("");
+  const [linkDialog, setLinkDialog] = useState<{ open: boolean; deal: Deal } | null>(null);
+  const [detailDealId, setDetailDealId] = useState<string | null>(null);
 
   const { data: stages = [] } = useQuery({
     queryKey: ["deal-stages"],
@@ -113,8 +126,10 @@ export default function CRMPipeline() {
   }, {});
 
   const moveDeal = useMutation({
-    mutationFn: async ({ dealId, stageId }: { dealId: string; stageId: string }) => {
-      const { error } = await supabase.from("deals").update({ stage_id: stageId }).eq("id", dealId);
+    mutationFn: async ({ dealId, stageId, lossReason }: { dealId: string; stageId: string; lossReason?: string | null }) => {
+      const payload: Record<string, unknown> = { stage_id: stageId };
+      if (lossReason !== undefined) payload.loss_reason = lossReason;
+      const { error } = await supabase.from("deals").update(payload).eq("id", dealId);
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["deals"] }),
@@ -158,6 +173,9 @@ export default function CRMPipeline() {
     if (deal.credit_analysis_id && analysisById[deal.credit_analysis_id]) return analysisById[deal.credit_analysis_id];
     return latestAnalysisByClient[deal.client_id] || null;
   };
+
+  const getClientAnalyses = (clientId: string): CreditAnalysis[] =>
+    creditAnalyses.filter(a => a.client_id === clientId);
 
   return (
     <div className="flex flex-col" style={{ minHeight: "calc(100vh - 68px)", background: "var(--off)" }}>
@@ -233,6 +251,20 @@ export default function CRMPipeline() {
             if (destination.droppableId === source.droppableId) return;
 
             const targetStage = stages.find(s => s.id === destination.droppableId);
+
+            // Se destino é "Perdido", abre dialog de motivo antes de mover
+            if (targetStage?.is_lost) {
+              setLossReason("preço");
+              setLossNote("");
+              setLossDialog({
+                open: true,
+                dealId: draggableId,
+                stageId: destination.droppableId,
+                stageName: targetStage.name,
+              });
+              return;
+            }
+
             const linked = analysisById[deals.find(d => d.id === draggableId)?.credit_analysis_id || ""];
             const requiresApproval = !!targetStage && (
               /proposta|negocia|fechamento/i.test(targetStage.name)
@@ -322,6 +354,9 @@ export default function CRMPipeline() {
                                 stages={activeStages}
                                 currentStage={stage}
                                 analysis={getAnalysis(deal)}
+                                clientAnalyses={getClientAnalyses(deal.client_id)}
+                                onOpenDetail={() => setDetailDealId(deal.id)}
+                                onLinkAnalysis={() => setLinkDialog({ open: true, deal })}
                                 onMove={(stageId) => {
                                   const target = stages.find(s => s.id === stageId);
                                   const requiresApproval = !!target && /proposta|negocia|fechamento/i.test(target.name);
@@ -406,6 +441,136 @@ export default function CRMPipeline() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Loss reason dialog */}
+      <AlertDialog open={!!lossDialog?.open} onOpenChange={(o) => !o && setLossDialog(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <XCircle className="h-5 w-5" style={{ color: T.danger }} />
+              Marcar oportunidade como perdida
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Registre o motivo da perda para análise futura do funil.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-3 py-2">
+            <div>
+              <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.10em", color: T.textMute, marginBottom: 8 }}>
+                Motivo
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {LOSS_REASONS.map(reason => (
+                  <button
+                    key={reason}
+                    type="button"
+                    onClick={() => setLossReason(reason)}
+                    className="px-3 py-2 rounded-[8px] text-[12px] font-medium transition-all text-left capitalize"
+                    style={{
+                      background: lossReason === reason ? T.marinho : T.white,
+                      color: lossReason === reason ? T.white : T.text,
+                      border: `1px solid ${lossReason === reason ? T.marinho : T.border}`,
+                    }}
+                  >
+                    {reason}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {lossReason === "outro" && (
+              <div>
+                <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.10em", color: T.textMute, marginBottom: 6 }}>
+                  Detalhes
+                </p>
+                <Textarea
+                  value={lossNote}
+                  onChange={e => setLossNote(e.target.value)}
+                  placeholder="Descreva o motivo da perda..."
+                  rows={3}
+                />
+              </div>
+            )}
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (lossDialog) {
+                  const finalReason = lossReason === "outro"
+                    ? `outro${lossNote.trim() ? `: ${lossNote.trim()}` : ""}`
+                    : lossReason;
+                  moveDeal.mutate({ dealId: lossDialog.dealId, stageId: lossDialog.stageId, lossReason: finalReason });
+                }
+                setLossDialog(null);
+              }}
+              style={{ background: T.danger }}
+            >
+              Marcar como perdida
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Link analysis dialog */}
+      <Dialog open={!!linkDialog?.open} onOpenChange={(o) => !o && setLinkDialog(null)}>
+        <DialogContent className="max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Vincular análise existente</DialogTitle>
+            <DialogDescription>
+              Selecione uma análise de crédito do cedente <strong>{linkDialog?.deal.clients?.razao_social}</strong> para vincular a esta oportunidade.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1">
+            {linkDialog && getClientAnalyses(linkDialog.deal.client_id).length === 0 && (
+              <p style={{ fontSize: 12, color: T.textMute, padding: "16px 0", textAlign: "center" }}>
+                Nenhuma análise encontrada para este cedente.
+              </p>
+            )}
+            {linkDialog && getClientAnalyses(linkDialog.deal.client_id).map(a => {
+              const cfg = STATUS_CONFIG[a.status];
+              const Icon = cfg?.icon || FileSearch;
+              return (
+                <button
+                  key={a.id}
+                  type="button"
+                  onClick={() => {
+                    linkAnalysis.mutate({ dealId: linkDialog.deal.id, analysisId: a.id });
+                    setLinkDialog(null);
+                  }}
+                  className="w-full flex items-center justify-between gap-3 px-3 py-3 rounded-[10px] transition-all hover:shadow-[0_4px_14px_rgba(10,21,56,0.10)] text-left"
+                  style={{ background: T.white, border: `1px solid ${T.border}` }}
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div
+                      className="flex items-center justify-center flex-shrink-0"
+                      style={{ width: 32, height: 32, borderRadius: 8, background: cfg?.bg || T.cinza }}
+                    >
+                      <Icon style={{ width: 14, height: 14, color: cfg?.fg || T.textMute }} />
+                    </div>
+                    <div className="min-w-0">
+                      <p style={{ fontSize: 12, fontWeight: 600, color: T.text }}>
+                        {cfg?.label || a.status}
+                      </p>
+                      <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: T.textMute, marginTop: 2 }}>
+                        {a.credit_score != null && <>SCORE {a.credit_score} · </>}
+                        {a.limite_sugerido != null && <>{formatBRL(a.limite_sugerido)}</>}
+                      </p>
+                    </div>
+                  </div>
+                  <Link2 style={{ width: 14, height: 14, color: T.esmeralda, flexShrink: 0 }} />
+                </button>
+              );
+            })}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Detail sheet */}
+      <DealDetailSheet
+        dealId={detailDealId}
+        open={!!detailDealId}
+        onOpenChange={(o) => !o && setDetailDealId(null)}
+      />
     </div>
   );
 }
@@ -413,14 +578,17 @@ export default function CRMPipeline() {
 /* ── Deal Card ──────────────────────────────────────────────────── */
 
 function DealCard({
-  deal, stages, currentStage, analysis, onMove, onStartAnalysis,
+  deal, stages, currentStage, analysis, clientAnalyses, onMove, onStartAnalysis, onOpenDetail, onLinkAnalysis,
 }: {
   deal: Deal;
   stages: Stage[];
   currentStage: Stage;
   analysis: CreditAnalysis | null;
+  clientAnalyses: CreditAnalysis[];
   onMove: (stageId: string) => void;
   onStartAnalysis: () => void;
+  onOpenDetail: () => void;
+  onLinkAnalysis: () => void;
 }) {
   const navigate = useNavigate();
   const nextStage = stages.find(s => s.order === currentStage.order + 1);
@@ -428,21 +596,52 @@ function DealCard({
   const StatusIcon = statusCfg?.icon || FileSearch;
   const score = analysis?.credit_score ?? null;
   const noAnalysis = !analysis;
+  const notLinked = !deal.credit_analysis_id;
+  const hasAvailableAnalyses = notLinked && clientAnalyses.length > 0;
   const isHighValue = (deal.value || 0) > 50000;
+  const probability = deal.probability ?? null;
+  const probColor = probability == null
+    ? T.textFaint
+    : probability >= 70 ? T.esmeralda : probability >= 40 ? T.amber : T.textMute;
+  const probBg = probability == null
+    ? T.cinza
+    : probability >= 70 ? "rgba(0,212,154,0.10)" : probability >= 40 ? "rgba(217,163,0,0.10)" : "rgba(10,21,56,0.05)";
 
   return (
     <div
       className="rounded-[10px] cursor-pointer transition-all hover:shadow-[0_4px_14px_rgba(10,21,56,0.10)] hover:-translate-y-[1px]"
       style={{ background: T.white, border: `1px solid ${T.border}` }}
-      onClick={() => navigate(`/crm/cliente/${deal.client_id}`)}
+      onClick={onOpenDetail}
     >
       {/* Card body */}
       <div className="p-[10px]">
-        {/* Título + badge de análise */}
+        {/* Título + badge de análise + probabilidade */}
         <div className="flex items-start justify-between gap-1 mb-[6px]">
           <p style={{ fontSize: 12, fontWeight: 600, color: T.text, lineHeight: 1.3, flex: 1 }}>
             {deal.title}
           </p>
+          <div className="flex items-center gap-1 flex-shrink-0">
+            {probability != null && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span
+                    className="px-[6px] py-[2px] rounded-[5px] tabular-nums"
+                    style={{
+                      fontFamily: "var(--font-mono)",
+                      fontSize: 9,
+                      fontWeight: 700,
+                      color: probColor,
+                      background: probBg,
+                    }}
+                  >
+                    {probability}%
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent side="left" className="text-xs">
+                  Probabilidade de fechamento
+                </TooltipContent>
+              </Tooltip>
+            )}
           {statusCfg && (
             <Tooltip>
               <TooltipTrigger asChild>
@@ -463,6 +662,7 @@ function DealCard({
               </TooltipContent>
             </Tooltip>
           )}
+          </div>
         </div>
 
         {/* Cliente */}
@@ -547,20 +747,34 @@ function DealCard({
         style={{ borderTop: `1px solid ${T.border}` }}
         onClick={e => e.stopPropagation()}
       >
-        {noAnalysis && (
+        {noAnalysis && !hasAvailableAnalyses && (
           <button
-            className="flex-1 flex items-center justify-center gap-1 py-[7px] text-[10px] font-semibold transition-colors hover:bg-[#FFF6DC] rounded-bl-[10px]"
-            style={{ color: "#7A5B00", borderRight: `1px solid ${T.border}` }}
+            className="flex-1 flex items-center justify-center gap-1 py-[7px] text-[10px] font-semibold transition-colors hover:bg-[#FFF6DC]"
+            style={{ color: "#7A5B00", borderRight: `1px solid ${T.border}`, borderBottomLeftRadius: 10 }}
             onClick={onStartAnalysis}
           >
             <FileSearch style={{ width: 11, height: 11 }} />
             Iniciar análise
           </button>
         )}
+        {hasAvailableAnalyses && (
+          <button
+            className="flex-1 flex items-center justify-center gap-1 py-[7px] text-[10px] font-semibold transition-colors hover:bg-[rgba(0,212,154,0.06)]"
+            style={{ color: T.esmeralda, borderRight: `1px solid ${T.border}`, borderBottomLeftRadius: 10 }}
+            onClick={onLinkAnalysis}
+          >
+            <Link2 style={{ width: 11, height: 11 }} />
+            Vincular análise
+          </button>
+        )}
         {nextStage && (
           <button
-            className="flex-1 flex items-center justify-center gap-1 py-[7px] text-[10px] font-semibold transition-colors hover:bg-[rgba(0,212,154,0.06)] rounded-br-[10px]"
-            style={{ color: T.esmeralda, borderRadius: noAnalysis ? "0 0 10px 0" : "0 0 10px 10px" }}
+            className="flex-1 flex items-center justify-center gap-1 py-[7px] text-[10px] font-semibold transition-colors hover:bg-[rgba(0,212,154,0.06)]"
+            style={{
+              color: T.esmeralda,
+              borderBottomRightRadius: 10,
+              borderBottomLeftRadius: (noAnalysis || hasAvailableAnalyses) ? 0 : 10,
+            }}
             onClick={() => onMove(nextStage.id)}
           >
             {nextStage.name}

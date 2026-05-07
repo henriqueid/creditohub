@@ -29,6 +29,7 @@ import CRMActivities from "@/pages/CRMActivities";
 import CRMTasks from "@/pages/CRMTasks";
 import CRMDashboard from "@/pages/CRMDashboard";
 import CRMClientProfile from "@/pages/CRMClientProfile";
+import DealDetail from "@/pages/DealDetail";
 
 // COLD paths — lazy (raros, OK ter um pequeno delay)
 const Auth = lazy(() => import("@/pages/Auth"));
@@ -93,6 +94,7 @@ const App = () => (
                 <Route path="/crm/tarefas" element={<CRMTasks />} />
                 <Route path="/crm/dashboard" element={<CRMDashboard />} />
                 <Route path="/crm/cliente/:id" element={<CRMClientProfile />} />
+                <Route path="/crm/deal/:id" element={<DealDetail />} />
               </Route>
             </Route>
 

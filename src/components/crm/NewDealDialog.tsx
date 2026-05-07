@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
 import { T } from "@/lib/tokens";
 import { fetchExternalConsulta } from "@/lib/external-consulta";
@@ -37,7 +38,7 @@ export function NewDealDialog({ open, onOpenChange, onCreated, defaultMode = "ne
 
   // Common deal fields
   const [deal, setDeal] = useState({
-    title: "", value: "", monthlyVolume: "", responsible: "", expected_close_date: "", notes: "",
+    title: "", value: "", monthlyVolume: "", responsible: "", expected_close_date: "", notes: "", probability: 50,
   });
 
   // Reset on close
@@ -46,7 +47,7 @@ export function NewDealDialog({ open, onOpenChange, onCreated, defaultMode = "ne
       setMode(defaultMode);
       setNewClient({ cnpj: "", razao_social: "", nome_fantasia: "", segmento: "", cidade: "", estado: "" });
       setExistingClientId("");
-      setDeal({ title: "", value: "", monthlyVolume: "", responsible: "", expected_close_date: "", notes: "" });
+      setDeal({ title: "", value: "", monthlyVolume: "", responsible: "", expected_close_date: "", notes: "", probability: 50 });
       setLookupStatus("idle");
       setLookingUp(false);
     }
@@ -148,6 +149,7 @@ export function NewDealDialog({ open, onOpenChange, onCreated, defaultMode = "ne
         responsible: deal.responsible || null,
         expected_close_date: deal.expected_close_date || null,
         notes: deal.notes || null,
+        probability: deal.probability,
       };
       let dealRes = await supabase.from("deals").insert(dealPayload as { client_id: string; stage_id: string; title: string });
       if (dealRes.error && dealRes.error.message?.includes("monthly_volume")) {
@@ -365,6 +367,32 @@ export function NewDealDialog({ open, onOpenChange, onCreated, defaultMode = "ne
               value={deal.expected_close_date}
               onChange={e => setDeal(p => ({ ...p, expected_close_date: e.target.value }))}
             />
+          </div>
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <Label>Probabilidade de fechamento</Label>
+              <span
+                className="tabular-nums"
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 12,
+                  fontWeight: 700,
+                  color: deal.probability >= 70 ? T.esmeralda : deal.probability >= 40 ? T.amber : T.textMute,
+                }}
+              >
+                {deal.probability}%
+              </span>
+            </div>
+            <Slider
+              value={[deal.probability]}
+              min={0}
+              max={100}
+              step={5}
+              onValueChange={(v) => setDeal(p => ({ ...p, probability: v[0] ?? 50 }))}
+            />
+            <p style={{ fontSize: 11, color: T.textMute, marginTop: 6 }}>
+              Confiança comercial em fechar a operação
+            </p>
           </div>
           <div>
             <Label>Responsável</Label>

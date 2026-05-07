@@ -16,7 +16,6 @@ export const COMMITTEE_FIELD_OPTIONS: { key: string; label: string; block: strin
   { key: "numero_funcionarios",   label: "Número de funcionários",    block: "Operacional" },
   // Societária
   { key: "socios_min_1",          label: "Ao menos 1 sócio",          block: "Societária" },
-  { key: "capital_social",        label: "Capital social",            block: "Societária" },
   { key: "historico_socios",      label: "Histórico dos sócios",      block: "Societária" },
   // Sacados
   { key: "sacados_min_1",         label: "Ao menos 1 sacado",         block: "Sacados" },
@@ -29,6 +28,8 @@ export const COMMITTEE_FIELD_OPTIONS: { key: string; label: string; block: strin
   { key: "referencias_bancarias",  label: "Referências bancárias",    block: "Referências" },
   { key: "referencias_comerciais", label: "Referências comerciais",   block: "Referências" },
   // Financeira
+  { key: "capital_social",        label: "Capital social",            block: "Financeira" },
+  { key: "receita_liquida",       label: "Receita líquida",           block: "Financeira" },
   { key: "analise_faturamento",   label: "Análise de faturamento",    block: "Financeira" },
   { key: "estrutura_financeira",  label: "Estrutura financeira",      block: "Financeira" },
   { key: "endividamento",         label: "Endividamento",             block: "Financeira" },

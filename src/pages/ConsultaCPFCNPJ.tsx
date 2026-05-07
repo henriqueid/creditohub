@@ -16,7 +16,7 @@ import {
   Info, Ban, Scale, Banknote, Users, MapPin, Calendar, Phone, Briefcase,
   Hash, Receipt, Landmark, Sparkles,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { PageHeader } from "@/components/trilho/PageHeader";
 import { formatCNPJorCPF, formatBRL, formatDate, formatPercent, statusLabels, statusColors, cleanDocument } from "@/lib/formatters";
 import { motion, AnimatePresence } from "framer-motion";
@@ -79,8 +79,19 @@ function StatCard({ icon: Icon, label, value, sub }: { icon: React.ElementType; 
 export default function ConsultaCPFCNPJ() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [searchParams] = useSearchParams();
   const [inputValue, setInputValue] = useState("");
   const [searchDoc, setSearchDoc] = useState<string | null>(null);
+
+  // Auto-search se chegou via /consulta?doc=...
+  useEffect(() => {
+    const docParam = searchParams.get("doc");
+    if (docParam && docParam !== searchDoc) {
+      setInputValue(formatInputDocument(docParam));
+      setSearchDoc(docParam);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
   const [qualification, setQualification] = useState<QualificationResult | null>(null);
   const [qualifyingInProgress, setQualifyingInProgress] = useState(false);
 

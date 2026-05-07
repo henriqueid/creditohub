@@ -536,7 +536,7 @@ function ProspectCard({
         </div>
         <div className="min-w-0 flex-1">
           <p className="truncate" style={{ fontSize: 15, fontWeight: 600, color: T.text, lineHeight: 1.2 }}>
-            {p.nome || cadastral?.razao_social || "—"}
+            {p.nome || snapshot?.razao_social || "—"}
           </p>
           {fantasia && (
             <p className="truncate" style={{ fontSize: 12, color: T.textMute, marginTop: 1 }}>

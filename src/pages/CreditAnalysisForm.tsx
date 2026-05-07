@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
 import { useCommitteeRequirements, evaluateReadiness, DEFAULT_REQUIRED_FIELDS } from "@/hooks/useCommitteeRequirements";
 import { formatBRL } from "@/lib/formatters";
+import { differenceInYears, parseISO, isValid } from "date-fns";
 import {
   ArrowLeft, Plus, Trash2, Send, Printer, Save, Building2, BarChart3,
   Users, ShieldCheck, TrendingUp, AlertTriangle, Settings2, FileCheck,
@@ -284,6 +285,7 @@ export default function CreditAnalysisForm() {
   const [historicoPagamentos, setHistoricoPagamentos] = useState("");
   const [restricoesCnpj, setRestricoesCnpj] = useState("");
   const [tempoAtividade, setTempoAtividade] = useState("");
+  const [tempoAtividadeManual, setTempoAtividadeManual] = useState(false);
   const [faturamentoDetalhado, setFaturamentoDetalhado] = useState("");
   const [condicoesEspeciais, setCondicoesEspeciais] = useState("");
   const [modalidadesOperacao, setModalidadesOperacao] = useState<string[]>([]);
@@ -704,6 +706,17 @@ export default function CreditAnalysisForm() {
 
   const selectedClient = clients.find(c => c.id === clientId);
 
+  // Tempo de atividade derivado de clients.data_fundacao (somente se não foi editado manualmente)
+  const dataFundacao = (selectedClient as any)?.data_fundacao as string | null | undefined;
+  const tempoAtividadeAuto = useMemo(() => {
+    if (!dataFundacao) return null;
+    const d = parseISO(dataFundacao);
+    if (!isValid(d)) return null;
+    const anos = differenceInYears(new Date(), d);
+    return { anos, label: `${anos} ano${anos === 1 ? "" : "s"} · desde ${d.getFullYear()}` };
+  }, [dataFundacao]);
+  const tempoAtividadeDisplay = tempoAtividadeManual || !tempoAtividadeAuto ? tempoAtividade : tempoAtividadeAuto.label;
+
   const analysisDataForAI = {
     faturamento_medio: fatNum, volume_estimado: volNum, credit_score: scoreNum,
     prazo_medio_titulos: prazoMedioTitulos ? parseInt(prazoMedioTitulos) : null,
@@ -726,12 +739,12 @@ export default function CreditAnalysisForm() {
     const sections = [
       {
         key: "identificacao", label: "Identificação", icon: Building2,
-        fields: [clientId, dataAnalise, responsavelComercial, analistaCredito, tempoAtividade, tipoImovelSede, numeroFuncionarios],
+        fields: [clientId, dataAnalise, responsavelComercial, analistaCredito, tempoAtividadeDisplay, numeroFuncionarios],
         required: [clientId],
       },
       {
         key: "operacional", label: "Operacional", icon: BarChart3,
-        fields: [faturamentoMedio, volumeEstimado, prazoMedioTitulos, faturamentoDetalhado, receitaLiquida, capitalSocial],
+        fields: [faturamentoMedio, volumeEstimado, prazoMedioTitulos, faturamentoDetalhado, tipoImovelSede],
         required: [faturamentoMedio],
       },
       {
@@ -751,7 +764,7 @@ export default function CreditAnalysisForm() {
       },
       {
         key: "financeira", label: "Financeira", icon: TrendingUp,
-        fields: [analiseFaturamento, estruturaFinanceira, endividamento, dependenciaClientes, margemLiquida, indiceLiquidez],
+        fields: [analiseFaturamento, estruturaFinanceira, endividamento, dependenciaClientes, margemLiquida, indiceLiquidez, capitalSocial, receitaLiquida],
         required: [],
       },
       {
@@ -773,7 +786,7 @@ export default function CreditAnalysisForm() {
       const requiredOk = s.required.every(f => f && String(f).trim() !== "");
       return { ...s, filled, total, pct, requiredOk };
     });
-  }, [clientId, dataAnalise, responsavelComercial, analistaCredito, tempoAtividade, tipoImovelSede, numeroFuncionarios, faturamentoMedio, volumeEstimado, prazoMedioTitulos, faturamentoDetalhado, receitaLiquida, capitalSocial, historicoSocios, socios.length, creditScore, protestos, pendencias, chequesSemFundo, acoesJudiciais, observacoesCredito, restricoesCnpj, historicoPagamentos, referenciasBancarias, referenciasComerciais, fonteInformacao, analiseFaturamento, estruturaFinanceira, endividamento, dependenciaClientes, margemLiquida, indiceLiquidez, riscos, pontosPositivos, limiteSugerido, prazoMedioPermitido, concentracaoMaxima, garantias, modalidadesOperacao, taxaSugerida, condicoesEspeciais]);
+  }, [clientId, dataAnalise, responsavelComercial, analistaCredito, tempoAtividadeDisplay, tipoImovelSede, numeroFuncionarios, faturamentoMedio, volumeEstimado, prazoMedioTitulos, faturamentoDetalhado, receitaLiquida, capitalSocial, historicoSocios, socios.length, creditScore, protestos, pendencias, chequesSemFundo, acoesJudiciais, observacoesCredito, restricoesCnpj, historicoPagamentos, referenciasBancarias, referenciasComerciais, fonteInformacao, analiseFaturamento, estruturaFinanceira, endividamento, dependenciaClientes, margemLiquida, indiceLiquidez, riscos, pontosPositivos, limiteSugerido, prazoMedioPermitido, concentracaoMaxima, garantias, modalidadesOperacao, taxaSugerida, condicoesEspeciais]);
 
   const overallProgress = useMemo(() => {
     const totalFilled = sectionProgress.reduce((a, s) => a + s.filled, 0);
@@ -789,7 +802,7 @@ export default function CreditAnalysisForm() {
       client_id: clientId,
       responsavel_comercial: responsavelComercial,
       analista_credito: analistaCredito,
-      tempo_atividade: tempoAtividade,
+      tempo_atividade: tempoAtividadeDisplay,
       faturamento_medio: faturamentoMedio,
       volume_estimado: volumeEstimado,
       prazo_medio_titulos: prazoMedioTitulos,
@@ -819,7 +832,7 @@ export default function CreditAnalysisForm() {
       sociosCount: socios.length,
     });
   }, [
-    committeeRequiredFields, clientId, responsavelComercial, analistaCredito, tempoAtividade,
+    committeeRequiredFields, clientId, responsavelComercial, analistaCredito, tempoAtividadeDisplay,
     faturamentoMedio, volumeEstimado, prazoMedioTitulos, numeroFuncionarios, capitalSocial,
     historicoSocios, creditScore, protestos, pendencias, acoesJudiciais,
     referenciasBancarias, referenciasComerciais, analiseFaturamento, estruturaFinanceira,
@@ -837,16 +850,14 @@ export default function CreditAnalysisForm() {
         f(dataAnalise, "Data"),
         f(responsavelComercial, "Comercial"),
         f(analistaCredito, "Analista"),
-        f(tempoAtividade, "Tempo Ativ."),
-        f(tipoImovelSede, "Imóvel"),
+        f(tempoAtividadeDisplay, "Tempo Ativ."),
         numeroFuncionarios ? `Funcionários: ${numeroFuncionarios}` : null,
       ].filter(Boolean) as string[],
       operacional: [
         fatNum ? `Faturamento: ${formatBRL(fatNum)}` : null,
         volNum ? `Volume: ${formatBRL(volNum)}` : null,
-        recLiqNum ? `Receita Líq.: ${formatBRL(recLiqNum)}` : null,
-        capSocNum ? `Capital Social: ${formatBRL(capSocNum)}` : null,
         prazoMedioTitulos ? `Prazo: ${prazoMedioTitulos} dias` : null,
+        f(tipoImovelSede, "Imóvel sede"),
       ].filter(Boolean) as string[],
       sacados: [
         sacados.length > 0
@@ -879,6 +890,8 @@ export default function CreditAnalysisForm() {
         f(fonteInformacao, "Fonte"),
       ].filter(Boolean) as string[],
       financeira: [
+        capSocNum ? `Capital Social: ${formatBRL(capSocNum)}` : null,
+        recLiqNum ? `Receita Líq.: ${formatBRL(recLiqNum)}` : null,
         f(analiseFaturamento, "Faturamento"),
         f(estruturaFinanceira, "Estrutura"),
         f(endividamento, "Endividamento"),
@@ -900,7 +913,7 @@ export default function CreditAnalysisForm() {
         f(condicoesEspeciais, "Condições"),
       ].filter(Boolean) as string[],
     };
-  }, [selectedClient, dataAnalise, responsavelComercial, analistaCredito, tempoAtividade, tipoImovelSede, numeroFuncionarios, fatNum, volNum, receitaLiquida, capitalSocial, prazoMedioTitulos, sacados.length, socios.length, sociosTotal, historicoSocios, scoreNum, grade, protestos, pendencias, chequesSemFundo, acoesJudiciais, restricoesCnpj, historicoPagamentos, referenciasBancarias, referenciasComerciais, fonteInformacao, analiseFaturamento, estruturaFinanceira, endividamento, dependenciaClientes, margemLiquida, indiceLiquidez, riscos, pontosPositivos, limiteNum, modalidadesOperacao, taxaSugerida, prazoMedioPermitido, concentracaoMaxima, garantias, condicoesEspeciais]);
+  }, [selectedClient, dataAnalise, responsavelComercial, analistaCredito, tempoAtividadeDisplay, tipoImovelSede, numeroFuncionarios, fatNum, volNum, receitaLiquida, capitalSocial, prazoMedioTitulos, sacados.length, socios.length, sociosTotal, historicoSocios, scoreNum, grade, protestos, pendencias, chequesSemFundo, acoesJudiciais, restricoesCnpj, historicoPagamentos, referenciasBancarias, referenciasComerciais, fonteInformacao, analiseFaturamento, estruturaFinanceira, endividamento, dependenciaClientes, margemLiquida, indiceLiquidez, riscos, pontosPositivos, limiteNum, modalidadesOperacao, taxaSugerida, prazoMedioPermitido, concentracaoMaxima, garantias, condicoesEspeciais]);
 
   return (
     <div className="flex h-[calc(100vh-3.5rem)] overflow-hidden" style={{ background: "#EDEEE7" }}>
@@ -1427,20 +1440,38 @@ export default function CreditAnalysisForm() {
                     <Input value={analistaCredito} onChange={(e) => setAnalistaCredito(e.target.value)} disabled={isReadOnly} className="h-9 text-sm" placeholder="—" />
                   </Field>
                 </FieldGroup>
-                <FieldGroup cols={3}>
-                  <Field label="Tempo de Atividade" hint="Ex: 15 anos, desde 2009">
-                    <Input value={tempoAtividade} onChange={(e) => setTempoAtividade(e.target.value)} disabled={isReadOnly} className="h-9 text-sm" placeholder="Ex: 12 anos" />
-                  </Field>
-                  <Field label="Tipo Imóvel Sede" hint="Próprio, alugado, cedido">
-                    <Select value={tipoImovelSede} onValueChange={setTipoImovelSede} disabled={isReadOnly}>
-                      <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Selecione" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="proprio">Próprio</SelectItem>
-                        <SelectItem value="alugado">Alugado</SelectItem>
-                        <SelectItem value="cedido">Cedido</SelectItem>
-                        <SelectItem value="comodato">Comodato</SelectItem>
-                      </SelectContent>
-                    </Select>
+                <FieldGroup cols={2}>
+                  <Field label="Tempo de Atividade" hint={tempoAtividadeAuto && !tempoAtividadeManual ? "Calculado a partir da data de fundação do cedente" : "Ex: 15 anos, desde 2009"}>
+                    {tempoAtividadeAuto && !tempoAtividadeManual ? (
+                      <div className="flex items-center gap-2">
+                        <div className="h-9 flex-1 flex items-center px-3 rounded-sink-md border border-sink-fog bg-sink-cream/40 text-sm text-sink-deep tabular-nums">
+                          {tempoAtividadeAuto.label}
+                        </div>
+                        {!isReadOnly && (
+                          <button
+                            type="button"
+                            onClick={() => setTempoAtividadeManual(true)}
+                            className="h-9 px-3 text-[11px] font-mono uppercase tracking-wider rounded-sink-md border border-sink-fog text-sink-deep/60 hover:bg-sink-cream hover:text-sink-deep transition-colors flex-shrink-0"
+                          >
+                            Editar manual
+                          </button>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <Input value={tempoAtividade} onChange={(e) => setTempoAtividade(e.target.value)} disabled={isReadOnly} className="h-9 text-sm flex-1" placeholder="Ex: 12 anos" />
+                        {tempoAtividadeAuto && tempoAtividadeManual && !isReadOnly && (
+                          <button
+                            type="button"
+                            onClick={() => { setTempoAtividadeManual(false); setTempoAtividade(""); }}
+                            className="h-9 px-3 text-[11px] font-mono uppercase tracking-wider rounded-sink-md border border-sink-fog text-sink-deep/60 hover:bg-sink-cream hover:text-sink-deep transition-colors flex-shrink-0"
+                            title="Voltar ao valor calculado automaticamente"
+                          >
+                            Auto
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </Field>
                   <Field label="Nº de Funcionários">
                     <Input type="number" value={numeroFuncionarios} onChange={(e) => setNumeroFuncionarios(e.target.value)} disabled={isReadOnly} className="h-9 text-sm tabular-nums" placeholder="0" />
@@ -1465,17 +1496,29 @@ export default function CreditAnalysisForm() {
                   <Field label="Prazo Médio (dias)">
                     <Input type="number" value={prazoMedioTitulos} onChange={(e) => setPrazoMedioTitulos(e.target.value)} disabled={isReadOnly} className="h-9 text-sm tabular-nums" placeholder="0" />
                   </Field>
-                  <Field label="Capital Social (R$)">
-                    <Input type="number" step="0.01" value={capitalSocial} onChange={(e) => setCapitalSocial(e.target.value)} disabled={isReadOnly} className="h-9 text-sm tabular-nums" placeholder="0,00" />
-                  </Field>
-                  <Field label="Receita Líquida (R$)">
-                    <Input type="number" step="0.01" value={receitaLiquida} onChange={(e) => setReceitaLiquida(e.target.value)} disabled={isReadOnly} className="h-9 text-sm tabular-nums" placeholder="0,00" />
-                  </Field>
                 </FieldGroup>
                 <div className="pt-3">
                   <Field label="Detalhamento de Faturamento" hint="Evolução mensal, sazonalidade, tendências">
                     <Textarea value={faturamentoDetalhado} onChange={(e) => setFaturamentoDetalhado(e.target.value)} disabled={isReadOnly} rows={2} className="text-sm resize-none" placeholder="Ex: Jan R$100k, Fev R$120k... ou descrição qualitativa" />
                   </Field>
+                </div>
+
+                {/* Mini-bloco patrimonial */}
+                <div className="pt-4 mt-4 border-t border-sink-fog/60">
+                  <p className="font-mono text-[10px] uppercase tracking-wider text-sink-deep/50 mb-3">Patrimonial</p>
+                  <FieldGroup cols={2}>
+                    <Field label="Tipo Imóvel Sede" hint="Próprio, alugado, cedido">
+                      <Select value={tipoImovelSede} onValueChange={setTipoImovelSede} disabled={isReadOnly}>
+                        <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="proprio">Próprio</SelectItem>
+                          <SelectItem value="alugado">Alugado</SelectItem>
+                          <SelectItem value="cedido">Cedido</SelectItem>
+                          <SelectItem value="comodato">Comodato</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </Field>
+                  </FieldGroup>
                 </div>
               </SectionWrapper>
 
@@ -1738,7 +1781,15 @@ export default function CreditAnalysisForm() {
                 onDataExtracted={handleDataExtracted} analysisContext={analysisDataForAI} disabled={isReadOnly}
                 compactMode={compactMode} bulkToggle={bulkToggle} summary={sectionSummaries.financeira}
               >
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
+                <FieldGroup cols={2}>
+                  <Field label="Capital Social (R$)">
+                    <Input type="number" step="0.01" value={capitalSocial} onChange={(e) => setCapitalSocial(e.target.value)} disabled={isReadOnly} className="h-9 text-sm tabular-nums" placeholder="0,00" />
+                  </Field>
+                  <Field label="Receita Líquida (R$)">
+                    <Input type="number" step="0.01" value={receitaLiquida} onChange={(e) => setReceitaLiquida(e.target.value)} disabled={isReadOnly} className="h-9 text-sm tabular-nums" placeholder="0,00" />
+                  </Field>
+                </FieldGroup>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 pt-3">
                   <Field label="Análise de Faturamento">
                     <Textarea value={analiseFaturamento} onChange={(e) => setAnaliseFaturamento(e.target.value)} disabled={isReadOnly} rows={3} className="text-sm resize-none" />
                   </Field>
