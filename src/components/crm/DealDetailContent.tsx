@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
 import { T } from "@/lib/tokens";
 import { formatBRL } from "@/lib/formatters";
+import { ResponsibleSelect } from "@/components/crm/ResponsibleSelect";
 
 interface Deal {
   id: string;
@@ -343,13 +344,13 @@ export function DealDetailContent({ dealId, variant = "page" }: DealDetailConten
           </div>
           <div>
             <p style={sectionLabel}>Responsável</p>
-            <Input
+            <ResponsibleSelect
               value={(edit.responsible ?? "") as string}
-              onChange={e => setEdit(p => ({ ...p, responsible: e.target.value }))}
-              onBlur={() => saveField("responsible", edit.responsible)}
-              className="border-0 px-0 focus-visible:ring-0"
-              style={{ fontSize: 12, color: T.text }}
-              placeholder="—"
+              onChange={(v) => {
+                setEdit(p => ({ ...p, responsible: v }));
+                saveField("responsible", v);
+              }}
+              className="h-8 text-[12px] border-0 px-0 focus:ring-0"
             />
           </div>
         </div>

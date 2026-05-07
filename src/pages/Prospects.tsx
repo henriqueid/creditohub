@@ -55,7 +55,15 @@ export default function Prospects() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
+  const [hidePromoted, setHidePromoted] = useState<boolean>(() => {
+    try { return localStorage.getItem("prospects.hidePromoted") === "1"; } catch { return false; }
+  });
   const [busyAction, setBusyAction] = useState<{ id: string; action: "pipeline" | "analise" | "discard" } | null>(null);
+
+  const togglePromotedFilter = (v: boolean) => {
+    setHidePromoted(v);
+    try { localStorage.setItem("prospects.hidePromoted", v ? "1" : "0"); } catch { /* */ }
+  };
 
   const { data: prospects = [], isLoading } = useQuery({
     queryKey: ["prospects"],
@@ -281,7 +289,9 @@ export default function Prospects() {
   }
 
   // ── Filters ────────────────────────────────────────────────────────
+  const promotedCount = prospects.filter(p => !!p.client_id).length;
   const filtered = prospects.filter(p => {
+    if (hidePromoted && p.client_id) return false;
     if (!search) return true;
     const q = search.toLowerCase();
     return p.documento.includes(q) || (p.nome || "").toLowerCase().includes(q);
@@ -321,23 +331,45 @@ export default function Prospects() {
         <Kpi label="Expirados"         value={stats.expired}      color={T.textMute} />
       </div>
 
-      {/* Search */}
-      <div className="relative w-full sm:max-w-md">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: T.textFaint }} />
-        <input
-          placeholder="Buscar por documento ou nome..."
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          className="w-full pl-9 pr-3 py-[9px] rounded-[10px] text-[14px] outline-none transition-all"
-          style={{
-            background: T.white,
-            border: `1px solid ${T.border}`,
-            color: T.text,
-            boxShadow: "0 1px 2px rgba(10,21,56,0.04)",
-          }}
-          onFocus={(e) => (e.target.style.borderColor = T.esmeralda)}
-          onBlur={(e) => (e.target.style.borderColor = T.border)}
-        />
+      {/* Search + filter */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+        <div className="relative w-full sm:max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: T.textFaint }} />
+          <input
+            placeholder="Buscar por documento ou nome..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="w-full pl-9 pr-3 py-[9px] rounded-[10px] text-[14px] outline-none transition-all"
+            style={{
+              background: T.white,
+              border: `1px solid ${T.border}`,
+              color: T.text,
+              boxShadow: "0 1px 2px rgba(10,21,56,0.04)",
+            }}
+            onFocus={(e) => (e.target.style.borderColor = T.esmeralda)}
+            onBlur={(e) => (e.target.style.borderColor = T.border)}
+          />
+        </div>
+
+        {promotedCount > 0 && (
+          <label
+            className="inline-flex items-center gap-2 cursor-pointer select-none"
+            style={{ fontSize: 12.5, color: T.textMute }}
+          >
+            <input
+              type="checkbox"
+              checked={hidePromoted}
+              onChange={(e) => togglePromotedFilter(e.target.checked)}
+              className="rounded border-border"
+            />
+            <span>
+              Esconder promovidos
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: T.textFaint, marginLeft: 6 }}>
+                ({promotedCount})
+              </span>
+            </span>
+          </label>
+        )}
       </div>
 
       {/* Cards */}

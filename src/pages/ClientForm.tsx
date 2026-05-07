@@ -16,6 +16,7 @@ import { ClientTagManager } from "@/components/crm/ClientTagManager";
 import { snapshotToCreditAnalysis, insertSnapshotSocios, type ConsultaSnapshot } from "@/lib/consulta-snapshot";
 import { fetchExternalConsulta } from "@/lib/external-consulta";
 import { T } from "@/lib/tokens";
+import { ResponsibleSelect } from "@/components/crm/ResponsibleSelect";
 
 const OPERATION_TYPES = [
   "Antecipação de recebíveis",
@@ -510,11 +511,10 @@ export default function ClientForm() {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label>Responsável</Label>
-                      <Input
+                      <Label>Responsável comercial</Label>
+                      <ResponsibleSelect
                         value={deal.responsible}
-                        onChange={(e) => updateDeal("responsible", e.target.value)}
-                        placeholder="Nome do responsável comercial"
+                        onChange={(v) => updateDeal("responsible", v)}
                       />
                     </div>
                   </div>

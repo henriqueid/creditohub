@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
 import { T } from "@/lib/tokens";
+import { ResponsibleSelect } from "@/components/crm/ResponsibleSelect";
 
 const OPERATION_TYPES = [
   "Antecipação de recebíveis",
@@ -224,10 +225,10 @@ export function NewDealDialog({ open, onOpenChange, onCreated }: NewDealDialogPr
             />
           </div>
           <div>
-            <Label>Responsável</Label>
-            <Input
+            <Label>Responsável comercial</Label>
+            <ResponsibleSelect
               value={deal.responsible}
-              onChange={(e) => setDeal((p) => ({ ...p, responsible: e.target.value }))}
+              onChange={(v) => setDeal((p) => ({ ...p, responsible: v }))}
             />
           </div>
           <div>
