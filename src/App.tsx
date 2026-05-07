@@ -17,6 +17,7 @@ import CreditAnalysisForm from "@/pages/CreditAnalysisForm";
 import CommitteeQueue from "@/pages/CommitteeQueue";
 import CommitteeVoting from "@/pages/CommitteeVoting";
 import ClientHistory from "@/pages/ClientHistory";
+import CedenteProfile from "@/pages/CedenteProfile";
 import ConsultaCPFCNPJ from "@/pages/ConsultaCPFCNPJ";
 import Blacklist from "@/pages/Blacklist";
 import Settings from "@/pages/Settings";
@@ -65,6 +66,7 @@ const App = () => (
                 <Route path="/cedentes/novo" element={<ClientForm />} />
                 <Route path="/cedentes/:id" element={<ClientForm />} />
                 <Route path="/cedentes/:id/historico" element={<ClientHistory />} />
+                <Route path="/cedentes/:id/perfil" element={<CedenteProfile />} />
                 <Route path="/analises" element={<CreditAnalysisList />} />
                 <Route path="/analises/nova" element={<CreditAnalysisForm />} />
                 <Route path="/analises/:id" element={<CreditAnalysisForm />} />

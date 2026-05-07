@@ -221,14 +221,14 @@ export default function Clients() {
   );
 
   const handleCardClick = (client: ClientWithAnalysis) => {
-    if (client.latestStatus === "cadastrado") {
-      navigate(`/cedentes/${client.id}`);
-    } else if (client.latestStatus === "in_committee" && client.latestAnalysisId) {
+    // Atalhos contextuais — leva direto pra ação esperada do estágio.
+    // Pra ver perfil completo, usa o botão Building2 na coluna de ações.
+    if (client.latestStatus === "in_committee" && client.latestAnalysisId) {
       navigate(`/comite/${client.latestAnalysisId}`);
     } else if (client.latestAnalysisId) {
       navigate(`/analises/${client.latestAnalysisId}`);
     } else {
-      navigate(`/cedentes/${client.id}`);
+      navigate(`/cedentes/${client.id}/perfil`);
     }
   };
 
@@ -681,9 +681,14 @@ export default function Clients() {
                     </TableCell>
                     <TableCell>{formatDate(client.created_at)}</TableCell>
                     <TableCell>
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); navigate(`/cedentes/${client.id}/historico`); }}>
-                        <History className="h-4 w-4" />
-                      </Button>
+                      <div className="flex items-center gap-0.5">
+                        <Button variant="ghost" size="icon" className="h-8 w-8" title="Perfil 360°" onClick={(e) => { e.stopPropagation(); navigate(`/cedentes/${client.id}/perfil`); }}>
+                          <Building2 className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" title="Histórico" onClick={(e) => { e.stopPropagation(); navigate(`/cedentes/${client.id}/historico`); }}>
+                          <History className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))

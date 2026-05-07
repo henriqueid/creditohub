@@ -95,7 +95,7 @@ export default function Dashboard() {
   const { data: committeeResults = [] } = useQuery({
     queryKey: ["dashboard-committee-results"],
     queryFn: async () => {
-      const { data } = await supabase.from("committee_result").select("decisao_final, limite_aprovado, created_at");
+      const { data } = await supabase.from("committee_result").select("credit_analysis_id, decisao_final, limite_aprovado, created_at");
       return data || [];
     },
   });
@@ -241,18 +241,31 @@ export default function Dashboard() {
   const sparkApproved = buildWeeklySparkline(fAnalyses.filter(a => a.status === "approved" || a.status === "approved_restricted"));
   const sparkInvoices = buildWeeklySparkline(fInvoices);
 
-  // ── Top cedentes ─────────────────────────────────────────────────────
-  const topClientsMap = new Map<string, { name: string; cnpj: string; total: number; score: number }>();
+  // ── Top cedentes por LIMITE APROVADO ───────────────────────────────
+  // Soma committee_result.limite_aprovado por cliente (cap de crédito real liberado).
+  // Antes usava limite_sugerido — cap teórico que ninguém preenchia → ficava R$ 0.
+  const topClientsMap = new Map<string, { id: string; name: string; cnpj: string; total: number; score: number }>();
+  // Indexa committee_result por analysis_id pra cruzar com analyses
+  const committeeByAnalysis = new Map<string, number>();
+  fCommitteeResults.forEach((r: any) => {
+    if (r.credit_analysis_id && r.limite_aprovado) {
+      committeeByAnalysis.set(r.credit_analysis_id, r.limite_aprovado);
+    }
+  });
   fAnalyses.forEach(a => {
     const name = (a.clients as any)?.razao_social;
     const cnpj = (a.clients as any)?.cnpj_cpf || "";
     if (!name) return;
-    const existing = topClientsMap.get(name) || { name, cnpj, total: 0, score: 0 };
-    existing.total += a.limite_sugerido ?? 0;
+    const limiteAprovado = committeeByAnalysis.get(a.id) ?? 0;
+    const existing = topClientsMap.get(name) || { id: a.client_id, name, cnpj, total: 0, score: 0 };
+    existing.total += limiteAprovado;
     existing.score = Math.max(existing.score, a.credit_score ?? 0);
     topClientsMap.set(name, existing);
   });
-  const topClients = Array.from(topClientsMap.values()).sort((a, b) => b.total - a.total).slice(0, 5);
+  const topClients = Array.from(topClientsMap.values())
+    .filter(c => c.total > 0)  // só cedentes com limite aprovado de fato
+    .sort((a, b) => b.total - a.total)
+    .slice(0, 5);
 
   // ── Funil ─────────────────────────────────────────────────────────
   const funnelData = [
@@ -561,9 +574,9 @@ export default function Dashboard() {
           className="flex justify-between items-center px-[18px] py-[14px]"
           style={{ borderBottom: `1px solid ${T.border}` }}
         >
-          <div style={{ fontSize: 14, fontWeight: 500, color: T.text }}>Top cedentes por volume</div>
+          <div style={{ fontSize: 14, fontWeight: 500, color: T.text }}>Top cedentes por limite aprovado</div>
           <button
-            onClick={() => navigate("/analises")}
+            onClick={() => navigate("/cedentes")}
             style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: T.textFaint, letterSpacing: "0.08em" }}
           >
             VER TODOS →
@@ -572,24 +585,26 @@ export default function Dashboard() {
         {topClients.length > 0 ? (
           <DataTable
             cols={[
-              { key: "name",  label: "Cedente", width: "2fr" },
-              { key: "cnpj",  label: "CNPJ",    width: "1.4fr", mono: true },
-              { key: "total", label: "Volume",  width: "1fr",   align: "right", mono: true },
-              { key: "score", label: "Score",   width: "100px", align: "right", mono: true },
-              { key: "tier",  label: "Tier",    width: "80px",  align: "right" },
+              { key: "name",  label: "Cedente",         width: "2fr" },
+              { key: "cnpj",  label: "CNPJ",            width: "1.4fr", mono: true },
+              { key: "total", label: "Limite aprovado", width: "1fr",   align: "right", mono: true },
+              { key: "score", label: "Score",           width: "100px", align: "right", mono: true },
+              { key: "tier",  label: "Tier",            width: "80px",  align: "right" },
             ]}
             rows={topClients.map(c => ({
+              _id: c.id,
               name:  <span style={{ fontWeight: 500 }}>{c.name}</span>,
               cnpj:  c.cnpj,
               total: formatBRL(c.total),
               score: c.score > 0 ? String(c.score) : "—",
               tier:  c.score > 0 ? <StatusBadge status={getTier(c.score)} /> : <span style={{ color: T.textFaint }}>—</span>,
             }))}
-            onRowClick={() => navigate("/analises")}
+            onRowClick={(row: any) => row._id && navigate(`/cedentes/${row._id}/perfil`)}
           />
         ) : (
-          <div className="py-10 text-center" style={{ fontSize: 13, color: T.textFaint }}>
-            Nenhuma análise encontrada
+          <div className="py-12 text-center space-y-1.5" style={{ fontSize: 13, color: T.textFaint }}>
+            <p style={{ color: T.textMute, fontSize: 14, fontWeight: 500 }}>Nenhum cedente com limite aprovado</p>
+            <p style={{ fontSize: 12 }}>Análises aprovadas pelo comitê aparecem aqui automaticamente</p>
           </div>
         )}
       </Card>
