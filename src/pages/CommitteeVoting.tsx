@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,19 +12,22 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
 import { formatBRL, formatDate, voteLabels, statusLabels } from "@/lib/formatters";
 import { StatusBadge } from "@/components/trilho/StatusBadge";
 import { PageHeader } from "@/components/trilho/PageHeader";
 import { classifyRisk, getScoreGrade, suggestLimit, calculateConcentration } from "@/lib/credit-calculations";
 import { ScoreGauge } from "@/components/ScoreGauge";
+import { T } from "@/lib/tokens";
 import ReactMarkdown from "react-markdown";
 
 const SAFE_MD_ELEMENTS = ["p", "h1", "h2", "h3", "h4", "ul", "ol", "li", "strong", "em", "code", "pre", "blockquote", "hr", "br", "a"];
 import {
   ArrowLeft, Vote, CheckCircle, Building2, User, MapPin, Calendar,
   TrendingUp, AlertTriangle, ShieldAlert, Scale, FileText, Sparkles,
-  BarChart3, Users, DollarSign, Clock, Percent, ExternalLink
+  BarChart3, Users, DollarSign, Clock, Percent, ExternalLink, Pencil, Lock,
+  ShieldCheck, ChevronDown, ChevronUp
 } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -68,6 +71,40 @@ export default function CommitteeVoting() {
   const [prazoAprovado, setPrazoAprovado] = useState("");
   const [concentracaoMax, setConcentracaoMax] = useState("");
   const [condicoesAdicionais, setCondicoesAdicionais] = useState("");
+
+  // Edit-vote dialog
+  const [editingVoteId, setEditingVoteId] = useState<string | null>(null);
+  const [editVote, setEditVote] = useState<string>("");
+  const [editObservation, setEditObservation] = useState("");
+
+  // Override fluxo
+  const [overrideOpen, setOverrideOpen] = useState(false);
+  const [overrideDecision, setOverrideDecision] = useState<string>("");
+  const [overrideReason, setOverrideReason] = useState("");
+
+  // Quem é o user atual + se é admin
+  const { data: currentUserId } = useQuery({
+    queryKey: ["current-user-id"],
+    queryFn: async () => {
+      const { data } = await supabase.auth.getUser();
+      return data.user?.id ?? null;
+    },
+  });
+
+  const { data: isAdmin = false } = useQuery({
+    queryKey: ["current-user-is-admin"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return false;
+      const { data } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .eq("role", "admin")
+        .maybeSingle();
+      return !!data;
+    },
+  });
 
   const { data: analysis } = useQuery({
     queryKey: ["committee-analysis", id],
@@ -167,13 +204,16 @@ export default function CommitteeVoting() {
 
   const voteMutation = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.from("credit_committee").insert({
+      const payload: any = {
         credit_analysis_id: id!,
         member_name: memberName,
         member_role: memberRole || null,
         vote: vote as CommitteeVoteType,
         observation: observation || null,
-      });
+      };
+      // voter_id (coluna nova) — types.ts pode estar desatualizado, vai como `as any`
+      if (currentUserId) payload.voter_id = currentUserId;
+      const { error } = await (supabase as any).from("credit_committee").insert(payload);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -185,6 +225,37 @@ export default function CommitteeVoting() {
       toast({ title: "Erro", description: err.message, variant: "destructive" });
     },
   });
+
+  const editVoteMutation = useMutation({
+    mutationFn: async () => {
+      if (!editingVoteId) return;
+      const { error } = await (supabase as any)
+        .from("credit_committee")
+        .update({
+          vote: editVote as CommitteeVoteType,
+          observation: editObservation || null,
+        })
+        .eq("id", editingVoteId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      refetchVotes();
+      queryClient.invalidateQueries({ queryKey: ["committee-votes", id] });
+      setEditingVoteId(null);
+      setEditVote("");
+      setEditObservation("");
+      toast({ title: "Voto atualizado" });
+    },
+    onError: (err: Error) => {
+      toast({ title: "Erro ao atualizar voto", description: err.message, variant: "destructive" });
+    },
+  });
+
+  const openEditVote = (v: any) => {
+    setEditingVoteId(v.id);
+    setEditVote(v.vote);
+    setEditObservation(v.observation || "");
+  };
 
   const calculateResult = (): { decision: Database["public"]["Enums"]["credit_status"]; isTie: boolean; counts: { approve: number; restrict: number; reject: number } } => {
     const counts = { approve: 0, restrict: 0, reject: 0 };
@@ -201,35 +272,37 @@ export default function CommitteeVoting() {
     return { decision: "approved_restricted", isTie: false, counts };
   };
 
+  // Finalização via RPC `finalize_committee` — banco calcula decisão a partir dos votos,
+  // exige justificativa em caso de override, trava votos, audita.
   const finalizeMutation = useMutation({
-    mutationFn: async () => {
-      const { decision, isTie } = calculateResult();
-      if (isTie) {
-        // Aviso explícito ao analista — empate aplica decisão prudente automaticamente
-        toast({
-          title: "Sem maioria estrita — decisão prudente aplicada",
-          description: "Aprovado com restrição por padrão de prudência. Pra revotar, registre mais votos antes de finalizar.",
-        });
-      }
+    mutationFn: async ({
+      finalDecision,
+      reason,
+    }: {
+      finalDecision: Database["public"]["Enums"]["credit_status"];
+      reason: string | null;
+    }) => {
+      const { data, error } = await (supabase as any).rpc("finalize_committee", {
+        p_analysis_id: id,
+        p_final_decision: finalDecision,
+        p_override_reason: reason,
+      });
+      if (error) throw error;
+
+      // Cria committee_result + deal CRM (efeitos colaterais que continuam aqui — não é trivial mover pro banco).
       const { error: resultError } = await supabase.from("committee_result").insert({
         credit_analysis_id: id!,
         limite_aprovado: limiteAprovado ? parseFloat(limiteAprovado) : null,
         prazo_aprovado: prazoAprovado ? parseInt(prazoAprovado) : null,
         concentracao_maxima: concentracaoMax ? parseFloat(concentracaoMax) : null,
         condicoes_adicionais: condicoesAdicionais || null,
-        decisao_final: decision,
+        decisao_final: finalDecision,
       });
-      if (resultError) throw resultError;
-      const { error: updateError } = await supabase
-        .from("credit_analysis")
-        .update({ status: decision })
-        .eq("id", id);
-      if (updateError) throw updateError;
+      if (resultError) console.warn("Falha ao registrar committee_result:", resultError);
 
       // Auto-create CRM deal on approval
-      if (decision === "approved" || decision === "approved_restricted") {
+      if (finalDecision === "approved" || finalDecision === "approved_restricted") {
         try {
-          // Get first active (non-won, non-lost) stage
           const { data: firstStage } = await supabase
             .from("deal_stages")
             .select("id")
@@ -242,7 +315,7 @@ export default function CommitteeVoting() {
 
           if (firstStage && analysis) {
             const clientName = client?.razao_social || "Cliente";
-            const dealTitle = `${decision === "approved" ? "Crédito aprovado" : "Crédito aprovado c/ restrição"} — ${clientName}`;
+            const dealTitle = `${finalDecision === "approved" ? "Crédito aprovado" : "Crédito aprovado c/ restrição"} — ${clientName}`;
             await supabase.from("deals").insert({
               client_id: analysis.client_id,
               stage_id: firstStage.id,
@@ -257,21 +330,45 @@ export default function CommitteeVoting() {
           console.warn("Falha ao criar deal CRM automaticamente:", e);
         }
       }
+
+      return data as { ok: boolean; was_override: boolean; calculated: string; final: string };
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["committee-queue"] });
       queryClient.invalidateQueries({ queryKey: ["credit-analyses"] });
+      queryClient.invalidateQueries({ queryKey: ["committee-analysis", id] });
+      queryClient.invalidateQueries({ queryKey: ["committee-votes", id] });
       queryClient.invalidateQueries({ queryKey: ["deals"] });
-      toast({ title: "Decisão do comitê finalizada" });
+      if (result?.was_override) {
+        toast({
+          title: "Decisão final aplicada via override admin",
+          description: `Calculada: ${statusLabels[result.calculated as keyof typeof statusLabels] || result.calculated}. Final: ${statusLabels[result.final as keyof typeof statusLabels] || result.final}.`,
+        });
+      } else {
+        toast({ title: "Decisão do comitê finalizada" });
+      }
+      setOverrideOpen(false);
+      setOverrideDecision("");
+      setOverrideReason("");
       navigate("/comite");
     },
     onError: (err: Error) => {
-      toast({ title: "Erro", description: err.message, variant: "destructive" });
+      toast({ title: "Erro ao finalizar", description: err.message, variant: "destructive" });
     },
   });
 
   const allVoted = votes.length >= totalMembers;
   const isFinalized = !!existingResult || (analysis && analysis.status !== "in_committee");
+
+  // Override metadata (colunas novas; types pode estar desatualizado)
+  const analysisAny = analysis as any;
+  const hadOverride = !!analysisAny?.committee_override_by;
+  const overrideMeta = {
+    reason: analysisAny?.committee_override_reason as string | null,
+    calculated: analysisAny?.committee_calculated_decision as string | null,
+    finalStatus: analysis?.status as string | null,
+    at: analysisAny?.committee_override_at as string | null,
+  };
 
   return (
     <div className="p-7 space-y-[14px]">
@@ -297,6 +394,37 @@ export default function CommitteeVoting() {
           </>
         }
       />
+
+      {hadOverride && (
+        <div
+          className="rounded-[12px] px-4 py-3 flex items-start gap-3"
+          style={{
+            background: "rgba(217,163,0,0.10)",
+            border: `1px solid ${T.amber}40`,
+          }}
+        >
+          <AlertTriangle style={{ width: 18, height: 18, color: T.amber, flexShrink: 0, marginTop: 2 }} />
+          <div className="flex-1 text-[12.5px]" style={{ color: T.text, lineHeight: 1.55 }}>
+            <p style={{ fontWeight: 600, marginBottom: 4 }}>
+              Esta análise teve override admin
+            </p>
+            <p style={{ color: T.textMute }}>
+              <span>Decisão calculada pelos votos: </span>
+              <strong>{overrideMeta.calculated ? statusLabels[overrideMeta.calculated as keyof typeof statusLabels] || overrideMeta.calculated : "—"}</strong>
+              <span> · Decisão final aplicada: </span>
+              <strong>{overrideMeta.finalStatus ? statusLabels[overrideMeta.finalStatus as keyof typeof statusLabels] || overrideMeta.finalStatus : "—"}</strong>
+              {overrideMeta.at && (
+                <span> · em {formatDate(overrideMeta.at)}</span>
+              )}
+            </p>
+            {overrideMeta.reason && (
+              <p style={{ marginTop: 6, fontStyle: "italic", color: T.text }}>
+                "{overrideMeta.reason}"
+              </p>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
         {/* LEFT: Dossiê Resumido para o Comitê (60%) */}
@@ -582,22 +710,66 @@ export default function CommitteeVoting() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  {votes.map((v) => (
-                    <div key={v.id} className="flex items-start justify-between border-b last:border-0 pb-2 last:pb-0">
-                      <div>
-                        <p className="text-sm font-medium">{v.member_name}</p>
-                        <p className="text-[10px] text-muted-foreground">{v.member_role || "Membro"} • {formatDate(v.vote_date)}</p>
-                        {v.observation && <p className="text-xs text-muted-foreground mt-0.5 italic">"{v.observation}"</p>}
+                  {votes.map((v) => {
+                    const vAny = v as any;
+                    const isLocked = !!vAny.is_locked;
+                    const isOwnVote = currentUserId && vAny.voter_id === currentUserId;
+                    const canEdit = isOwnVote && !isLocked;
+                    return (
+                      <div key={v.id} className="flex items-start justify-between border-b last:border-0 pb-2 last:pb-0 gap-2">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <p className="text-sm font-medium">{v.member_name}</p>
+                            {isLocked && (
+                              <span
+                                className="inline-flex items-center gap-1 px-1.5 py-[1px] rounded-full text-[9px] font-semibold uppercase tracking-wider"
+                                style={{
+                                  fontFamily: "var(--font-mono)",
+                                  background: "rgba(10,21,56,0.06)",
+                                  color: T.textMute,
+                                }}
+                                title="Voto travado após finalização do comitê"
+                              >
+                                <Lock style={{ width: 9, height: 9 }} />
+                                Travado
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[10px] text-muted-foreground">
+                            {v.member_role || "Membro"} • {formatDate(v.vote_date)}
+                          </p>
+                          {v.observation && (
+                            <p className="text-xs text-muted-foreground mt-0.5 italic">
+                              "{v.observation}"
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
+                          <Badge className={
+                            v.vote === "approve" ? "bg-status-approved/10 text-status-approved border-status-approved/20" :
+                            v.vote === "reject" ? "bg-sink-danger/10 text-sink-danger border-sink-danger/20" :
+                            "bg-sink-warn/10 text-sink-warn border-sink-warn/20"
+                          }>
+                            {voteLabels[v.vote]}
+                          </Badge>
+                          {canEdit && (
+                            <button
+                              onClick={() => openEditVote(v)}
+                              className="inline-flex items-center gap-1 px-2 py-[3px] rounded-[6px] text-[10px] font-medium transition-colors hover:bg-[rgba(10,21,56,0.06)]"
+                              style={{
+                                color: T.textMute,
+                                border: `1px solid ${T.border}`,
+                                fontFamily: "var(--font-mono)",
+                              }}
+                            >
+                              <Pencil style={{ width: 10, height: 10 }} />
+                              Editar
+                            </button>
+                          )}
+                        </div>
                       </div>
-                      <Badge className={
-                        v.vote === "approve" ? "bg-status-approved/10 text-status-approved border-status-approved/20" :
-                        v.vote === "reject" ? "bg-sink-danger/10 text-sink-danger border-sink-danger/20" :
-                        "bg-sink-warn/10 text-sink-warn border-sink-warn/20"
-                      }>
-                        {voteLabels[v.vote]}
-                      </Badge>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </CardContent>
             </Card>
@@ -653,55 +825,242 @@ export default function CommitteeVoting() {
                 </Card>
               )}
 
-              {allVoted && (
-                <Card className="border-status-approved/30">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-status-approved" /> Finalizar Decisão
-                    </CardTitle>
-                    <CardDescription className="text-xs">
-                      {(() => {
-                        const r = calculateResult();
-                        return (
-                          <>
-                            Resultado por maioria: <strong>{statusLabels[r.decision]}</strong>
-                            {r.isTie && (
-                              <span className="block mt-1.5 px-2 py-1 rounded text-[11px]" style={{ background: "rgba(217,163,0,0.10)", color: "#7A5B00", border: "1px solid rgba(217,163,0,0.25)" }}>
-                                ⚠️ Sem maioria estrita ({r.counts.approve}A · {r.counts.restrict}R · {r.counts.reject}X) — decisão prudente aplicada. Registre mais votos pra confirmar.
-                              </span>
+              {allVoted && (() => {
+                const r = calculateResult();
+                const calculated = r.decision;
+                const overrideIsSame = overrideDecision === calculated;
+                const overrideValid =
+                  !!overrideDecision &&
+                  !overrideIsSame &&
+                  overrideReason.trim().length > 0;
+                return (
+                  <Card className="border-status-approved/30">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <CheckCircle className="h-4 w-4 text-status-approved" /> Finalizar Decisão
+                      </CardTitle>
+                      <CardDescription className="text-xs">
+                        Resultado calculado pelos votos: <strong>{statusLabels[calculated]}</strong>
+                        {" "}
+                        ({r.counts.approve}A · {r.counts.restrict}R · {r.counts.reject}X)
+                        {r.isTie && (
+                          <span
+                            className="block mt-1.5 px-2 py-1 rounded text-[11px]"
+                            style={{
+                              background: "rgba(217,163,0,0.10)",
+                              color: "#7A5B00",
+                              border: "1px solid rgba(217,163,0,0.25)",
+                            }}
+                          >
+                            Sem maioria estrita — decisão prudente será aplicada se finalizar agora.
+                          </span>
+                        )}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <Label className="text-xs">Limite Aprovado (R$)</Label>
+                          <Input type="number" step="0.01" value={limiteAprovado} onChange={(e) => setLimiteAprovado(e.target.value)} className="h-8 text-sm tabular-nums" />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">Prazo (dias)</Label>
+                          <Input type="number" value={prazoAprovado} onChange={(e) => setPrazoAprovado(e.target.value)} className="h-8 text-sm" />
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Concentração Máxima (%)</Label>
+                        <Input type="number" step="0.1" value={concentracaoMax} onChange={(e) => setConcentracaoMax(e.target.value)} className="h-8 text-sm tabular-nums" />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Condições Adicionais</Label>
+                        <Textarea value={condicoesAdicionais} onChange={(e) => setCondicoesAdicionais(e.target.value)} rows={2} className="text-sm" />
+                      </div>
+
+                      {/* Botão principal: aplica decisão calculada */}
+                      <Button
+                        onClick={() =>
+                          finalizeMutation.mutate({ finalDecision: calculated, reason: null })
+                        }
+                        disabled={finalizeMutation.isPending}
+                        className="w-full h-9 text-sm"
+                        style={{ background: T.esmeralda, color: T.marinho }}
+                      >
+                        {finalizeMutation.isPending
+                          ? "Finalizando..."
+                          : `Finalizar com decisão calculada (${statusLabels[calculated]})`}
+                      </Button>
+
+                      {/* Override admin */}
+                      {isAdmin && (
+                        <div
+                          className="rounded-[10px] overflow-hidden"
+                          style={{ border: `1px solid ${T.border}`, background: T.paper }}
+                        >
+                          <button
+                            onClick={() => setOverrideOpen((o) => !o)}
+                            className="w-full flex items-center justify-between gap-2 px-3 py-2 text-left text-[12px] font-medium transition-colors hover:bg-[rgba(10,21,56,0.04)]"
+                            style={{ color: T.text }}
+                          >
+                            <span className="flex items-center gap-2">
+                              <ShieldCheck style={{ width: 13, height: 13, color: T.amber }} />
+                              Aplicar decisão diferente (override admin)
+                            </span>
+                            {overrideOpen ? (
+                              <ChevronUp style={{ width: 14, height: 14, color: T.textMute }} />
+                            ) : (
+                              <ChevronDown style={{ width: 14, height: 14, color: T.textMute }} />
                             )}
-                          </>
-                        );
-                      })()}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="space-y-1">
-                        <Label className="text-xs">Limite Aprovado (R$)</Label>
-                        <Input type="number" step="0.01" value={limiteAprovado} onChange={(e) => setLimiteAprovado(e.target.value)} className="h-8 text-sm tabular-nums" />
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs">Prazo (dias)</Label>
-                        <Input type="number" value={prazoAprovado} onChange={(e) => setPrazoAprovado(e.target.value)} className="h-8 text-sm" />
-                      </div>
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs">Concentração Máxima (%)</Label>
-                      <Input type="number" step="0.1" value={concentracaoMax} onChange={(e) => setConcentracaoMax(e.target.value)} className="h-8 text-sm tabular-nums" />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs">Condições Adicionais</Label>
-                      <Textarea value={condicoesAdicionais} onChange={(e) => setCondicoesAdicionais(e.target.value)} rows={2} className="text-sm" />
-                    </div>
-                    <Button onClick={() => finalizeMutation.mutate()} disabled={finalizeMutation.isPending} className="w-full h-9 text-sm">
-                      {finalizeMutation.isPending ? "Finalizando..." : "Finalizar Decisão do Comitê"}
-                    </Button>
-                  </CardContent>
-                </Card>
-              )}
+                          </button>
+                          {overrideOpen && (
+                            <div className="px-3 pb-3 pt-1 space-y-2" style={{ borderTop: `1px solid ${T.border}` }}>
+                              <p className="text-[11px]" style={{ color: T.textMute, lineHeight: 1.5 }}>
+                                Use para registrar uma decisão diferente da calculada pelos votos.
+                                A justificativa fica auditada e visível no dossiê.
+                              </p>
+                              <div className="space-y-1">
+                                <Label className="text-xs">Decisão final</Label>
+                                <Select value={overrideDecision} onValueChange={setOverrideDecision}>
+                                  <SelectTrigger className="h-8 text-sm">
+                                    <SelectValue placeholder="Selecione" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="approved">Aprovar</SelectItem>
+                                    <SelectItem value="approved_restricted">Aprovar com restrição</SelectItem>
+                                    <SelectItem value="rejected">Rejeitar</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="text-xs">
+                                  Justificativa do override <span style={{ color: T.danger }}>*</span>
+                                </Label>
+                                <Textarea
+                                  value={overrideReason}
+                                  onChange={(e) => setOverrideReason(e.target.value)}
+                                  rows={3}
+                                  placeholder="Explique por que está aplicando uma decisão diferente da calculada..."
+                                  className="text-sm"
+                                />
+                              </div>
+                              {overrideIsSame && overrideDecision && (
+                                <p
+                                  className="text-[11px] px-2 py-1 rounded"
+                                  style={{
+                                    background: "rgba(217,163,0,0.10)",
+                                    color: "#7A5B00",
+                                    border: "1px solid rgba(217,163,0,0.25)",
+                                  }}
+                                >
+                                  A decisão escolhida é igual à calculada — use o botão verde acima.
+                                </p>
+                              )}
+                              <Button
+                                onClick={() =>
+                                  finalizeMutation.mutate({
+                                    finalDecision:
+                                      overrideDecision as Database["public"]["Enums"]["credit_status"],
+                                    reason: overrideReason.trim(),
+                                  })
+                                }
+                                disabled={!overrideValid || finalizeMutation.isPending}
+                                className="w-full h-8 text-sm"
+                                style={{ background: T.amber, color: T.marinho }}
+                              >
+                                {finalizeMutation.isPending
+                                  ? "Aplicando..."
+                                  : "Aplicar override"}
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })()}
             </>
           )}
+
+          {/* Dialog de edição de voto próprio */}
+          <Dialog
+            open={!!editingVoteId}
+            onOpenChange={(open) => {
+              if (!open) {
+                setEditingVoteId(null);
+                setEditVote("");
+                setEditObservation("");
+              }
+            }}
+          >
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Editar voto</DialogTitle>
+                <DialogDescription>
+                  Você pode editar enquanto o comitê não estiver finalizado.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-3 pt-1">
+                <div className="space-y-2">
+                  <Label className="text-xs">Voto</Label>
+                  <div className="grid grid-cols-1 gap-2">
+                    {[
+                      { value: "approve", label: "Aprovar", color: T.esmeralda },
+                      { value: "restrict", label: "Aprovar com restrição", color: T.amber },
+                      { value: "reject", label: "Rejeitar", color: T.danger },
+                    ].map((opt) => {
+                      const selected = editVote === opt.value;
+                      return (
+                        <button
+                          key={opt.value}
+                          onClick={() => setEditVote(opt.value)}
+                          className="flex items-center justify-between px-3 py-2 rounded-[8px] text-[13px] font-medium transition-colors text-left"
+                          style={{
+                            background: selected ? `${opt.color}20` : T.white,
+                            border: `1.5px solid ${selected ? opt.color : T.border}`,
+                            color: selected ? opt.color : T.text,
+                          }}
+                        >
+                          <span>{opt.label}</span>
+                          {selected && <CheckCircle style={{ width: 14, height: 14 }} />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Justificativa / observação</Label>
+                  <Textarea
+                    value={editObservation}
+                    onChange={(e) => setEditObservation(e.target.value)}
+                    rows={3}
+                    className="text-sm"
+                    placeholder="Motivo do voto (opcional)"
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <button
+                  onClick={() => {
+                    setEditingVoteId(null);
+                    setEditVote("");
+                    setEditObservation("");
+                  }}
+                  className="px-4 py-[7px] rounded-[999px] text-[12px] font-medium border"
+                  style={{ border: `1px solid ${T.border}`, color: T.textMute }}
+                >
+                  Cancelar
+                </button>
+                <Button
+                  onClick={() => editVoteMutation.mutate()}
+                  disabled={!editVote || editVoteMutation.isPending}
+                  className="h-8 text-sm"
+                >
+                  {editVoteMutation.isPending ? "Salvando..." : "Salvar voto"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
 
           {isFinalized && existingResult && (
             <Card className="border-primary/20">

@@ -16,6 +16,7 @@ import {
   UserSearch, Loader2, ChevronRight,
 } from "lucide-react";
 import { COMMITTEE_FIELD_OPTIONS, DEFAULT_REQUIRED_FIELDS } from "@/hooks/useCommitteeRequirements";
+import CommitteeMembersSection from "@/components/settings/CommitteeMembersSection";
 
 /* ── Types ────────────────────────────────────────────────────────── */
 
@@ -26,7 +27,7 @@ function parseValue(val: any): string {
   return JSON.stringify(val);
 }
 
-type Section = "empresa" | "aprovacao" | "comite" | "automacao" | "integracoes" | "acessos";
+type Section = "empresa" | "aprovacao" | "comite" | "membros_comite" | "automacao" | "integracoes" | "acessos";
 
 /* ── Sub-components ────────────────────────────────────────────────── */
 
@@ -154,6 +155,7 @@ export default function Settings() {
     { key: "empresa",      label: "Empresa",            icon: Building2 },
     { key: "aprovacao",    label: "Políticas de crédito", icon: Shield },
     { key: "comite",       label: "Requisitos do comitê", icon: CheckCircle2 },
+    { key: "membros_comite", label: "Membros do comitê", icon: Users },
     { key: "automacao",    label: "Automações",          icon: Zap },
     { key: "integracoes",  label: "Integrações",         icon: Plug, badge: totalIntegrations > 0 ? `${activeIntegrations}/${totalIntegrations}` : undefined },
     { key: "acessos",      label: "Acessos",             icon: Users },
@@ -448,6 +450,9 @@ export default function Settings() {
               </div>
             );
           })()}
+
+          {/* ── Membros do comitê ─────────────────────────────────── */}
+          {section === "membros_comite" && <CommitteeMembersSection />}
 
           {/* ── Automação ─────────────────────────────────────────── */}
           {section === "automacao" && (
