@@ -85,20 +85,18 @@ export default function Clients() {
   });
 
   const enrichedClients = useMemo<ClientWithAnalysis[]>(() => {
-    // Portfólio = só cedentes que já entraram no fluxo de análise.
-    // Cedentes sem análise (status virtual "cadastrado") aparecem em Prospects, não aqui.
-    return clients
-      .map((c) => {
-        const latest = analyses.filter((a) => a.client_id === c.id)[0];
-        return {
-          ...c,
-          latestStatus: latest ? (latest.status as KanbanStage) : ("cadastrado" as const),
-          latestAnalysisId: latest?.id ?? null,
-          latestLimiteSugerido: latest?.limite_sugerido ?? null,
-          latestScore: latest?.credit_score ?? null,
-        };
-      })
-      .filter((c) => c.latestStatus !== "cadastrado");
+    // Portfólio mostra TODOS os cedentes — recém-cadastrados aparecem na coluna
+    // "Cadastrado" do kanban (status virtual quando ainda não há análise).
+    return clients.map((c) => {
+      const latest = analyses.filter((a) => a.client_id === c.id)[0];
+      return {
+        ...c,
+        latestStatus: latest ? (latest.status as KanbanStage) : ("cadastrado" as const),
+        latestAnalysisId: latest?.id ?? null,
+        latestLimiteSugerido: latest?.limite_sugerido ?? null,
+        latestScore: latest?.credit_score ?? null,
+      };
+    });
   }, [clients, analyses]);
 
   const filtered = useMemo(() => {
