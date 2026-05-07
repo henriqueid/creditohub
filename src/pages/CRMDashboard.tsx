@@ -124,7 +124,7 @@ export default function CRMDashboard() {
     }), [stages, deals]);
 
   return (
-    <div className="p-7 space-y-[14px]">
+    <div className="p-4 sm:p-7 space-y-[14px]">
       <PageHeader
         title="Painel comercial"
         subtitle={`EQUIPE COMERCIAL · ${new Date().toLocaleDateString("pt-BR", { month: "short", year: "numeric" }).toUpperCase()}`}
@@ -154,7 +154,7 @@ export default function CRMDashboard() {
       />
 
       {/* KPIs */}
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <KPI label="Pipeline aberto" value={BRL(pipelineTotal)} sub={`${activeDeals.length} deals`} trend="vs. mês ant." spark={sparkPipeline} />
         <KPI label="Ganhos acumulados" value={BRL(wonTotal)} sub={`${wonDeals.length} deals fechados`} trend="acumulado" trendDir="up" />
         <KPI label="Tarefas pendentes" value={String(taskCount)} sub="pendentes" trendDir={taskCount > 5 ? "down" : "up"} />
@@ -162,7 +162,7 @@ export default function CRMDashboard() {
       </div>
 
       {/* Funil + Ranking */}
-      <div className="grid gap-3" style={{ gridTemplateColumns: "1.4fr 1fr" }}>
+      <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-3">
         <Card padding={18}>
           <SectionTitle
             action={<span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: T.textFaint, letterSpacing: "0.08em" }}>PIPELINE</span>}

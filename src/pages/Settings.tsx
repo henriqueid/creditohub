@@ -168,7 +168,7 @@ export default function Settings() {
   }
 
   return (
-    <div className="p-7 space-y-5">
+    <div className="p-4 sm:p-7 space-y-5">
       <PageHeader
         title="Configurações"
         subtitle="SISTEMA E OPERAÇÕES"
@@ -206,35 +206,37 @@ export default function Settings() {
       </button>
 
       {/* Sidebar + content */}
-      <div className="grid gap-5" style={{ gridTemplateColumns: "200px 1fr" }}>
+      <div className="grid gap-5 grid-cols-1 lg:grid-cols-[200px_1fr]">
 
-        {/* Sidebar nav */}
+        {/* Sidebar nav (desktop) / Tabs horizontais (mobile) */}
         <div
-          className="rounded-[16px] py-2 h-fit"
-          style={{ background: T.white, border: `1px solid ${T.border}`, boxShadow: "var(--shadow-sm)" }}
+          className="rounded-[16px] py-2 h-fit overflow-x-auto lg:overflow-visible"
+          style={{ background: T.white, border: `1px solid ${T.border}`, boxShadow: "var(--shadow-sm)", scrollbarWidth: "none" }}
         >
-          {NAV.map(item => {
-            const active = section === item.key;
-            return (
-              <button
-                key={item.key}
-                onClick={() => setSection(item.key)}
-                className="w-full flex items-center gap-3 px-4 py-[10px] text-left transition-colors"
-                style={{
-                  background: active ? "rgba(0,212,154,0.08)" : "transparent",
-                  borderLeft: `3px solid ${active ? T.esmeralda : "transparent"}`,
-                }}
-              >
-                <item.icon style={{ width: 15, height: 15, color: active ? T.esmeralda : T.textMute, flexShrink: 0 }} />
-                <span style={{ fontSize: 13, fontWeight: active ? 600 : 400, color: active ? T.text : T.textMute, flex: 1 }}>
-                  {item.label}
-                </span>
-                {item.badge && (
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: T.textFaint }}>{item.badge}</span>
-                )}
-              </button>
-            );
-          })}
+          <div className="flex lg:flex-col">
+            {NAV.map(item => {
+              const active = section === item.key;
+              return (
+                <button
+                  key={item.key}
+                  onClick={() => setSection(item.key)}
+                  className="flex-shrink-0 lg:w-full flex items-center gap-3 px-4 py-[10px] text-left transition-colors whitespace-nowrap"
+                  style={{
+                    background: active ? "rgba(0,212,154,0.08)" : "transparent",
+                    borderLeft: `3px solid ${active ? T.esmeralda : "transparent"}`,
+                  }}
+                >
+                  <item.icon style={{ width: 15, height: 15, color: active ? T.esmeralda : T.textMute, flexShrink: 0 }} />
+                  <span style={{ fontSize: 13, fontWeight: active ? 600 : 400, color: active ? T.text : T.textMute, flex: 1 }}>
+                    {item.label}
+                  </span>
+                  {item.badge && (
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: T.textFaint }}>{item.badge}</span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* Content */}
@@ -660,7 +662,7 @@ function IntegrationsSection() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {integrations.map((item: any) => (
               <div
                 key={item.id}

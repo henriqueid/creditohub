@@ -16,7 +16,7 @@ import {
   ArrowLeft, Plus, Trash2, Send, Printer, Save, Building2, BarChart3,
   Users, ShieldCheck, TrendingUp, AlertTriangle, Settings2, FileCheck,
   Sparkles, Brain, Target, Gauge, FileText, Zap, ChevronDown, Check, Eye, EyeOff,
-  Landmark, Handshake, MapPin, DollarSign, Scale, Activity, ChevronsDownUp, ChevronsUpDown
+  Landmark, Handshake, MapPin, DollarSign, Scale, Activity, ChevronsDownUp, ChevronsUpDown, Receipt
 } from "lucide-react";
 import { StatusBadge } from "@/components/StatusBadge";
 import { fetchPrintData, generatePrintHtml, openPrintWindow } from "@/lib/pdf-export";
@@ -74,7 +74,11 @@ function Field({ label, children, hint }: { label: string; children: React.React
 }
 
 function FieldGroup({ children, cols = 2 }: { children: React.ReactNode; cols?: 2 | 3 | 4 }) {
-  const gridCols = cols === 4 ? "grid-cols-2 md:grid-cols-4" : cols === 3 ? "grid-cols-1 md:grid-cols-3" : "grid-cols-1 md:grid-cols-2";
+  const gridCols = cols === 4
+    ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"
+    : cols === 3
+    ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+    : "grid-cols-1 sm:grid-cols-2";
   return <div className={`grid ${gridCols} gap-4`}>{children}</div>;
 }
 
@@ -843,7 +847,18 @@ export default function CreditAnalysisForm() {
         recLiqNum ? `Receita Líq.: ${formatBRL(recLiqNum)}` : null,
         capSocNum ? `Capital Social: ${formatBRL(capSocNum)}` : null,
         prazoMedioTitulos ? `Prazo: ${prazoMedioTitulos} dias` : null,
-        sacados.length > 0 ? `${sacados.length} sacado(s)` : null,
+      ].filter(Boolean) as string[],
+      sacados: [
+        sacados.length > 0
+          ? `${sacados.length} sacado${sacados.length > 1 ? "s" : ""}`
+          : null,
+        concentration.totalConcentration > 0
+          ? `Total: ${concentration.totalConcentration.toFixed(0)}%`
+          : null,
+        concentration.maxSingleConcentration > 0
+          ? `Maior: ${concentration.maxSingleConcentration.toFixed(0)}%`
+          : null,
+        concentration.hhi > 0 ? `HHI: ${concentration.hhi.toFixed(0)}` : null,
       ].filter(Boolean) as string[],
       societaria: [
         socios.length > 0 ? `${socios.length} sócio(s) • ${sociosTotal.totalParticipacao.toFixed(1)}%` : null,
@@ -889,6 +904,41 @@ export default function CreditAnalysisForm() {
 
   return (
     <div className="flex h-[calc(100vh-3.5rem)] overflow-hidden" style={{ background: "#EDEEE7" }}>
+      {/* Aviso mobile: edição apenas em telas maiores */}
+      <div
+        className="sm:hidden fixed inset-0 z-[150] flex items-center justify-center p-6"
+        style={{ background: "rgba(10,21,56,0.92)" }}
+      >
+        <div
+          className="rounded-[16px] px-6 py-7 max-w-sm text-center"
+          style={{ background: "#FBFBF7", boxShadow: "0 12px 40px -8px rgba(0,0,0,0.4)" }}
+        >
+          <div
+            style={{
+              width: 56, height: 56, borderRadius: 16,
+              background: "rgba(0,212,154,0.15)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              margin: "0 auto 16px",
+            }}
+          >
+            <FileText style={{ width: 26, height: 26, color: "#00D49A" }} />
+          </div>
+          <h2 style={{ fontSize: 17, fontWeight: 600, color: "#0A1538", marginBottom: 8 }}>
+            Dossiê em modo leitura
+          </h2>
+          <p style={{ fontSize: 13, color: "rgba(10,21,56,0.65)", lineHeight: 1.5, marginBottom: 16 }}>
+            Edição disponível apenas em telas maiores. Abra no desktop ou tablet horizontal para preencher e enviar ao comitê.
+          </p>
+          <button
+            onClick={() => navigate("/analises")}
+            className="w-full py-[10px] rounded-[10px] text-[13px] font-semibold transition-opacity hover:opacity-90"
+            style={{ background: "#0A1538", color: "#FAFAF7" }}
+          >
+            Voltar para Análises
+          </button>
+        </div>
+      </div>
+
       {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top bar */}
@@ -1427,11 +1477,69 @@ export default function CreditAnalysisForm() {
                     <Textarea value={faturamentoDetalhado} onChange={(e) => setFaturamentoDetalhado(e.target.value)} disabled={isReadOnly} rows={2} className="text-sm resize-none" placeholder="Ex: Jan R$100k, Fev R$120k... ou descrição qualitativa" />
                   </Field>
                 </div>
+              </SectionWrapper>
 
-                {/* Sacados table */}
-                <div className="pt-3">
+              {/* 3. Sacados (carteira do cedente) */}
+              <SectionWrapper title="Sacados" icon={Receipt} section="sacados"
+                analysisId={isEditing ? id! : null} attachments={sectionAttachments.sacados || []}
+                onAttachmentsChange={updateSectionAttachments("sacados")}
+                onDataExtracted={handleDataExtracted} analysisContext={analysisDataForAI} disabled={isReadOnly}
+                compactMode={compactMode} bulkToggle={bulkToggle} summary={sectionSummaries.sacados}
+              >
+                {/* Métricas de concentração */}
+                {sacados.length > 0 && (
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
+                    <div className="rounded-sink-md p-3" style={{ background: "var(--paper)", border: "1px solid rgba(10,21,56,0.08)" }}>
+                      <p className="font-mono text-[9px] uppercase tracking-wider text-sink-deep/50 mb-1">Sacados</p>
+                      <p className="text-[20px] font-bold text-sink-deep tabular-nums leading-none">{sacados.length}</p>
+                    </div>
+                    <div className="rounded-sink-md p-3" style={{ background: "var(--paper)", border: "1px solid rgba(10,21,56,0.08)" }}>
+                      <p className="font-mono text-[9px] uppercase tracking-wider text-sink-deep/50 mb-1">Total Fat.</p>
+                      <p className={cn("text-[20px] font-bold tabular-nums leading-none",
+                        concentration.totalConcentration > 100 ? "text-sink-danger"
+                          : concentration.totalConcentration > 0 ? "text-sink-deep" : "text-sink-deep/30"
+                      )}>
+                        {concentration.totalConcentration.toFixed(0)}<span className="text-[12px]">%</span>
+                      </p>
+                    </div>
+                    <div className="rounded-sink-md p-3" style={{ background: "var(--paper)", border: "1px solid rgba(10,21,56,0.08)" }}>
+                      <p className="font-mono text-[9px] uppercase tracking-wider text-sink-deep/50 mb-1">Maior Sacado</p>
+                      <p className={cn("text-[20px] font-bold tabular-nums leading-none",
+                        concentration.maxSingleConcentration > 30 ? "text-sink-danger"
+                          : concentration.maxSingleConcentration > 0 ? "text-sink-deep" : "text-sink-deep/30"
+                      )}>
+                        {concentration.maxSingleConcentration.toFixed(0)}<span className="text-[12px]">%</span>
+                      </p>
+                    </div>
+                    <div className="rounded-sink-md p-3" style={{ background: "var(--paper)", border: "1px solid rgba(10,21,56,0.08)" }}>
+                      <p className="font-mono text-[9px] uppercase tracking-wider text-sink-deep/50 mb-1">HHI</p>
+                      <p className={cn("text-[20px] font-bold tabular-nums leading-none",
+                        concentration.hhi > 2500 ? "text-sink-danger"
+                          : concentration.hhi > 1500 ? "text-sink-warn" : "text-sink-mint"
+                      )}>
+                        {concentration.hhi.toFixed(0)}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Alertas */}
+                {concentration.alerts.length > 0 && (
+                  <div className="mb-4 space-y-1.5">
+                    {concentration.alerts.map((alert, i) => (
+                      <div key={i} className="flex items-start gap-2 px-3 py-2 rounded-sink-md text-[12px]"
+                        style={{ background: "rgba(217,163,0,0.08)", border: "1px solid rgba(217,163,0,0.25)", color: "#7A5B00" }}>
+                        <AlertTriangle className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
+                        <span>{alert}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Tabela de sacados */}
+                <div>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="font-mono text-[10px] uppercase tracking-wider text-sink-deep/50 font-semibold">Principais Sacados</span>
+                    <span className="font-mono text-[10px] uppercase tracking-wider text-sink-deep/50 font-semibold">Carteira de Sacados</span>
                     {!isReadOnly && (
                       <Button
                         type="button"
@@ -1440,18 +1548,18 @@ export default function CreditAnalysisForm() {
                         className="h-7 font-mono text-[10px] rounded-sink-md border border-sink-fog bg-transparent text-sink-deep/60 hover:bg-sink-cream hover:text-sink-deep"
                         onClick={addSacado}
                       >
-                        <Plus className="h-3 w-3 mr-1" /> Sacado
+                        <Plus className="h-3 w-3 mr-1" /> Adicionar Sacado
                       </Button>
                     )}
                   </div>
-                  {sacados.length > 0 && (
+                  {sacados.length > 0 ? (
                     <div className="rounded-sink-md border border-sink-fog overflow-hidden">
                       <Table>
                         <TableHeader>
                           <TableRow className="bg-sink-cream/80 border-b border-sink-fog hover:bg-sink-cream">
                             <TableHead className="font-mono text-[10px] uppercase tracking-wider text-sink-deep/50 h-8">Sacado</TableHead>
-                            <TableHead className="font-mono text-[10px] uppercase tracking-wider text-sink-deep/50 h-8 w-32">% Fat.</TableHead>
-                            <TableHead className="font-mono text-[10px] uppercase tracking-wider text-sink-deep/50 h-8 w-28">Prazo</TableHead>
+                            <TableHead className="font-mono text-[10px] uppercase tracking-wider text-sink-deep/50 h-8 w-32">% Faturamento</TableHead>
+                            <TableHead className="font-mono text-[10px] uppercase tracking-wider text-sink-deep/50 h-8 w-28">Prazo Médio (dias)</TableHead>
                             {!isReadOnly && <TableHead className="w-10 h-8" />}
                           </TableRow>
                         </TableHeader>
@@ -1459,13 +1567,13 @@ export default function CreditAnalysisForm() {
                           {sacados.map((s, i) => (
                             <TableRow key={i} className="border-b border-sink-fog/40 hover:bg-sink-cream/40">
                               <TableCell className="p-1.5">
-                                <Input value={s.sacado_nome} onChange={(e) => { const u = [...sacados]; u[i].sacado_nome = e.target.value; setSacados(u); }} disabled={isReadOnly} className="h-8 text-sm border-0 bg-transparent shadow-none focus-visible:ring-1 focus-visible:ring-sink-mint" />
+                                <Input value={s.sacado_nome} onChange={(e) => { const u = [...sacados]; u[i].sacado_nome = e.target.value; setSacados(u); }} disabled={isReadOnly} className="h-8 text-sm border-0 bg-transparent shadow-none focus-visible:ring-1 focus-visible:ring-sink-mint" placeholder="Nome do sacado" />
                               </TableCell>
                               <TableCell className="p-1.5">
-                                <Input type="number" step="0.1" value={s.percentual_faturamento ?? ""} onChange={(e) => { const u = [...sacados]; u[i].percentual_faturamento = e.target.value ? parseFloat(e.target.value) : null; setSacados(u); }} disabled={isReadOnly} className="h-8 text-sm tabular-nums border-0 bg-transparent shadow-none focus-visible:ring-1 focus-visible:ring-sink-mint" />
+                                <Input type="number" step="0.1" value={s.percentual_faturamento ?? ""} onChange={(e) => { const u = [...sacados]; u[i].percentual_faturamento = e.target.value ? parseFloat(e.target.value) : null; setSacados(u); }} disabled={isReadOnly} className="h-8 text-sm tabular-nums border-0 bg-transparent shadow-none focus-visible:ring-1 focus-visible:ring-sink-mint" placeholder="0" />
                               </TableCell>
                               <TableCell className="p-1.5">
-                                <Input type="number" value={s.prazo_medio ?? ""} onChange={(e) => { const u = [...sacados]; u[i].prazo_medio = e.target.value ? parseInt(e.target.value) : null; setSacados(u); }} disabled={isReadOnly} className="h-8 text-sm tabular-nums border-0 bg-transparent shadow-none focus-visible:ring-1 focus-visible:ring-sink-mint" />
+                                <Input type="number" value={s.prazo_medio ?? ""} onChange={(e) => { const u = [...sacados]; u[i].prazo_medio = e.target.value ? parseInt(e.target.value) : null; setSacados(u); }} disabled={isReadOnly} className="h-8 text-sm tabular-nums border-0 bg-transparent shadow-none focus-visible:ring-1 focus-visible:ring-sink-mint" placeholder="0" />
                               </TableCell>
                               {!isReadOnly && (
                                 <TableCell className="p-1.5">
@@ -1477,11 +1585,18 @@ export default function CreditAnalysisForm() {
                         </TableBody>
                       </Table>
                     </div>
+                  ) : (
+                    <div className="rounded-sink-md border border-dashed border-sink-fog p-6 text-center">
+                      <Receipt className="h-6 w-6 text-sink-deep/30 mx-auto mb-2" />
+                      <p className="text-[12px] text-sink-deep/50">
+                        Nenhum sacado cadastrado.{!isReadOnly && " Clique em \"Adicionar Sacado\" pra começar."}
+                      </p>
+                    </div>
                   )}
                 </div>
               </SectionWrapper>
 
-              {/* 3. Societária */}
+              {/* 4. Societária */}
               <SectionWrapper title="Estrutura Societária" icon={Users} section="societaria"
                 analysisId={isEditing ? id! : null} attachments={sectionAttachments.societaria || []}
                 onAttachmentsChange={updateSectionAttachments("societaria")}

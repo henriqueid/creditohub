@@ -170,7 +170,15 @@ export async function fetchExternalConsulta(document: string): Promise<ExternalS
   if (cleanDoc.length === 14) {
     try {
       // BrasilAPI call (CNPJ é dado público mas evitamos logar)
-      const response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cleanDoc}`);
+      const response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cleanDoc}`, {
+        // Algumas redes corporativas/proxies derrubam preflight; explicit mode
+        method: "GET",
+        headers: { "Accept": "application/json" },
+      });
+      if (!response.ok) {
+        // Loga sem PII
+        console.warn(`[BrasilAPI] HTTP ${response.status}`);
+      }
       if (response.ok) {
         const raw = await response.json();
 
@@ -260,18 +268,20 @@ export async function fetchExternalConsulta(document: string): Promise<ExternalS
           message: response.status === 404 ? "CNPJ não encontrado na Receita Federal" : `Erro HTTP ${response.status}`,
         });
       }
-    } catch {
+    } catch (e: any) {
+      // Captura o erro real pra ajudar debug — sem expor PII
+      console.error("[BrasilAPI] fetch error:", e?.name, e?.message);
       results.push({
         source: "BrasilAPI (Receita Federal)",
         status: "error",
-        message: "Falha na comunicação com BrasilAPI",
+        message: `Falha na comunicação com BrasilAPI: ${e?.message || "erro desconhecido"}`,
       });
     }
   } else {
     results.push({
       source: "BrasilAPI (Receita Federal)",
       status: "not_configured",
-      message: "Disponível apenas para CNPJ (14 dígitos)",
+      message: `Disponível apenas para CNPJ (14 dígitos) — recebido ${cleanDoc.length} dígito(s)`,
     });
   }
 

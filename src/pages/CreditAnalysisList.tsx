@@ -157,7 +157,7 @@ export default function CreditAnalysisList() {
   }, {});
 
   return (
-    <div className="p-7 flex flex-col h-full" style={{ minHeight: "calc(100vh - 104px)" }}>
+    <div className="p-4 sm:p-7 flex flex-col h-full" style={{ minHeight: "calc(100vh - 104px)" }}>
       <PageHeader
         title="Análises de Crédito"
         subtitle={`${analyses.length} ANÁLISES · ARRASTE PARA MOVER ETAPA`}
@@ -179,8 +179,11 @@ export default function CreditAnalysisList() {
       ) : (
         <DragDropContext onDragEnd={onDragEnd}>
           <div
-            className="flex-1 grid gap-[10px]"
-            style={{ gridTemplateColumns: `repeat(${STAGES.length}, 1fr)`, minHeight: 400 }}
+            className="flex-1 grid gap-[10px] overflow-x-auto"
+            style={{
+              gridTemplateColumns: `repeat(${STAGES.length}, minmax(240px, 1fr))`,
+              minHeight: 400,
+            }}
           >
             {STAGES.map((stage) => {
               const cards = byStage[stage.key] || [];

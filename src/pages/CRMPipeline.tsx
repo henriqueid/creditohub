@@ -163,7 +163,7 @@ export default function CRMPipeline() {
     <div className="flex flex-col" style={{ minHeight: "calc(100vh - 68px)", background: "var(--off)" }}>
 
       {/* ── Header ─────────────────────────────────────────────────── */}
-      <div className="px-7 pt-6 pb-0">
+      <div className="px-4 sm:px-7 pt-6 pb-0">
         <PageHeader
           title="Pipeline comercial"
           subtitle={`${deals.length} OPORTUNIDADES · ${formatBRL(totalPipeline)} EM ABERTO`}
@@ -182,7 +182,7 @@ export default function CRMPipeline() {
         <NewDealDialog open={newDealOpen} onOpenChange={setNewDealOpen} />
 
         {/* ── KPI strip ──────────────────────────────────────────── */}
-        <div className="grid grid-cols-4 gap-3 mt-5 mb-5">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-5 mb-5">
           {[
             { label: "Limite ativo",    value: formatBRL(totalPipeline),  sub: `${activeDeals.length} deals · cap de crédito`, icon: TrendingUp },
             { label: "Volume/mês ativo", value: formatBRL(totalMonthlyVolume), sub: "fluxo esperado mensal", icon: TrendingUp },
@@ -226,7 +226,7 @@ export default function CRMPipeline() {
       </div>
 
       {/* ── Kanban ─────────────────────────────────────────────────── */}
-      <div className="flex-1 overflow-x-auto px-7 pb-7">
+      <div className="flex-1 overflow-x-auto px-4 sm:px-7 pb-7">
         <DragDropContext
           onDragEnd={(result: DropResult) => {
             const { destination, source, draggableId } = result;

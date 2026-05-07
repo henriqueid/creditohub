@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -12,7 +12,28 @@ import { StatusBadge } from "@/components/trilho/StatusBadge";
 import { PageHeader } from "@/components/trilho/PageHeader";
 import { Sparkline } from "@/components/trilho/Sparkline";
 import { differenceInDays, parseISO } from "date-fns";
-import { AlertTriangle, Clock, CheckSquare, Activity, ChevronRight, Calendar } from "lucide-react";
+import { AlertTriangle, Clock, CheckSquare, Activity, ChevronRight, Calendar, X } from "lucide-react";
+
+const DISMISSED_ALERTS_KEY = "dashboard.dismissedAlerts";
+
+// Cada alerta dismissado tem TTL — depois disso volta a aparecer mesmo se a condição persistir.
+// Útil pra "snooze" de 4h em vez de "esconder pra sempre".
+const DISMISS_TTL_MS = 4 * 60 * 60 * 1000; // 4h
+
+function loadDismissed(): Record<string, number> {
+  try {
+    const raw = localStorage.getItem(DISMISSED_ALERTS_KEY);
+    if (!raw) return {};
+    const data = JSON.parse(raw) as Record<string, number>;
+    const now = Date.now();
+    // Remove expirados
+    return Object.fromEntries(Object.entries(data).filter(([_, ts]) => now - ts < DISMISS_TTL_MS));
+  } catch { return {}; }
+}
+
+function saveDismissed(d: Record<string, number>) {
+  try { localStorage.setItem(DISMISSED_ALERTS_KEY, JSON.stringify(d)); } catch { /* ignora */ }
+}
 
 function getTier(score: number) {
   if (score >= 800) return "AAA";
@@ -36,6 +57,18 @@ function PriorityDot({ priority }: { priority: string }) {
 }
 
 export default function Dashboard() {
+  const [dismissed, setDismissed] = useState<Record<string, number>>(() => loadDismissed());
+
+  useEffect(() => { saveDismissed(dismissed); }, [dismissed]);
+
+  function dismissAlert(key: string) {
+    setDismissed(prev => ({ ...prev, [key]: Date.now() }));
+  }
+  function dismissAll(keys: string[]) {
+    const now = Date.now();
+    setDismissed(prev => ({ ...prev, ...Object.fromEntries(keys.map(k => [k, now])) }));
+  }
+
   const navigate = useNavigate();
   const [periodDays, setPeriodDays] = useState<number | null>(null);
 
@@ -185,6 +218,8 @@ export default function Dashboard() {
     },
   ].filter(Boolean) as { key: string; label: string; color: string; bg: string; path: string }[];
 
+  const visibleAlerts = alerts.filter(a => !(a.key in dismissed));
+
   // ── Tarefas para exibir ──────────────────────────────────────────────
   const visibleTasks = crmTasks.slice(0, 5);
   const pendingTasks = crmTasks.length;
@@ -234,7 +269,7 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="p-7 space-y-[14px]">
+    <div className="p-4 sm:p-7 space-y-[14px]">
       <PageHeader
         title="Painel inicial"
         subtitle={`ATUALIZADO AGORA · ${new Date().toLocaleDateString("pt-BR", { month: "short", year: "numeric" }).toUpperCase()}`}
@@ -250,25 +285,49 @@ export default function Dashboard() {
       />
 
       {/* ── Alert strip ──────────────────────────────────────────── */}
-      {alerts.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {alerts.map(alert => (
-            <button
+      {visibleAlerts.length > 0 && (
+        <div className="flex flex-wrap gap-2 items-center">
+          {visibleAlerts.map(alert => (
+            <div
               key={alert.key}
-              onClick={() => navigate(alert.path)}
-              className="flex items-center gap-2 px-[12px] py-[7px] rounded-[8px] text-[12px] font-medium transition-opacity hover:opacity-80"
-              style={{ background: alert.bg, color: alert.color, border: `1px solid ${alert.color}22` }}
+              className="flex items-center rounded-[8px] overflow-hidden"
+              style={{ background: alert.bg, border: `1px solid ${alert.color}22` }}
             >
-              <AlertTriangle style={{ width: 13, height: 13 }} />
-              {alert.label}
-              <ChevronRight style={{ width: 12, height: 12, opacity: 0.6 }} />
-            </button>
+              <button
+                onClick={() => navigate(alert.path)}
+                className="flex items-center gap-2 px-[12px] py-[7px] text-[12px] font-medium transition-opacity hover:opacity-80"
+                style={{ color: alert.color, background: "transparent", border: "none" }}
+                title="Abrir tela relacionada"
+              >
+                <AlertTriangle style={{ width: 13, height: 13 }} />
+                {alert.label}
+                <ChevronRight style={{ width: 12, height: 12, opacity: 0.6 }} />
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); dismissAlert(alert.key); }}
+                className="flex items-center justify-center px-[8px] py-[7px] transition-opacity hover:opacity-100"
+                style={{ color: alert.color, opacity: 0.5, background: "transparent", border: "none", borderLeft: `1px solid ${alert.color}22` }}
+                title="Dispensar alerta (volta em 4h)"
+              >
+                <X style={{ width: 12, height: 12 }} />
+              </button>
+            </div>
           ))}
+          {visibleAlerts.length > 1 && (
+            <button
+              onClick={() => dismissAll(visibleAlerts.map(a => a.key))}
+              className="px-[10px] py-[7px] rounded-[8px] text-[11px] font-medium transition-colors hover:bg-[rgba(10,21,56,0.06)]"
+              style={{ color: T.textMute, background: "transparent", border: `1px dashed ${T.borderMed}` }}
+              title="Dispensa todos por 4h"
+            >
+              Limpar tudo
+            </button>
+          )}
         </div>
       )}
 
       {/* ── KPIs ─────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <KPI
           label="Exposição total"
           value={formatBRL(totalLimiteAprovado + pipelineValue)}
@@ -304,7 +363,7 @@ export default function Dashboard() {
       </div>
 
       {/* ── Funil + Tendências ────────────────────────────────────── */}
-      <div className="grid gap-3" style={{ gridTemplateColumns: "1.4fr 1fr" }}>
+      <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-3">
         <Card padding={18}>
           <SectionTitle>Funil de conversão · esteira</SectionTitle>
           <div className="flex items-stretch gap-0 mt-[14px]">
@@ -372,7 +431,7 @@ export default function Dashboard() {
       </div>
 
       {/* ── Tarefas + Atividades ─────────────────────────────────── */}
-      <div className="grid gap-3" style={{ gridTemplateColumns: "1fr 1fr" }}>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
 
         {/* Tarefas pendentes */}
         <Card padding={0}>

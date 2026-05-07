@@ -48,13 +48,14 @@ export function AppBreadcrumbs() {
 
   return (
     <div
-      className="flex items-center gap-2 px-7 flex-shrink-0"
+      className="flex items-center gap-2 px-3 sm:px-7 flex-shrink-0 overflow-x-auto whitespace-nowrap"
       style={{
         height: "var(--breadcrumb-height)",
         background: "var(--off)",
         borderBottom: "1px solid var(--hairline)",
         fontFamily: "var(--font-sans)",
         fontSize: 12,
+        scrollbarWidth: "none",
       }}
     >
       <Link

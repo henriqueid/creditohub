@@ -7,7 +7,7 @@ import { motion } from "framer-motion";
 import {
   LogOut, User as UserIcon, Settings, Bell, ChevronDown,
   LayoutGrid, Workflow, Users, Activity, CheckSquare,
-  BarChart3, Scale, Building2, Search, Ban, Sparkles,
+  BarChart3, Scale, Building2, Search, Ban, Sparkles, Menu, X as XIcon,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -93,13 +93,14 @@ function SubNav({
 }) {
   return (
     <div
-      className="flex items-center px-6 flex-shrink-0"
+      className="flex items-center px-3 sm:px-6 flex-shrink-0 overflow-x-auto"
       style={{
         height: 44,
         background: "rgba(8,17,46,0.96)",
         borderBottom: "1px solid rgba(0,212,154,0.10)",
         boxShadow: "inset 0 1px 0 rgba(255,255,255,0.04)",
         fontFamily: "var(--font-sans)",
+        scrollbarWidth: "none",
       }}
     >
       <nav className="flex items-center gap-1 relative">
@@ -140,16 +141,36 @@ function SubNav({
 
 /* ── Notifications Dropdown ─────────────────────────────────────── */
 
-const MOCK_NOTIFICATIONS = [
-  { id: "1", title: "Análise aprovada", body: "Empresa XYZ aprovada com limite R$ 50k", time: "há 5min", unread: true },
-  { id: "2", title: "Comitê pendente",  body: "3 análises aguardam votação no comitê",  time: "há 1h",  unread: true },
-  { id: "3", title: "Deal criado",      body: "Novo deal criado para Empresa ABC",       time: "há 2h",  unread: false },
+interface Notification {
+  id: string;
+  title: string;
+  body: string;
+  time: string;
+  unread: boolean;
+  path?: string;  // rota pra abrir ao clicar
+}
+
+const INITIAL_NOTIFICATIONS: Notification[] = [
+  { id: "1", title: "Análise aprovada", body: "Empresa XYZ aprovada com limite R$ 50k", time: "há 5min", unread: true,  path: "/analises" },
+  { id: "2", title: "Comitê pendente",  body: "3 análises aguardam votação no comitê",  time: "há 1h",  unread: true,  path: "/comite" },
+  { id: "3", title: "Deal criado",      body: "Novo deal criado para Empresa ABC",       time: "há 2h",  unread: false, path: "/crm/pipeline" },
 ];
 
-function NotificationsDropdown() {
+function NotificationsDropdown({ navigate }: { navigate: (path: string) => void }) {
   const [open, setOpen] = useState(false);
+  const [notifications, setNotifications] = useState<Notification[]>(INITIAL_NOTIFICATIONS);
   const ref = useRef<HTMLDivElement>(null);
-  const unreadCount = MOCK_NOTIFICATIONS.filter(n => n.unread).length;
+  const unreadCount = notifications.filter(n => n.unread).length;
+
+  function handleClickNotification(n: Notification) {
+    setNotifications(prev => prev.map(x => x.id === n.id ? { ...x, unread: false } : x));
+    setOpen(false);
+    if (n.path) navigate(n.path);
+  }
+
+  function markAllRead() {
+    setNotifications(prev => prev.map(n => ({ ...n, unread: false })));
+  }
 
   useEffect(() => {
     function onClickOutside(e: MouseEvent) {
@@ -203,35 +224,45 @@ function NotificationsDropdown() {
             )}
           </div>
           <div>
-            {MOCK_NOTIFICATIONS.map(n => (
-              <div
-                key={n.id}
-                className="flex gap-3 px-4 py-3 cursor-pointer transition-colors hover:bg-[rgba(10,21,56,0.03)]"
-                style={{ borderBottom: "1px solid rgba(10,21,56,0.05)" }}
-              >
-                <div
-                  style={{
-                    width: 8, height: 8, borderRadius: "50%", flexShrink: 0, marginTop: 5,
-                    background: n.unread ? "#00D49A" : "rgba(10,21,56,0.15)",
-                  }}
-                />
-                <div className="min-w-0">
-                  <p style={{ fontSize: 13, fontWeight: n.unread ? 600 : 400, color: "#0A1538", marginBottom: 1 }}>
-                    {n.title}
-                  </p>
-                  <p style={{ fontSize: 12, color: "rgba(10,21,56,0.55)", lineHeight: 1.4 }}>{n.body}</p>
-                  <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "rgba(10,21,56,0.35)", marginTop: 4 }}>{n.time}</p>
-                </div>
+            {notifications.length === 0 ? (
+              <div className="px-4 py-8 text-center" style={{ fontSize: 12, color: "rgba(10,21,56,0.45)" }}>
+                Sem notificações
               </div>
-            ))}
+            ) : (
+              notifications.map(n => (
+                <button
+                  key={n.id}
+                  onClick={() => handleClickNotification(n)}
+                  className="w-full flex gap-3 px-4 py-3 cursor-pointer transition-colors hover:bg-[rgba(10,21,56,0.04)] text-left"
+                  style={{ borderBottom: "1px solid rgba(10,21,56,0.05)", background: "transparent", border: "none", borderLeft: "3px solid", borderLeftColor: n.unread ? "#00D49A" : "transparent" }}
+                >
+                  <div
+                    style={{
+                      width: 8, height: 8, borderRadius: "50%", flexShrink: 0, marginTop: 5,
+                      background: n.unread ? "#00D49A" : "rgba(10,21,56,0.15)",
+                    }}
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p style={{ fontSize: 13, fontWeight: n.unread ? 600 : 400, color: "#0A1538", marginBottom: 1 }}>
+                      {n.title}
+                    </p>
+                    <p style={{ fontSize: 12, color: "rgba(10,21,56,0.55)", lineHeight: 1.4 }}>{n.body}</p>
+                    <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "rgba(10,21,56,0.35)", marginTop: 4 }}>{n.time}</p>
+                  </div>
+                </button>
+              ))
+            )}
           </div>
-          <div className="px-4 py-2.5" style={{ borderTop: "1px solid rgba(10,21,56,0.06)" }}>
-            <button
-              style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "#00D49A", background: "none", border: "none", cursor: "pointer" }}
-            >
-              Marcar todas como lidas
-            </button>
-          </div>
+          {unreadCount > 0 && (
+            <div className="px-4 py-2.5" style={{ borderTop: "1px solid rgba(10,21,56,0.06)" }}>
+              <button
+                onClick={markAllRead}
+                style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "#00D49A", background: "none", border: "none", cursor: "pointer" }}
+              >
+                Marcar todas como lidas
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -341,12 +372,77 @@ function UserDropdown({ user, navigate }: { user: User | null; navigate: (path: 
   );
 }
 
+/* ── Mobile Drawer ──────────────────────────────────────────────── */
+
+function MobileDrawer({
+  open,
+  onClose,
+  activeModule,
+  navigate,
+}: {
+  open: boolean;
+  onClose: () => void;
+  activeModule: string;
+  navigate: (path: string) => void;
+}) {
+  if (!open) return null;
+  return (
+    <div
+      className="fixed inset-0 z-[200] lg:hidden"
+      onClick={onClose}
+    >
+      <div className="absolute inset-0 bg-black/50" />
+      <aside
+        className="absolute top-0 left-0 h-full w-[280px] flex flex-col"
+        style={{ background: "var(--marinho)" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+          <Logo />
+          <button onClick={onClose} className="p-1 rounded-md hover:bg-white/10" style={{ color: "rgba(250,250,247,0.7)" }}>
+            <XIcon style={{ width: 18, height: 18 }} />
+          </button>
+        </div>
+        <nav className="flex flex-col p-3 gap-1">
+          {MODULES.map(({ label, path }) => {
+            const isActive = activeModule === label;
+            return (
+              <button
+                key={label}
+                onClick={() => { navigate(path); onClose(); }}
+                className={cn(
+                  "w-full text-left px-4 py-3 rounded-[10px] text-[14px] font-medium transition-colors",
+                  isActive
+                    ? "bg-[rgba(250,250,247,0.13)] text-[#FAFAF7] border border-[rgba(250,250,247,0.18)]"
+                    : "text-[rgba(250,250,247,0.7)] hover:bg-[rgba(255,255,255,0.06)] border border-transparent"
+                )}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </nav>
+        <div className="mt-auto p-3" style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+          <button
+            onClick={() => { navigate("/consulta"); onClose(); }}
+            className="w-full flex items-center justify-center gap-1.5 py-[10px] rounded-[999px] text-[13px] font-semibold transition-opacity hover:opacity-90"
+            style={{ background: "#00D49A", color: "#0A1538" }}
+          >
+            + Nova Consulta
+          </button>
+        </div>
+      </aside>
+    </div>
+  );
+}
+
 /* ── Topbar ─────────────────────────────────────────────────────── */
 
 export function AppNavbar() {
   const location = useLocation();
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const activeModule = getActiveModule(location.pathname);
 
   useEffect(() => {
@@ -365,20 +461,30 @@ export function AppNavbar() {
   return (
     <>
       <header
-        className="flex items-center gap-6 px-6 flex-shrink-0"
+        className="flex items-center gap-3 lg:gap-6 px-3 sm:px-6 flex-shrink-0"
         style={{
           height: "var(--topbar-height)",
           background: "var(--marinho)",
           fontFamily: "var(--font-sans)",
         }}
       >
+        {/* Hamburger (mobile/tablet) */}
+        <button
+          onClick={() => setDrawerOpen(true)}
+          className="lg:hidden p-2 rounded-[8px] transition-colors hover:bg-[rgba(255,255,255,0.08)]"
+          style={{ color: "rgba(250,250,247,0.85)" }}
+          aria-label="Abrir menu"
+        >
+          <Menu style={{ width: 20, height: 20 }} />
+        </button>
+
         {/* Logo → Painel */}
         <button onClick={() => navigate("/")} className="flex-shrink-0 hover:opacity-85 transition-opacity">
           <Logo />
         </button>
 
-        {/* Módulos */}
-        <nav className="flex items-center gap-1 ml-1">
+        {/* Módulos — só lg+ */}
+        <nav className="hidden lg:flex items-center gap-1 ml-1">
           {MODULES.map(({ label, path }) => {
             const isActive = activeModule === label;
             return (
@@ -401,7 +507,7 @@ export function AppNavbar() {
         {/* Spacer */}
         <div className="flex-1" />
 
-        {/* Search */}
+        {/* Search — só md+ */}
         <button
           className="hidden md:flex items-center gap-2 px-[14px] py-2 rounded-[999px] text-[12px] text-[rgba(250,250,247,0.52)] transition-colors hover:bg-[rgba(255,255,255,0.1)]"
           style={{ background: "rgba(255,255,255,0.06)", minWidth: 200 }}
@@ -417,7 +523,7 @@ export function AppNavbar() {
           </span>
         </button>
 
-        {/* Nova Consulta */}
+        {/* Nova Consulta — só sm+ */}
         <button
           onClick={() => navigate("/consulta")}
           className="hidden sm:flex items-center gap-1.5 px-[14px] py-[8px] rounded-[999px] text-[13px] font-medium flex-shrink-0 transition-opacity hover:opacity-90"
@@ -427,11 +533,19 @@ export function AppNavbar() {
         </button>
 
         {/* Notifications */}
-        <NotificationsDropdown />
+        <NotificationsDropdown navigate={navigate} />
 
         {/* User */}
         <UserDropdown user={user} navigate={navigate} />
       </header>
+
+      {/* Mobile drawer */}
+      <MobileDrawer
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        activeModule={activeModule}
+        navigate={navigate}
+      />
 
       {/* Sub-nav condicional */}
       {subNav && (

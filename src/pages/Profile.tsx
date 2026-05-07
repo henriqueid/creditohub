@@ -141,7 +141,7 @@ export default function Profile() {
   }
 
   return (
-    <div className="p-7 space-y-[14px]">
+    <div className="p-4 sm:p-7 space-y-[14px]">
       <PageHeader
         title="Meu perfil"
         subtitle="CONTA E SEGURANÇA"
@@ -149,7 +149,7 @@ export default function Profile() {
 
       {/* Avatar + resumo */}
       <div
-        className="rounded-[16px] flex items-center gap-6 px-7 py-6"
+        className="rounded-[16px] flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 px-5 sm:px-7 py-5 sm:py-6"
         style={{ background: T.marinho, boxShadow: "var(--shadow-md)" }}
       >
         <div
@@ -175,7 +175,7 @@ export default function Profile() {
         </button>
       </div>
 
-      <div className="grid gap-[14px]" style={{ gridTemplateColumns: "1fr 1fr", alignItems: "start" }}>
+      <div className="grid gap-[14px] grid-cols-1 lg:grid-cols-2 items-start">
         {/* Informações pessoais */}
         <Section title="Informações pessoais" sub="Nome e cargo exibidos no sistema" icon={User}>
           <div className="space-y-4">

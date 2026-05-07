@@ -6,12 +6,12 @@ interface PageHeaderProps {
 
 export function PageHeader({ title, subtitle, actions }: PageHeaderProps) {
   return (
-    <div className="flex justify-between items-end mb-6">
-      <div>
+    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-3 mb-6">
+      <div className="min-w-0">
         <h1
+          className="text-[22px] sm:text-[28px]"
           style={{
             fontFamily: "var(--font-sans)",
-            fontSize: 28,
             fontWeight: 500,
             color: "var(--text)",
             letterSpacing: "-0.03em",
@@ -36,7 +36,7 @@ export function PageHeader({ title, subtitle, actions }: PageHeaderProps) {
         )}
       </div>
       {actions && (
-        <div className="flex items-center gap-[10px]">{actions}</div>
+        <div className="flex flex-wrap items-center gap-[10px]">{actions}</div>
       )}
     </div>
   );

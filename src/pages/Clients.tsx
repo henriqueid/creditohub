@@ -274,9 +274,9 @@ export default function Clients() {
   }, [enrichedClients, search, activeTab]);
 
   return (
-    <div className="p-6 space-y-4">
+    <div className="p-4 sm:p-6 space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Portfólio</h1>
           <p className="text-muted-foreground">Cedentes em análise, no comitê ou já decididos</p>
@@ -289,7 +289,7 @@ export default function Clients() {
       </div>
 
       {/* KPI Strip */}
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
           { label: "Total de cedentes", value: kpiTotals.total, color: "text-foreground" },
           { label: "Aprovados", value: kpiTotals.aprovados, color: "text-status-approved" },
@@ -304,7 +304,7 @@ export default function Clients() {
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-1 border-b border-border">
+      <div className="flex items-center gap-1 border-b border-border overflow-x-auto" style={{ scrollbarWidth: "none" }}>
         {TAB_DEF.map(({ key, label, icon: Icon, count }) => (
           <button
             key={key}
@@ -423,7 +423,7 @@ export default function Clients() {
 
       {/* ── Tab: Reprovados ── */}
       {activeTab === "reprovados" && (
-        <div className="rounded-lg border bg-card">
+        <div className="rounded-lg border bg-card overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -609,7 +609,7 @@ export default function Clients() {
           </ScrollArea>
         </DragDropContext>
       ) : (
-        <div className="rounded-lg border bg-card">
+        <div className="rounded-lg border bg-card overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>

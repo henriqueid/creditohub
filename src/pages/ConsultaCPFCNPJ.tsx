@@ -622,36 +622,45 @@ export default function ConsultaCPFCNPJ() {
                             Como deseja seguir com este {isPJ ? "CNPJ" : "CPF"}?
                           </p>
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left">
+                            {/* Primário — filled mint sólido (Adicionar como prospect) */}
                             <button
                               onClick={() => createProspectMutation.mutate()}
                               disabled={!qualification || isCreating}
-                              className="flex flex-col gap-2 p-4 rounded-[12px] border bg-card hover:bg-muted/40 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-left"
-                              style={{ borderColor: "rgba(10,21,56,0.10)" }}
-                            >
-                              <div className="flex items-center gap-2">
-                                <Sparkles className="h-4 w-4 text-sink-mint-3" />
-                                <span className="font-semibold text-sm">Adicionar como prospect</span>
-                                {createProspectMutation.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin ml-auto" />}
-                              </div>
-                              <p className="text-[12px] text-muted-foreground leading-snug">
-                                Vai pro funil de prospecção. Ideal para leads que ainda precisam ser qualificados/abordados pelo comercial.
-                              </p>
-                            </button>
-                            <button
-                              onClick={() => addToPortfolioMutation.mutate()}
-                              disabled={isCreating}
-                              className="flex flex-col gap-2 p-4 rounded-[12px] border transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-left"
+                              className="flex flex-col gap-2 p-4 rounded-[12px] transition-opacity disabled:opacity-50 disabled:cursor-not-allowed text-left hover:opacity-90"
                               style={{
-                                borderColor: "rgba(0,212,154,0.30)",
-                                background: "rgba(0,212,154,0.05)",
+                                background: "#00D49A",
+                                color: "#0A1538",
+                                boxShadow: "0 4px 14px -4px rgba(0,212,154,0.45)",
                               }}
                             >
                               <div className="flex items-center gap-2">
-                                <Building2 className="h-4 w-4 text-status-approved" />
-                                <span className="font-semibold text-sm">Adicionar à carteira</span>
-                                {addToPortfolioMutation.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin ml-auto" />}
+                                <Sparkles className="h-4 w-4" style={{ color: "#0A1538" }} />
+                                <span className="font-bold text-sm" style={{ color: "#0A1538" }}>Adicionar como prospect</span>
+                                {createProspectMutation.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin ml-auto" style={{ color: "#0A1538" }} />}
                               </div>
-                              <p className="text-[12px] text-muted-foreground leading-snug">
+                              <p className="text-[12px] leading-snug" style={{ color: "rgba(10,21,56,0.75)" }}>
+                                Vai pro funil de prospecção. Ideal para leads que ainda precisam ser qualificados/abordados pelo comercial.
+                              </p>
+                            </button>
+
+                            {/* Secundário — outlined com border mint claro (Adicionar à carteira) */}
+                            <button
+                              onClick={() => addToPortfolioMutation.mutate()}
+                              disabled={isCreating}
+                              className="flex flex-col gap-2 p-4 rounded-[12px] border-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-left"
+                              style={{
+                                borderColor: "#2BD49C",
+                                background: "rgba(43,212,156,0.06)",
+                              }}
+                              onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(43,212,156,0.12)"; }}
+                              onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(43,212,156,0.06)"; }}
+                            >
+                              <div className="flex items-center gap-2">
+                                <Building2 className="h-4 w-4 text-sink-mint-3" />
+                                <span className="font-semibold text-sm" style={{ color: "#0A1538" }}>Adicionar à carteira</span>
+                                {addToPortfolioMutation.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin ml-auto text-sink-mint-3" />}
+                              </div>
+                              <p className="text-[12px] leading-snug" style={{ color: "rgba(10,21,56,0.65)" }}>
                                 Vira cedente direto no Portfólio com análise pré-aberta. Pula o prospect — use quando já tem decisão de incluir.
                               </p>
                             </button>

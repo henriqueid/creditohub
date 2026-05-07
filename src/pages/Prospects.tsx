@@ -182,11 +182,58 @@ export default function Prospects() {
       setBusyAction({ id: prospect.id, action: "discard" });
 
       if (cascade && prospect.client_id) {
-        // FKs ON DELETE CASCADE em deals/credit_analysis/contacts já cuidam do resto
-        const { error } = await supabase.from("clients").delete().eq("id", prospect.client_id);
-        if (error) throw error;
+        const clientId = prospect.client_id;
+
+        // FKs do credit_analysis → clients são RESTRICT (migration 20260428221846).
+        // Precisamos apagar manualmente as filhas na ordem certa:
+        //   1. Filhas profundas das análises
+        //   2. Análises
+        //   3. Deals (também tem FK pra clients)
+        //   4. Cliente
+        //   5. Prospect
+
+        // Pega ids das análises do cliente
+        const { data: analyses } = await supabase
+          .from("credit_analysis").select("id").eq("client_id", clientId);
+        const analysisIds = (analyses || []).map(a => a.id);
+
+        if (analysisIds.length > 0) {
+          // Filhas das análises
+          await Promise.all([
+            supabase.from("credit_analysis_attachments").delete().in("credit_analysis_id", analysisIds),
+            supabase.from("credit_analysis_insights").delete().in("credit_analysis_id", analysisIds),
+            supabase.from("credit_analysis_socios").delete().in("credit_analysis_id", analysisIds),
+            supabase.from("credit_analysis_sacados").delete().in("credit_analysis_id", analysisIds),
+            supabase.from("credit_committee").delete().in("credit_analysis_id", analysisIds),
+            supabase.from("committee_result").delete().in("credit_analysis_id", analysisIds),
+          ]);
+
+          // Análises
+          const { error: analErr } = await supabase
+            .from("credit_analysis").delete().in("id", analysisIds);
+          if (analErr) throw analErr;
+        }
+
+        // Deals do cliente
+        const { error: dealsErr } = await supabase
+          .from("deals").delete().eq("client_id", clientId);
+        if (dealsErr) throw dealsErr;
+
+        // Outras tabelas com FK pra clients (best-effort, ignora erros não-críticos)
+        await Promise.all([
+          supabase.from("contacts").delete().eq("client_id", clientId),
+          supabase.from("monitoring_group_clients").delete().eq("client_id", clientId),
+          supabase.from("activities").delete().eq("client_id", clientId),
+          supabase.from("crm_tasks").delete().eq("client_id", clientId),
+        ]);
+
+        // Cliente
+        const { error: clientErr } = await supabase
+          .from("clients").delete().eq("id", clientId);
+        if (clientErr) throw clientErr;
       }
-      // Prospect tem client_id ON DELETE SET NULL, então o cascade do client não remove ele.
+
+      // Prospect (tem client_id ON DELETE SET NULL, mas como já apagamos o client antes, está null aqui)
       const { error } = await supabase.from("prospects").delete().eq("id", prospect.id);
       if (error) throw error;
     },
@@ -249,7 +296,7 @@ export default function Prospects() {
   };
 
   return (
-    <div className="p-7 space-y-[14px]">
+    <div className="p-4 sm:p-7 space-y-[14px]">
       <PageHeader
         title="Prospects"
         subtitle={`INBOX DE LEADS PRÉ-QUALIFICADOS${validityDays ? ` · VALIDADE ${validityDays} DIAS` : ""}`}
