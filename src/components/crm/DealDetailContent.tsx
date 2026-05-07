@@ -230,6 +230,53 @@ export function DealDetailContent({ dealId, variant = "page" }: DealDetailConten
     },
   });
 
+  // Cria análise direto (ou reusa em andamento) e abre o dossiê.
+  const startAnalysisMutation = useMutation({
+    mutationFn: async () => {
+      if (!deal?.client_id) throw new Error("Deal sem cedente vinculado");
+
+      const { data: existing } = await supabase
+        .from("credit_analysis")
+        .select("id")
+        .eq("client_id", deal.client_id)
+        .in("status", ["draft", "in_committee"])
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      let analysisId = existing?.id;
+
+      if (!analysisId) {
+        const { data: created, error } = await supabase
+          .from("credit_analysis")
+          .insert({
+            client_id: deal.client_id,
+            status: "draft",
+            limite_sugerido: deal.value ?? null,
+            volume_estimado: deal.monthly_volume ?? null,
+            modalidade_operacao: (deal as any).operation_type ?? null,
+          } as { client_id: string } & Record<string, unknown>)
+          .select("id")
+          .single();
+        if (error) throw error;
+        analysisId = created.id;
+      }
+
+      if (deal.credit_analysis_id !== analysisId) {
+        await supabase.from("deals").update({ credit_analysis_id: analysisId }).eq("id", deal.id);
+      }
+
+      return { analysisId, reused: !!existing };
+    },
+    onSuccess: ({ analysisId, reused }) => {
+      qc.invalidateQueries({ queryKey: ["deals"] });
+      qc.invalidateQueries({ queryKey: ["deal-detail", dealId] });
+      toast.success(reused ? "Análise existente aberta" : "Análise iniciada!");
+      navigate(`/analises/${analysisId}`);
+    },
+    onError: (e: any) => toast.error(e?.message || "Erro ao iniciar análise"),
+  });
+
   const saveField = (field: keyof Deal, value: any) => {
     if (deal && (deal as any)[field] !== value) {
       updateMutation.mutate({ [field]: value });
@@ -491,11 +538,14 @@ export function DealDetailContent({ dealId, variant = "page" }: DealDetailConten
             </div>
           ) : (
             <button
-              onClick={() => navigate(`/analises/nova?client_id=${deal.client_id}`)}
-              className="w-full flex items-center justify-center gap-2 py-3 rounded-[10px] text-[12px] font-medium transition-colors"
+              onClick={() => startAnalysisMutation.mutate()}
+              disabled={startAnalysisMutation.isPending}
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-[10px] text-[12px] font-medium transition-colors disabled:opacity-50"
               style={{ background: T.off, color: T.text, border: `1px dashed ${T.border}` }}
             >
-              <FileSearch style={{ width: 13, height: 13 }} />
+              {startAnalysisMutation.isPending
+                ? <Loader2 className="animate-spin" style={{ width: 13, height: 13 }} />
+                : <FileSearch style={{ width: 13, height: 13 }} />}
               Iniciar análise
             </button>
           )}

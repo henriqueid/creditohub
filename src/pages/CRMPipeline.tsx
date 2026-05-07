@@ -144,6 +144,56 @@ export default function CRMPipeline() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["deals"] }); toast.success("Análise vinculada!"); },
   });
 
+  // Cria análise nova vinculada ao cedente + ao deal e abre o dossiê.
+  // Se já existe análise em andamento (draft/in_committee) pro cedente, reusa.
+  const startAnalysisFromDeal = useMutation({
+    mutationFn: async (deal: Deal) => {
+      if (!deal.client_id) throw new Error("Deal sem cedente vinculado");
+
+      // Reusa análise existente em andamento, se houver
+      const { data: existing } = await supabase
+        .from("credit_analysis")
+        .select("id")
+        .eq("client_id", deal.client_id)
+        .in("status", ["draft", "in_committee"])
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      let analysisId = existing?.id;
+
+      if (!analysisId) {
+        const { data: created, error } = await supabase
+          .from("credit_analysis")
+          .insert({
+            client_id: deal.client_id,
+            status: "draft",
+            limite_sugerido: deal.value ?? null,
+            volume_estimado: deal.monthly_volume ?? null,
+            modalidade_operacao: (deal as any).operation_type ?? null,
+          } as { client_id: string } & Record<string, unknown>)
+          .select("id")
+          .single();
+        if (error) throw error;
+        analysisId = created.id;
+      }
+
+      // Vincula deal -> análise (se ainda não estiver)
+      if (deal.credit_analysis_id !== analysisId) {
+        await supabase.from("deals").update({ credit_analysis_id: analysisId }).eq("id", deal.id);
+      }
+
+      return { analysisId, reused: !!existing };
+    },
+    onSuccess: ({ analysisId, reused }) => {
+      qc.invalidateQueries({ queryKey: ["deals"] });
+      qc.invalidateQueries({ queryKey: ["credit-analyses-for-pipeline"] });
+      toast.success(reused ? "Análise existente aberta" : "Análise iniciada!");
+      navigate(`/analises/${analysisId}`);
+    },
+    onError: (e: any) => toast.error(e?.message || "Erro ao iniciar análise"),
+  });
+
   const { activeStages, wonStage, lostStage, dealsByStage } = useMemo(() => {
     const activeStages = stages.filter(s => !s.is_won && !s.is_lost);
     const wonStage = stages.find(s => s.is_won);
@@ -391,7 +441,7 @@ export default function CRMPipeline() {
                                   }
                                   moveDeal.mutate({ dealId: deal.id, stageId });
                                 }}
-                                onStartAnalysis={() => navigate(`/analises/nova?client_id=${deal.client_id}`)}
+                                onStartAnalysis={() => startAnalysisFromDeal.mutate(deal)}
                               />
                             </div>
                           )}
