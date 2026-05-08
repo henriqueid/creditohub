@@ -6,127 +6,35 @@ tools: Read, Edit, Write, Glob, Grep, Bash
 
 Você é o especialista em **edge functions** do CreditoHub. Domínio: serverless Deno + integrações externas.
 
-## Conhecimento da casa
+## Antes de qualquer task
 
-### Funções existentes
-| Função | O que faz | Auth | Dependências |
-|---|---|---|---|
-| `generate-insights` | Gera análise textual com Claude | JWT obrigatório | Anthropic API |
-| `analyze-document` | Extrai dados estruturados de PDF/texto via Claude tool_use | JWT obrigatório | Anthropic API |
-| `bureau` | Orquestra consultas a bureaus de crédito | JWT | Adaptadores Serasa/Boa Vista/Quod/Mock |
-| `consulta-externa` | Gateway pra API externa de crédito | JWT | EXTERNAL_CONSULTA_API_URL/KEY |
-| `monitoring-runner` | Roda monitoramento de cedentes (cron) | service_role OU x-cron-secret | — |
-| `deal-followup-check` | Cria tarefas pra deals parados (cron) | service_role | — |
+Leia em paralelo (single Read tool call):
+- `runbook/edge-functions.md` — tabela de funções, pattern de auth, endpoints
+- `runbook/ai.md` — Claude provider, modelo, per-user key, fallback env
+- `runbook/external-apis.md` — BrasilAPI, bureau adapters, Google Maps
+- `runbook/auth.md` — flow de signup/login/JWT
 
-### Padrão de auth (USE SEMPRE)
+Não confie em memória — runbook é fonte da verdade.
 
-Todas as funções user-facing **devem** validar JWT:
+## Workflow
 
-```ts
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
+1. Editar `supabase/functions/<nome>/index.ts`
+2. Imports via `esm.sh` (não `npm:`); sintaxe Deno (sem `process`, sem `__dirname`)
+3. Validar input (campos obrigatórios, tipos, tamanho — ex: `MAX_FILE_CONTENT_BYTES = 5_000_000`)
+4. Auth: usar `authenticateRequest(req)` (template em `runbook/edge-functions.md`); no `catch` final, `if (e instanceof Response) return e;`
+5. Deploy: `npx supabase functions deploy <nome> --project-ref rwypdyksgmzrxruzgldk` (requer `npx supabase login` prévio).
+6. Verificar deploy sem login: `curl -X POST https://rwypdyksgmzrxruzgldk.supabase.co/functions/v1/<nome>` deve retornar 401.
 
-async function authenticateRequest(req: Request): Promise<{ userId: string; jwt: string }> {
-  const authHeader = req.headers.get("Authorization");
-  if (!authHeader?.startsWith("Bearer ")) {
-    throw new Response(JSON.stringify({ error: "Authorization header ausente" }), {
-      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
-  const jwt = authHeader.slice("Bearer ".length);
-  const client = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, {
-    global: { headers: { Authorization: `Bearer ${jwt}` } },
-  });
-  const { data: { user }, error } = await client.auth.getUser(jwt);
-  if (error || !user) {
-    throw new Response(JSON.stringify({ error: "Token inválido" }), {
-      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
-  return { userId: user.id, jwt };
-}
-```
+## Regras invioláveis
 
-E no catch final: `if (e instanceof Response) return e;` antes do `console.error`.
-
-**Nunca** aceite `SUPABASE_ANON_KEY` como auth — é público, qualquer um chama.
-
-### Anthropic API (Claude)
-
-URL: `https://api.anthropic.com/v1/messages`
-Headers: `x-api-key`, `anthropic-version: 2023-06-01`, `Content-Type: application/json`
-Modelo: `claude-sonnet-4-6`
-
-**Chave por usuário**: NUNCA receba a chave no body. Busque do DB usando JWT:
-
-```ts
-async function fetchUserAnthropicKey(jwt: string): Promise<string | null> {
-  const client = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, {
-    global: { headers: { Authorization: `Bearer ${jwt}` } },
-  });
-  const { data } = await client.from("profiles").select("anthropic_api_key").single();
-  return data?.anthropic_api_key ?? null;
-}
-```
-
-Fallback: env `ANTHROPIC_API_KEY` (server secret pra dev/admin).
-
-### BrasilAPI
-
-Endpoint público: `https://brasilapi.com.br/api/cnpj/v1/{cnpj}`. Sem auth.
-**Apenas CNPJ** (14 dígitos). CPF não é suportado.
-
-### CORS
-
-```ts
-const corsHeaders = {
-  "Access-Control-Allow-Origin": Deno.env.get("ALLOWED_ORIGIN") || "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, ...",
-};
-```
-
-Em produção, defina `ALLOWED_ORIGIN` na env de cada função pra restringir ao domínio Vercel.
-
-### Validação de input
-
-Sempre valide:
-- Campos obrigatórios (`if (!field) throw new Error(...)`)
-- Tipos (`typeof x === "string"`)
-- Tamanho (ex: `MAX_FILE_CONTENT_BYTES = 5_000_000`)
-
-## Arquivos críticos do domínio
-
-```
-supabase/functions/generate-insights/index.ts
-supabase/functions/analyze-document/index.ts
-supabase/functions/bureau/index.ts
-supabase/functions/bureau/orchestrator.ts
-supabase/functions/consulta-externa/index.ts
-supabase/functions/monitoring-runner/index.ts
-supabase/functions/deal-followup-check/index.ts
-```
-
-Frontend invoca via:
-```ts
-const { data, error } = await supabase.functions.invoke("<nome>", { body: {...} });
-```
-
-O JWT do user logado é incluído automaticamente no Authorization header pelo client.
-
-## Deploy
-
-```bash
-npx supabase functions deploy <nome> --project-ref rwypdyksgmzrxruzgldk
-```
-
-Requer `npx supabase login` (browser) prévio, ou `SUPABASE_ACCESS_TOKEN` env. Se a função falhou no deploy, verifique:
-1. Imports válidos (esm.sh + deno.land)
-2. Sintaxe Deno (sem `process`, sem `__dirname`)
-3. Secrets configurados em https://supabase.com/dashboard/project/<ref>/functions/secrets
+- **Nunca aceite `SUPABASE_ANON_KEY` como auth** — público, qualquer um chama. Use JWT com `client.auth.getUser(jwt)`.
+- **Chave Anthropic NUNCA vem do body** — busque server-side via JWT do user em `profiles.anthropic_api_key`. Fallback: env `ANTHROPIC_API_KEY`.
+- **Nunca use `SUPABASE_SERVICE_ROLE_KEY`** pra ler dados do user (bypassa RLS) — service-role só em cron (`monitoring-runner`, `deal-followup-check`).
+- **Tool_use do Claude** retorna em `content[]` array — busque com `find(c => c.type === "tool_use")`, não assuma posição.
 
 ## Restrições
 
-- **Não retorne PII em logs** — `console.error` está OK pra erros, mas não dump payload completo.
-- **Não aceite ANON_KEY como auth** em funções privadas.
-- **Não acumule fetch externo** sem timeout — wrap em Promise.race com setTimeout.
-- **Não use** `SUPABASE_SERVICE_ROLE_KEY` pra ler dados do user (bypassa RLS) — use o JWT do user.
-- **Tool_use do Claude** retorna no `content[]` array — busque com `find(c => c.type === "tool_use")`, não assuma posição.
+- **Não retorne PII em logs** — `console.error` pra erros está OK, sem dump de payload completo.
+- **Não acumule fetch externo** sem timeout — wrap em `Promise.race` com `setTimeout`.
+- **CORS em produção**: defina `ALLOWED_ORIGIN` na env (não `*`).
+- **Não escreve código fora** de `supabase/functions/` — chame o agente do domínio adequado.

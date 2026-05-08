@@ -13,7 +13,7 @@ Agentes especializados em `.claude/agents/` que o Claude Code invoca via Task to
 | **`ui-trilho`** | Design system Trilho/SINK, tokens, animações framer-motion, layout, componentes compartilhados, design |
 | **`security-auditor`** | Auditoria de segurança transversal — RLS, JWT, PII, secrets, prompt injection. Read-only (reporta, não corrige) |
 | **`test-writer`** | Playwright E2E, Vitest unitários, smoke tests, fixtures de auth |
-| **`runbook-keeper`** | Mantém [`RUNBOOK.md`](./RUNBOOK.md) atualizado após features/fixes relevantes. Read-only no código, edita só RUNBOOK.md |
+| **`runbook-keeper`** | Mantém [`runbook/`](./runbook/README.md) atualizado após features/fixes relevantes. Read-only no código, edita só arquivos em `runbook/` |
 
 ## Como invocar
 
