@@ -180,7 +180,8 @@ export default function CRMPipeline() {
 
       // Vincula deal -> análise (se ainda não estiver)
       if (deal.credit_analysis_id !== analysisId) {
-        await supabase.from("deals").update({ credit_analysis_id: analysisId }).eq("id", deal.id);
+        const { error: linkError } = await supabase.from("deals").update({ credit_analysis_id: analysisId }).eq("id", deal.id);
+        if (linkError) throw new Error(`Falha ao vincular deal à análise: ${linkError.message}`);
       }
 
       return { analysisId, reused: !!existing };

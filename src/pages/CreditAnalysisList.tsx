@@ -11,7 +11,8 @@ import { DragDropContext, Droppable, Draggable, type DropResult } from "@hello-p
 import { useState } from "react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useCommitteeRequirements, evaluateReadiness, DEFAULT_REQUIRED_FIELDS } from "@/hooks/useCommitteeRequirements";
-import { ANALYSIS_STATUS, type AnalysisStatus, findDealStageForAnalysisStatus } from "@/lib/analysis-status";
+import { ANALYSIS_STATUS, type AnalysisStatus, findDealStageForAnalysisStatus, isAllowedDragTransition } from "@/lib/analysis-status";
+import { getTier } from "@/lib/credit-calculations";
 
 const STAGES: { key: AnalysisStatus; label: string; color: string }[] = [
   { key: ANALYSIS_STATUS.draft,               label: "Em análise",  color: T.marinho },
@@ -20,14 +21,6 @@ const STAGES: { key: AnalysisStatus; label: string; color: string }[] = [
   { key: ANALYSIS_STATUS.approved_restricted, label: "Restrito",    color: "#D97706" },
   { key: ANALYSIS_STATUS.rejected,            label: "Reprovado",   color: T.danger },
 ];
-
-function getTier(score: number | null) {
-  if (!score) return null;
-  if (score >= 800) return "AAA";
-  if (score >= 700) return "AA";
-  if (score >= 600) return "A";
-  return "BBB";
-}
 
 function calcReadiness(a: any, requiredKeys: string[]): { pct: number; missing: string[] } {
   const r = evaluateReadiness(requiredKeys, a);
@@ -106,9 +99,13 @@ export default function CreditAnalysisList() {
       if (!deals?.length) return { dealsUpdated: 0, status };
 
       const toUpdate = deals.filter(d => d.stage_id !== targetStageId);
-      await Promise.all(
+      const results = await Promise.all(
         toUpdate.map(d => supabase.from("deals").update({ stage_id: targetStageId }).eq("id", d.id))
       );
+      const failed = results.filter(r => r.error);
+      if (failed.length > 0) {
+        throw new Error(`Falha ao sincronizar ${failed.length}/${toUpdate.length} deal(s) no Pipeline: ${failed[0].error?.message}`);
+      }
       return { dealsUpdated: toUpdate.length, status };
     },
     onSuccess: ({ dealsUpdated, status }) => {
@@ -136,12 +133,19 @@ export default function CreditAnalysisList() {
       return;
     }
 
+    const sourceStatus = source.droppableId as AnalysisStatus;
     const targetStatus = destination.droppableId as AnalysisStatus;
     const analysis = analyses.find(a => a.id === draggableId);
     if (!analysis) return;
 
-    // Guard: ao mover draft → in_committee, exigir prontidão 100%
-    if (source.droppableId === ANALYSIS_STATUS.draft && targetStatus === ANALYSIS_STATUS.in_committee) {
+    // Guard 1: respeita transições permitidas (comitê inviolável — CLAUDE.md §12)
+    if (!isAllowedDragTransition(sourceStatus, targetStatus)) {
+      toast.error("Transição não permitida pelo arrastar — use o comitê para decidir");
+      return;
+    }
+
+    // Guard 2: ao mover draft → in_committee, exigir prontidão 100%
+    if (sourceStatus === ANALYSIS_STATUS.draft && targetStatus === ANALYSIS_STATUS.in_committee) {
       const r = calcReadiness(analysis, requiredKeys);
       if (r.pct < 100) {
         setReadinessAlert({ analysisId: analysis.id, missing: r.missing });

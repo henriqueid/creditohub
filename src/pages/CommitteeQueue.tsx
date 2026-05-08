@@ -6,6 +6,7 @@ import { T } from "@/lib/tokens";
 import { PageHeader } from "@/components/trilho/PageHeader";
 import { differenceInDays, parseISO } from "date-fns";
 import { Clock, Scale, Users, ArrowRight } from "lucide-react";
+import { getTier } from "@/lib/credit-calculations";
 
 function daysSince(dateStr: string) {
   try {
@@ -110,9 +111,7 @@ export default function CommitteeQueue() {
             const name = (a.clients as any)?.razao_social || "—";
             const cnpj = (a.clients as any)?.cnpj_cpf || "";
             const days = daysSince(a.updated_at);
-            const tier = a.credit_score
-              ? a.credit_score >= 800 ? "AAA" : a.credit_score >= 700 ? "AA" : a.credit_score >= 600 ? "A" : "BBB"
-              : null;
+            const tier = a.credit_score ? getTier(a.credit_score) : null;
 
             return (
               <div

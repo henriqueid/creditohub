@@ -20,6 +20,20 @@ export const ANALYSIS_STATUS_LABEL: Record<AnalysisStatus, string> = {
   rejected:            "Reprovado",
 };
 
+// Transições permitidas via drag (Kanban). Mudanças in_committee→decisão são
+// feitas SOMENTE via CommitteeVoting (regra inviolável — CLAUDE.md §12).
+export const ALLOWED_DRAG_TRANSITIONS: Record<AnalysisStatus, AnalysisStatus[]> = {
+  draft:               [ANALYSIS_STATUS.in_committee],
+  in_committee:        [],
+  approved:            [],
+  approved_restricted: [],
+  rejected:            [ANALYSIS_STATUS.draft],
+};
+
+export function isAllowedDragTransition(from: AnalysisStatus, to: AnalysisStatus): boolean {
+  return ALLOWED_DRAG_TRANSITIONS[from]?.includes(to) ?? false;
+}
+
 /**
  * Mapeia status de análise → estágio do deal_stages no Pipeline.
  * Recebe a lista de stages já carregada (sem fetch interno).

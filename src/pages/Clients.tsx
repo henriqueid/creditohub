@@ -17,6 +17,8 @@ import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { DragDropContext, Droppable, Draggable, type DropResult } from "@hello-pangea/dnd";
 import { toast } from "sonner";
 import { ClientTagManager, TagFilter, useAllClientTags } from "@/components/crm/ClientTagManager";
+import { getTier } from "@/lib/credit-calculations";
+import { ANALYSIS_STATUS, ALLOWED_DRAG_TRANSITIONS } from "@/lib/analysis-status";
 
 type ClientTab = "todos" | "em-analise" | "aprovados" | "restricoes" | "reprovados";
 
@@ -30,14 +32,8 @@ const stages: { key: KanbanStage; label: string; color: string; borderColor: str
   { key: "rejected", label: "Reprovado", color: "bg-status-rejected/10 text-status-rejected", borderColor: "border-status-rejected/40", headerBg: "bg-status-rejected/5" },
 ];
 
-// Which transitions are allowed via drag
-const allowedTransitions: Record<KanbanStage, KanbanStage[]> = {
-  draft: ["in_committee"],
-  in_committee: [], // decided via committee voting only
-  approved: [],
-  approved_restricted: [],
-  rejected: ["draft"], // allow re-analysis
-};
+// Transições permitidas via drag — fonte única em analysis-status.ts
+const allowedTransitions = ALLOWED_DRAG_TRANSITIONS;
 
 interface ClientWithAnalysis {
   id: string;
@@ -366,7 +362,7 @@ export default function Clients() {
             />
           ) : tabClients.map(c => {
             const result = (analyses.find(a => a.client_id === c.id && a.status === "approved") as any)?.committee_result;
-            const tier = c.latestScore ? (c.latestScore >= 800 ? "AAA" : c.latestScore >= 700 ? "AA" : c.latestScore >= 600 ? "A" : "BBB") : null;
+            const tier = c.latestScore ? getTier(c.latestScore) : null;
             return (
               <div
                 key={c.id}

@@ -13,12 +13,13 @@ export interface RiskClassification {
   score: number;
 }
 
+// Cortes alinhados com CLAUDE.md §13.2: ≥700 aprovado, 400-699 warn, <400 danger
 export function classifyRisk(creditScore: number | null): RiskClassification {
   const s = creditScore ?? 0;
   if (s >= 800) return { level: "very_low", label: "Muito Baixo", color: "text-status-approved", bgColor: "bg-status-approved", score: s };
-  if (s >= 600) return { level: "low", label: "Baixo", color: "text-sink-mint-3", bgColor: "bg-sink-mint-3", score: s };
+  if (s >= 700) return { level: "low", label: "Baixo", color: "text-status-approved", bgColor: "bg-status-approved", score: s };
   if (s >= 400) return { level: "medium", label: "Médio", color: "text-sink-warn", bgColor: "bg-sink-warn", score: s };
-  if (s >= 200) return { level: "high", label: "Alto", color: "text-status-restricted", bgColor: "bg-status-restricted", score: s };
+  if (s >= 200) return { level: "high", label: "Alto", color: "text-sink-danger", bgColor: "bg-sink-danger", score: s };
   return { level: "very_high", label: "Muito Alto", color: "text-sink-danger", bgColor: "bg-sink-danger", score: s };
 }
 
@@ -67,19 +68,18 @@ export function calculateLimitUtilization(volumeEstimado: number | null, limiteS
   return Math.min((volumeEstimado / limiteSugerido) * 100, 200);
 }
 
+// Tier canônico — CLAUDE.md §13.3
+// ≥800 = AAA · ≥700 = AA · ≥600 = A · else = B
 export function getScoreGrade(score: number | null): string {
   const s = score ?? 0;
-  if (s >= 900) return "AAA";
-  if (s >= 800) return "AA";
-  if (s >= 700) return "A";
-  if (s >= 600) return "BBB";
-  if (s >= 500) return "BB";
-  if (s >= 400) return "B";
-  if (s >= 300) return "CCC";
-  if (s >= 200) return "CC";
-  if (s >= 100) return "C";
-  return "D";
+  if (s >= 800) return "AAA";
+  if (s >= 700) return "AA";
+  if (s >= 600) return "A";
+  return "B";
 }
+
+// Alias semântico — usar este em UI
+export const getTier = getScoreGrade;
 
 // ─── Advanced Financial Calculations ────────────────────────────
 
@@ -118,8 +118,9 @@ export function calculateFinancialRatios(data: {
   const coberturaDivida = data.faturamentoMedio && data.limiteSugerido && data.limiteSugerido > 0
     ? data.faturamentoMedio / data.limiteSugerido : null;
 
+  // Aproximação: sem balanço estruturado (AC-PC), usamos capital social como proxy de PC
   const capitalGiroLiquido = data.receitaLiquida && data.capitalSocial
-    ? data.receitaLiquida - data.capitalSocial * 0.3 : null;
+    ? data.receitaLiquida - data.capitalSocial : null;
 
   const receitaPorFuncionario = data.receitaLiquida && data.numeroFuncionarios && data.numeroFuncionarios > 0
     ? data.receitaLiquida / data.numeroFuncionarios : null;

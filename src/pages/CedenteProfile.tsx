@@ -28,13 +28,11 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { ContactsSection } from "@/components/cedente/ContactsSection";
+import { getTier as canonicalTier } from "@/lib/credit-calculations";
 
 function getTier(score: number | null) {
   if (!score) return null;
-  if (score >= 800) return "AAA";
-  if (score >= 700) return "AA";
-  if (score >= 600) return "A";
-  return "BBB";
+  return canonicalTier(score);
 }
 
 export default function CedenteProfile() {

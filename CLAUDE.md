@@ -137,9 +137,13 @@ Logo: `/logo.svg` (SVG mint sobre transparente).
 
 ## 7. Automações Ativas (sem configuração)
 
-- **Trigger de banco:** ao aprovar análise (`approved` ou `approved_restricted`), cria tarefas CRM automaticamente em 7 e 30 dias.
-- **Deal automático:** ao finalizar comitê com aprovação, cria deal no CRM no primeiro estágio ativo.
-- **Prospect → Deal:** ao converter prospect `qualified`, cria deal automaticamente.
+- **Trigger de banco** (`auto_create_task_on_credit_decision`): ao aprovar análise:
+  - `approved`: cria 1 tarefa CRM de follow-up em 7d (prioridade média).
+  - `approved_restricted`: cria 1 tarefa CRM de follow-up em 7d (alta) + 1 tarefa de revisão da restrição em 30d.
+- **Deal automático na aprovação**: criado pelo **frontend** em `CommitteeVoting.tsx` ao finalizar comitê — primeiro estágio ativo de `deal_stages`. Falha sinaliza pra UI mas não trava a finalização.
+- **Prospect → Deal**: ao converter prospect `qualified`, frontend cria deal automaticamente.
+
+> Nota: as duas últimas automações vivem no **frontend** (não há trigger SQL). Migrar pra trigger no banco aumenta consistência mas não é prioridade enquanto a UI for o único caller.
 
 ---
 
@@ -222,7 +226,7 @@ Transições `in_committee→decisão`: somente via CommitteeVoting.
 
 1. **Blacklist tem prioridade máxima** — verificada antes de qualquer dado na Consulta
 2. **Score determina cor em todo o sistema:** ≥ 700 = `status-approved`, 400–699 = `sink-warn`, < 400 = `sink-danger`
-3. **Score tier:** ≥ 800 = AAA, ≥ 700 = AA, ≥ 600 = A, else = B
+3. **Score tier:** ≥ 800 = AAA, ≥ 700 = AA, ≥ 600 = A, else = B (fonte única: `getTier` / `getScoreGrade` em `src/lib/credit-calculations.ts` — **não duplicar**)
 4. **Comitê é inviolável** — status `in_committee`+ não pode ser alterado por drag
 5. **Deal automático na aprovação** — primeiro estágio ativo de `deal_stages`
 6. **Prospect qualificado** = score ≥ 60; não qualificado = score < 30; pendente = intermediário
