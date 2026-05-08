@@ -2,7 +2,7 @@
 
 > Referência operacional rápida — quebrada em 1 arquivo por tópico pra agentes lerem só o que precisam. Mantida pelo agente `runbook-keeper`.
 
-**Última atualização:** 2026-05-07
+**Última atualização:** 2026-05-08
 
 ---
 

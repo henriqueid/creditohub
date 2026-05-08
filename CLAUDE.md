@@ -2,7 +2,7 @@
 
 > Leia este arquivo no início de qualquer sessão. Ele substitui a necessidade de re-explicar o projeto.
 >
-> **Pra referência operacional rápida** (rotas, schema, edge functions, comandos, pendências), consulte [`runbook/README.md`](./runbook/README.md) — pasta com 1 arquivo por tópico, mantida pelo agente `runbook-keeper`. Cada agente lê apenas os arquivos do seu domínio (mapa em `runbook/README.md`).
+> **Pra referência operacional rápida** (rotas, schema, edge functions, comandos, pendências, decisões), consulte [`runbook/README.md`](./runbook/README.md) — pasta com 1 arquivo por tópico, mantida pelo agente `runbook-keeper`. Cada agente lê apenas os arquivos do seu domínio (mapa em `runbook/README.md`).
 >
 > **Após qualquer feature/fix relevante**, dispatch o `runbook-keeper` pra atualizar o arquivo correto do runbook. Critério de "relevante": nova rota, nova tabela, nova edge function, decisão de produto, mudança de fluxo, deprecation. Bug fix pontual e refactor cosmético NÃO disparam.
 
@@ -11,7 +11,6 @@
 ## 1. O que é o CreditoHub
 
 Plataforma SaaS B2B de análise de crédito e CRM para factoring, FIDC e securitização.
-Migrado do Lovable Cloud para código próprio — hospedagem planejada na Vercel.
 
 **Usuário:** Henrique — empreendedor não-técnico. Usa linguagem natural (pt-BR). Toma decisões rápidas. Prefere ação a planejamento excessivo.
 
@@ -30,28 +29,16 @@ Migrado do Lovable Cloud para código próprio — hospedagem planejada na Verce
 | Animações | framer-motion |
 | Backend | Supabase (PostgreSQL + PostgREST + Auth + Storage + Edge Functions) |
 | Edge Functions | Deno (TypeScript) |
+| IA | Anthropic Claude (`claude-sonnet-4-6`) — chave por usuário em `profiles.anthropic_api_key` |
 | Fonte | Geist (sans) + JetBrains Mono (code) |
-| Build | Vite · bundle atual ~1.9MB (precisa code splitting) |
+
+> Detalhes operacionais (URLs, secrets, project IDs) em `runbook/setup.md`. Estado das edge functions em `runbook/edge-functions.md`.
 
 ---
 
-## 3. Supabase — Projeto Ativo
+## 3. SINK Design System — Regras Absolutas
 
-| Variável | Valor |
-|---|---|
-| `VITE_SUPABASE_URL` | `https://rwypdyksgmzrxruzgldk.supabase.co` |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | `eyJhbGci...IUGk` (JWT exp ~2036) |
-| Project ID | `rwypdyksgmzrxruzgldk` |
-
-Configurado em `c:\DEV\creditohub\.env.local`.
-Auth: `localStorage`, `persistSession: true`, `autoRefreshToken: true`.
-RLS ativo em todas as tabelas. Todas as queries exigem sessão autenticada.
-
----
-
-## 4. SINK Design System — Regras Absolutas
-
-### 4.1 Paleta de tokens (usar SEMPRE estes, nunca Tailwind genérico)
+### 3.1 Paleta de tokens (usar SEMPRE estes, nunca Tailwind genérico)
 
 ```
 Fundos escuros:   sink-deep (#07232A)  sink-deep-2  sink-deep-3  sink-deep-4
@@ -62,7 +49,7 @@ Semânticos:       sink-warn (#F3B84A)  sink-danger (#E26B5A)
 Status:           status-approved (#17A679)  status-restricted  status-committee  status-rejected  status-draft
 ```
 
-### 4.2 Mapeamento obrigatório (nunca usar a coluna ERRADO)
+### 3.2 Mapeamento obrigatório (nunca usar a coluna ERRADO)
 
 | ERRADO ❌ | CERTO ✅ |
 |---|---|
@@ -82,34 +69,24 @@ Status:           status-approved (#17A679)  status-restricted  status-committee
 | `border-amber-*` | `border-sink-warn/30` |
 | `border-red-*` | `border-sink-danger/30` |
 
-### 4.3 Border-radius
+### 3.3 Border-radius e sombras
 
 ```
 rounded-sink-sm (6px)  rounded-sink-md (10px)  rounded-sink-lg (16px)
 rounded-sink-xl (24px)  rounded-sink-pill (999px)
-```
 
-### 4.4 Sombras
-
-```
 shadow-sink-sm  shadow-sink-md  shadow-sink-lg  shadow-sink-glow
 ```
 
-### 4.5 Sidebar e Navbar
+### 3.4 Sidebar e Navbar
 
 Sidebar: fundo `bg-sink-deep`, texto `sidebar-foreground`, accent `sidebar-accent`.
 Navbar: fundo `bg-sink-deep` / `navbar`, texto `navbar-foreground`.
 **Nunca usar branco ou cinza genérico no sidebar/navbar.**
 
-### 4.6 Login (Auth.tsx)
-
-Painel esquerdo: `bg-sink-deep` com `NodeNetwork` (canvas animado — 28 nós mint conectados por linhas).
-Painel direito: `bg-sink-cream`.
-Logo: `/logo.svg` (SVG mint sobre transparente).
-
 ---
 
-## 5. Layout — Regras de Espaçamento
+## 4. Layout — Regras de Espaçamento
 
 - **Nunca usar `max-w-*` em páginas principais** — usar `w-full`
 - Padding padrão de página: `p-5` (não `p-6` ou `p-10`)
@@ -118,64 +95,11 @@ Logo: `/logo.svg` (SVG mint sobre transparente).
 
 ---
 
-## 6. Edge Functions — Status Atual
-
-| Função | O que faz | Status |
-|---|---|---|
-| `analyze-document` | Extrai dados de PDF via GPT-4o | Código OK · **falta `AI_API_KEY`** no Supabase Secrets |
-| `generate-insights` | Gera parecer/risco/perfil via GPT-4o | Código OK · **falta `AI_API_KEY`** |
-| `deal-followup-check` | Cria tarefas para deals parados | Código OK · **falta `pg_cron.schedule()`** |
-| `monitoring-runner` | Roda monitoramento de cedentes | Código OK · **falta `pg_cron.schedule()`** |
-| `bureau` | Orquestra consultas a bureaus de crédito | Adaptadores são mocks · Bureau real pendente |
-| `consulta-externa` | Gateway API externa de crédito | OK · falta `EXTERNAL_CONSULTA_API_URL` + `EXTERNAL_CONSULTA_API_KEY` |
-
-**Nenhuma edge function foi deployada no novo projeto Supabase ainda.**
-
-**IA hardcoded para OpenAI (gpt-4o).** Se mudar para Anthropic, atualizar URL e formato do request em `analyze-document/index.ts` e `generate-insights/index.ts`.
-
----
-
-## 7. Automações Ativas (sem configuração)
-
-- **Trigger de banco** (`auto_create_task_on_credit_decision`): ao aprovar análise:
-  - `approved`: cria 1 tarefa CRM de follow-up em 7d (prioridade média).
-  - `approved_restricted`: cria 1 tarefa CRM de follow-up em 7d (alta) + 1 tarefa de revisão da restrição em 30d.
-- **Deal automático na aprovação**: criado pelo **frontend** em `CommitteeVoting.tsx` ao finalizar comitê — primeiro estágio ativo de `deal_stages`. Falha sinaliza pra UI mas não trava a finalização.
-- **Prospect → Deal**: ao converter prospect `qualified`, frontend cria deal automaticamente.
-
-> Nota: as duas últimas automações vivem no **frontend** (não há trigger SQL). Migrar pra trigger no banco aumenta consistência mas não é prioridade enquanto a UI for o único caller.
-
----
-
-## 8. Alertas Técnicos Pendentes
-
-1. `AI_API_KEY` não configurada → IA não funciona
-2. Bucket `analysis-attachments` precisa existir no Storage
-3. `insertSnapshotSocios` tem erro silencioso (não trata `error` do insert)
-4. `bureau/index.ts` usa `supabase.auth.getClaims(token)` — verificar compatibilidade SDK
-5. Playwright usa `lovable-agent-playwright-config` (devDep Lovable) — substituir por config nativa
-6. Bundle ~1.9MB — implementar code splitting com `React.lazy` / `import()`
-7. `pg_cron` instalado mas sem jobs definidos — crons do `deal-followup-check` e `monitoring-runner` não rodam
-
----
-
-## 9. Referências ao Lovable — Estado Atual
-
-**Código de produção (`src/`):** ZERO referências. Completamente independente.
-
-**Ainda com referências (apenas testes):**
-- `playwright.config.ts` — importa `lovable-agent-playwright-config`
-- `playwright-fixture.ts` — importa `lovable-agent-playwright-config`
-
-Não afeta produção. Cleanup opcional.
-
----
-
-## 10. Estrutura de Arquivos — Responsabilidades
+## 5. Estrutura de Arquivos — Responsabilidades
 
 ```
 src/
-  pages/          → 30 páginas (ver BUSINESS_RULES.md para lógica de cada uma)
+  pages/          → páginas (uma por rota)
   components/     → componentes reutilizáveis
   components/ui/  → shadcn/ui (não modificar diretamente)
   lib/            → lógica de negócio pura (sem UI)
@@ -183,33 +107,37 @@ src/
   integrations/supabase/client.ts  → cliente Supabase (não modificar)
 
 supabase/
-  migrations/     → 25 migrations SQL rodadas no novo projeto
-  functions/      → 6 edge functions (Deno)
+  migrations/     → SQL versionado
+  functions/      → edge functions (Deno)
 
-public/
-  logo.svg        → logo oficial CreditoHub (mint sobre transparente)
+runbook/          → referência operacional viva (mantida pelo runbook-keeper)
+.claude/agents/   → 8 agentes especializados
 ```
 
----
-
-## 11. Sistema de Agentes (ver AGENTS.md)
-
-4 agentes especializados + 1 orquestrador:
-
-| Agente | Fase | Domínio |
-|---|---|---|
-| Lógica de Negócio | 0 | `src/lib/`, `src/hooks/` — regras e cálculos |
-| Backend · Schema | 0 | `supabase/migrations/` — tabelas, RLS |
-| Backend · Edge Functions | 1 | `supabase/functions/` |
-| Frontend · Componentes | 1 | `src/components/` |
-| Frontend · Páginas | 2 | `src/pages/` |
-| Testes | 3 (E2E) / qualquer (unit) | `src/test/`, Playwright |
-
-**Regra de ouro:** Fases 0 e 1 rodam em paralelo. Agente nunca lê contexto de outro domínio.
+> Mapa detalhado de rotas em `runbook/rotas.md`. Estrutura completa em `runbook/estrutura.md`.
 
 ---
 
-## 12. Status Flow — credit_analysis
+## 6. Sistema de Agentes (ver AGENTS.md + runbook/README.md)
+
+8 agentes especializados em `.claude/agents/`. Cada um lê apenas seus arquivos do `runbook/` antes da task — sem contexto de domínio alheio.
+
+| Agente | Domínio |
+|---|---|
+| `credit-domain` | dossiê, comitê, scoring, prontidão |
+| `crm-pipeline` | deals, prospects, funil, kanban |
+| `db-architect` | migrations, schema, RLS, multi-tenancy |
+| `edge-functions` | Deno, integrações Anthropic/BrasilAPI/bureau |
+| `ui-trilho` | design system, tokens, animações |
+| `security-auditor` | RLS, JWT, PII, OWASP |
+| `test-writer` | Playwright (E2E) + Vitest (unit) |
+| `runbook-keeper` | mantém `runbook/` atualizado |
+
+**Regra de ouro:** agentes nunca leem código de domínio alheio. Orquestrador resolve conflitos.
+
+---
+
+## 7. Status Flow — credit_analysis
 
 ```
 draft → in_committee → approved
@@ -217,44 +145,22 @@ draft → in_committee → approved
                      → rejected → draft (re-análise)
 ```
 
-Transições via drag (Kanban Cedentes): `cadastrado→draft`, `draft→in_committee`, `rejected→draft`.
-Transições `in_committee→decisão`: somente via CommitteeVoting.
+Transições via drag (Kanban): `cadastrado→draft`, `draft→in_committee`, `rejected→draft`.
+Transição `in_committee → decisão`: **só** via `finalize_committee` RPC (CommitteeVoting).
+
+> Detalhes do RPC, override e edição de voto em `runbook/funil.md`.
 
 ---
 
-## 13. Regras de Negócio Globais (resumo)
+## 8. Regras de Negócio Globais
 
 1. **Blacklist tem prioridade máxima** — verificada antes de qualquer dado na Consulta
 2. **Score determina cor em todo o sistema:** ≥ 700 = `status-approved`, 400–699 = `sink-warn`, < 400 = `sink-danger`
-3. **Score tier:** ≥ 800 = AAA, ≥ 700 = AA, ≥ 600 = A, else = B (fonte única: `getTier` / `getScoreGrade` em `src/lib/credit-calculations.ts` — **não duplicar**)
-4. **Comitê é inviolável** — status `in_committee`+ não pode ser alterado por drag
-5. **Deal automático na aprovação** — primeiro estágio ativo de `deal_stages`
+3. **Score tier:** ≥ 800 = AAA, ≥ 700 = AA, ≥ 600 = A, else = B (fonte única: `getScoreGrade` em `src/lib/credit-calculations.ts` — **não duplicar**)
+4. **Comitê é inviolável** — status `in_committee+` não pode ser alterado por drag; só via `finalize_committee` RPC. Override admin exige `reason`.
+5. **Deal automático na aprovação** — primeiro estágio ativo de `deal_stages` (criado pelo frontend em `CommitteeVoting`).
 6. **Prospect qualificado** = score ≥ 60; não qualificado = score < 30; pendente = intermediário
 7. **Auditoria automática** — triggers de banco registram em `audit_log` (não controlado no frontend)
-8. **Cálculos automáticos no dossiê:** score → limite sugerido → taxa → concentração → HHI
+8. **Cálculos no dossiê** (todos em `src/lib/credit-calculations.ts`): score → limite sugerido → taxa → concentração → HHI
 
----
-
-## 14. O que já foi feito neste projeto
-
-- [x] Migração completa do Lovable Cloud para código próprio
-- [x] Novo projeto Supabase criado e 25 migrations rodadas (31 tabelas)
-- [x] Logo real (`/logo.svg`) em toda a app (sidebar, navbar, auth, favicon)
-- [x] Auth funcional via Supabase (login, signup, reset de senha)
-- [x] SINK Design System implementado: tokens, tipografia Geist, sidebar/navbar deep teal
-- [x] Layout sem max-width constraints — `w-full` em todas as páginas principais
-- [x] Animação NodeNetwork no painel esquerdo do login (canvas, 28 nós mint)
-- [x] **Purga completa de cores genéricas Tailwind** — 80+ instâncias substituídas por tokens SINK em 17 arquivos
-- [x] AGENTS.md reestruturado com fases de paralelismo explícitas
-- [x] CLAUDE.md criado (este arquivo)
-
-## 15. Pendências Conhecidas
-
-- [ ] Deploy das 6 edge functions no novo Supabase
-- [ ] Configurar `AI_API_KEY` no Supabase Secrets
-- [ ] Criar bucket `analysis-attachments` no Storage
-- [ ] Configurar `pg_cron` jobs para `deal-followup-check` e `monitoring-runner`
-- [ ] Code splitting — bundle 1.9MB → lazy load por rota
-- [ ] Limpar Playwright (remover dependência `lovable-agent-playwright-config`)
-- [ ] Deploy na Vercel (substituir Lovable Cloud)
-- [ ] Corrigir erro silencioso em `insertSnapshotSocios`
+> Decisões de produto detalhadas em `runbook/decisoes.md`. Pendências e débitos em `runbook/pendencias.md`.
